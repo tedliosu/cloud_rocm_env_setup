@@ -5,7 +5,7 @@
 - ResNet-50 vs ViT-B/16 Classification and Resource Usage Performance Project
 - Flux.1 Dev based image generation
 - Ollama-powered LLM inferencing
-- hipCollections/cuCollections-based micro-bench
+- hipCollections/cuCollections-based and mixbench micro-benches
 
 ## Private ONLY
 - MLP in CuPy from first principles trained with Vanilla SGD and tested on MNIST_784 dataset
