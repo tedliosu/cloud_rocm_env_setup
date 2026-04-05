@@ -7,8 +7,6 @@ EXPECTED_DIST_VER="22.04"
 EXPECTED_ROCM_VER="7.2"
 EXPECTED_ROCMVER_REGEX="${EXPECTED_ROCM_VER/\./\\.}\.[0-9]+"
 
-echo "Please enter sudo password when prompted!"
-
 # Environment assumptions check specific to hot aisle invariants
 if ! grep --quiet "DISTRIB_ID=${EXPECTED_DISTRO}" /etc/lsb-release ||
    ! grep --quiet "DISTRIB_RELEASE=${EXPECTED_DIST_VER}" /etc/lsb-release; then
@@ -16,10 +14,8 @@ if ! grep --quiet "DISTRIB_ID=${EXPECTED_DISTRO}" /etc/lsb-release ||
     echo -e "\n    This IS NOT ${EXPECTED_DISTRO} ${EXPECTED_DIST_VER}; bailing!" >&2
     exit 1
 fi
-# dkms command requires elevated privileges
-sudo --set-home true
-if ! sudo --set-home dkms status amdgpu | grep --quiet "installed"; then
-    echo "Out of tree amdgpu dkms not installed; bailing!" >&2
+if rocminfo | grep --quiet "NOT loaded"; then
+    echo "amdgpu dkms not installed; bailing!" >&2
     exit 1
 fi
 ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut -d"-" -f2)"
@@ -30,6 +26,8 @@ if [[ ! "$ROCM_DETECTED_VER" =~ $EXPECTED_ROCMVER_REGEX ]]; then
     echo " ${EXPECTED_ROCM_VER}!"
     exit 1
 fi
+
+echo "Please enter sudo password when prompted!"
 
 # Enforce CWD is the directory that this script resides in
 OLD_CWDIR="$(pwd -P)" || {
