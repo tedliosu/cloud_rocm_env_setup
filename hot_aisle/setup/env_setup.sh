@@ -14,7 +14,7 @@ if ! grep --quiet "DISTRIB_ID=${EXPECTED_DISTRO}" /etc/lsb-release ||
     echo -e "\n    This IS NOT ${EXPECTED_DISTRO} ${EXPECTED_DIST_VER}; bailing!" >&2
     exit 1
 fi
-if rocminfo | grep --quiet "NOT loaded"; then
+if rocminfo | grep --ignore-case --quiet "NOT loaded"; then
     echo "amdgpu dkms not installed; bailing!" >&2
     exit 1
 fi
