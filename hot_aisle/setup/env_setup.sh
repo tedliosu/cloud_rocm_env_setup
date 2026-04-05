@@ -7,6 +7,8 @@ EXPECTED_DIST_VER="22.04"
 EXPECTED_ROCM_VER="7.2"
 EXPECTED_ROCMVER_REGEX="${EXPECTED_ROCM_VER/\./\\.}\.[0-9]+"
 
+echo "Please enter sudo password when prompted!"
+
 # Environment assumptions check specific to hot aisle invariants
 if ! grep --quiet "DISTRIB_ID=${EXPECTED_DISTRO}" /etc/lsb-release ||
    ! grep --quiet "DISTRIB_RELEASE=${EXPECTED_DIST_VER}" /etc/lsb-release; then
@@ -28,8 +30,6 @@ if [[ ! "$ROCM_DETECTED_VER" =~ $EXPECTED_ROCMVER_REGEX ]]; then
     echo " ${EXPECTED_ROCM_VER}!"
     exit 1
 fi
-
-echo "Please enter sudo password when prompted!"
 
 # Enforce CWD is the directory that this script resides in
 OLD_CWDIR="$(pwd -P)" || {
@@ -86,9 +86,11 @@ reboot_once_dont_wrap() {
     fi
 }
 
+
 # BEGIN "MAIN"
 run_stage apt_get_sys_update
 reboot_once_dont_wrap
+
 
 # Change back into old CWD just in case
 cd "$OLD_CWDIR" || {
