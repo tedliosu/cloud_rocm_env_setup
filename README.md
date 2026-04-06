@@ -1,13 +1,41 @@
-# Use Cases This Repository Serves
+# Guarantees
+
+- Target cloud environments:
+    - Hot Aisle MI300X, single-GPU VM instances
+    - (optional) Azure `Standard_NV24ads_V710_v5` instances
+        - **TODO**: Specify exact image name which has ROCm pre-installed to be used with this instance, to ease and standardize environment setup given the vast variety of possible images provided on Azure.
+- Reproducible environment setup with *selective* `pip` packages pinning, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
+- Safe, resumable bootstrap scripts with reboot handling
+- Minimal validation to detect obviously broken environments
+
+# Non-Goals
+
+- Genuinely production ready environment setup
+- Redistribution of proprietary drivers, runtimes, binaries, and source code
+- Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
+
+# Target Workloads
 
 ## Public or To Be Made Public
-- Custom Canny Edge Detection Pipeline written with CuPy
-- ResNet-50 vs ViT-B/16 Classification and Resource Usage Performance Project
-- Flux.1 Dev based image generation
-- Ollama-powered LLM inferencing
-- hipCollections/cuCollections-based and mixbench micro-benches
+- Custom Canny edge detection pipeline written with CuPy from first principles
+- ResNet-50 vs ViT-B/16 classification and resource usage performance project
+- ComfyUI 2D image generation:
+    - FLUX.x [dev] (where "x" is 1 or greater)
+- Ollama-powered LLM inferencing:
+    - Gemma (3 and above)
+    - gpt-oss (2025 version and newer)
+    - Mistral Small (3 and above)
+    - (optionally) Llama (3.3 and above)
+- HIP micro-benches:
+    - Elias Konstantinidis's mixbench
+    - Custom hipCollections `static_map` kernel-embedded aggregation computation.
+    - (optional) gather-GEMM via Triton with scrambled row maps
 
 ## Private ONLY
-- MLP in CuPy from first principles trained with Vanilla SGD and tested on MNIST_784 dataset
+- MLP in CuPy from first principles trained with vanilla mini-batch SGD and MSE loss, with training and testing on MNIST_784 dataset provided by Scikit-Learn OpenML
 - Comparison of classification performance and loss curves of various custom Voice Activity Detection models implemented in PyTorch
 - CUDA/HIP custom co-rank based iterative mergesort from first principles
+
+# LLM Assistance Usage Disclaimer
+
+- All code and documentation in this repository were drafted with assistance from ChatGPT and Gemini models publicly available circa 2026, but all final code review, integration, validation, testing, etc. were done by me, a human.
