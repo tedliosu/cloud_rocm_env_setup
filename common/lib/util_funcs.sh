@@ -23,7 +23,7 @@ run_stage() {
 # Usage: no arguments required
 apt_get_sys_update() {
     sudo --set-home apt-get update
-    sudo --set-home apt-get upgrade --assume-yes
+    sudo --set-home env NEEDRESTART_MODE="a" apt-get upgrade --assume-yes
 }
 
 # Reboot once helper (for ONLY after a system update)
