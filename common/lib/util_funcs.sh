@@ -55,7 +55,7 @@ ensure_latest_cmake() {
         sudo --set-home tee /etc/apt/sources.list.d/kitware.list >/dev/null
     sudo --set-home apt-get update
     test -f "${_kitware_test_file}" || sudo --set-home rm "${_kitware_signing_file}"
-    sudo --set-home apt-get install --assume-yes kitware-archive-keyring
+    sudo --set-home apt-get install --assume-yes --reinstall kitware-archive-keyring
     sudo --set-home apt-get install --assume-yes cmake
    
 }
