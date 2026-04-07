@@ -17,7 +17,7 @@ cd "$SCRIPT_DIR" || {
 }
 
 # Now we source all needed common functions/variables/etc.
-source "../vars.sh"
+source "../lib/hot_aisle_vars.sh"
 source "../../common/lib/util_funcs.sh"
 
 # Environment assumptions check specific to hot aisle invariants
