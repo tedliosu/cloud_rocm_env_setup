@@ -2,7 +2,6 @@ build-essential
 curl
 expect
 file
-git
 glances
 jq
 likwid
