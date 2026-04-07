@@ -47,7 +47,7 @@ ensure_latest_cmake() {
     _kitware_test_file="/usr/share/doc/kitware-archive-keyring/copyright"
     _kitware_signing_file="/usr/share/keyrings/kitware-archive-keyring.gpg"
     _signed_by_str="[signed-by=${_kitware_signing_file}]"
-    sudo --set-home apt-get install ca-certificates gpg wget
+    sudo --set-home apt-get install --assume-yes ca-certificates gpg wget
     test -f "${_kitware_test_file}" ||
         wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |
             gpg --dearmor - | sudo --set-home tee "${_kitware_signing_file}" >/dev/null
@@ -55,8 +55,8 @@ ensure_latest_cmake() {
         sudo --set-home tee /etc/apt/sources.list.d/kitware.list >/dev/null
     sudo --set-home apt-get update
     test -f "${_kitware_test_file}" || sudo --set-home rm "${_kitware_signing_file}"
-    sudo --set-home apt-get install kitware-archive-keyring
-    sudo --set-home apt-get install cmake
+    sudo --set-home apt-get install --assume-yes kitware-archive-keyring
+    sudo --set-home apt-get install --assume-yes cmake
    
 }
 
@@ -75,7 +75,7 @@ ensure_apt_with_custom_conf() {
     touch "${_w3m_hidden_dir}/history"
     # safe because apt package names each NEVER contain whitespace(s)
     # shellcheck disable=SC2086
-    sudo --set-home apt-get install ${_common_apt_packages} w3m apt-file
+    sudo --set-home apt-get install --assume-yes ${_common_apt_packages} w3m apt-file
     sudo --set-home apt-file update
     sudo --set-home update-alternatives --set "pager" "/usr/bin/w3m"
 
