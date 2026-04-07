@@ -11,6 +11,7 @@
 # Non-Goals
 
 - Genuinely production ready environment setup
+- Bundling in this repository of any actual code for the workloads listed in [Target Workloads](#target-workloads), whether the workloads are public OR private
 - Redistribution of proprietary drivers, runtimes, binaries, and source code
 - Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
 
