@@ -3,10 +3,10 @@
 - Target cloud environments:
     - Hot Aisle MI300X, single-GPU VM instances
     - (optional) Azure `Standard_NV24ads_V710_v5` instances
-        - **TODO**: Specify exact image name which has ROCm pre-installed to be used with this instance, to ease and standardize environment setup given the vast variety of possible images provided on Azure.
-- Reproducible environment setup with *selective* `pip` packages pinning, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
+        - **Planned:** specify a standardized base image with preinstalled ROCm to reduce setup variability
+- Reproducible, *minimal* environment setup with *selectively* pinned Python dependencies, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
 - Safe, resumable bootstrap scripts with reboot handling
-- Minimal validation to detect obviously broken environments
+- Minimal validation to detect obviously broken environments (e.g., ROCm availability, basic workload execution)
 
 # Non-Goals
 
@@ -22,10 +22,12 @@
 - ComfyUI 2D image generation:
     - FLUX.x [dev] (where "x" is 1 or greater)
 - Ollama-powered LLM inferencing:
-    - Gemma (3 and above)
-    - gpt-oss (2025 version and newer)
-    - Mistral Small (3 and above)
-    - (optionally) Llama (3.3 and above)
+    - Use **local** `open-webui` install for GUI frontend, for streamlined experience and software maintenance; please see [official Open WebUI documentation](https://docs.openwebui.com/getting-started/quick-start/connect-a-provider/starting-with-ollama/) for more relevant configuration details
+    - Target model families:
+        - Gemma (3 and above)
+        - gpt-oss (2025 version and newer)
+        - Mistral Small (3 and above)
+        - (optionally) Llama (3.3 and above)
 - HIP micro-benches:
     - Elias Konstantinidis's mixbench
     - Custom hipCollections `static_map` kernel-embedded aggregation computation.
