@@ -38,6 +38,9 @@
 - Comparison of classification performance and loss curves of various custom Voice Activity Detection models implemented in PyTorch
 - CUDA/HIP custom co-rank based iterative mergesort from first principles
 
+## Additional Notes
+- High-capacity solid state storage (>=100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
+
 # LLM Assistance Usage Disclaimer
 
 - All code and documentation in this repository were drafted with assistance from ChatGPT and Gemini models publicly available circa 2026, but all final code review, integration, validation, testing, etc. were done by me, a human.
