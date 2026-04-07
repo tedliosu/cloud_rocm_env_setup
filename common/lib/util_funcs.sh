@@ -11,7 +11,7 @@ run_stage() {
 
     if [ ! -f "${_done_marker_file}" ]; then
         echo "--- starting stage: ${_func_to_run} ---"
-        "${_func_to_run}" "$@" && touch "${_done_marker_file}"
+        "${_func_to_run}" "$@" && touch "${_done_marker_file}" && \
         echo "--- completed stage: ${_func_to_run} ---"
     else
         echo "--- skipping stage: ${_func_to_run} (already complete) ---"

@@ -53,7 +53,7 @@ PKGS_LISTS_DIR="$(realpath "../../common/etc")"
 run_stage "$MILESTONES_DIR" apt_get_sys_update
 reboot_once_dont_wrap "$MILESTONES_DIR"
 run_stage "$MILESTONES_DIR" ensure_latest_cmake "${EXPECTED_DIST_CODENAME}"
-run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf "${PKGS_LISTS_DIR}"
+run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf "${PKGS_LISTS_DIR}/common_apt_reqs.txt"
 
 
 # Change back into old CWD just in case
