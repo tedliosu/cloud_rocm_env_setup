@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# Arguments parsing
+# TODO
+
 # Enforce CWD is the directory that this script resides in
 OLD_CWDIR="$(pwd -P)" || {
     echo "Failed to resolve initial directory path" >&2
@@ -42,11 +45,15 @@ echo "Please enter sudo password when prompted!"
 # Create directory containing idempotent milestone markers
 MILESTONES_DIR="$(realpath "../state_trackers")"
 mkdir --parents "$MILESTONES_DIR"
+# Directory containing packages to be setup lists
+PKGS_LISTS_DIR="$(realpath "../../common/etc")"
 
 
 # BEGIN "MAIN"
 run_stage "$MILESTONES_DIR" apt_get_sys_update
 reboot_once_dont_wrap "$MILESTONES_DIR"
+run_stage "$MILESTONES_DIR" ensure_latest_cmake "${EXPECTED_DIST_CODENAME}"
+run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf "${PKGS_LISTS_DIR}"
 
 
 # Change back into old CWD just in case

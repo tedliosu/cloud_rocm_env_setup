@@ -40,3 +40,44 @@ reboot_once_dont_wrap() {
     fi
 }
 
+# up-to-date CMake setup, assuming Ubuntu
+# Usage: ensure_latest_cmake <ubuntu_distro_codename>
+ensure_latest_cmake() {
+
+    _kitware_test_file="/usr/share/doc/kitware-archive-keyring/copyright"
+    _kitware_signing_file="/usr/share/keyrings/kitware-archive-keyring.gpg"
+    _signed_by_str="[signed-by=${_kitware_signing_file}]"
+    sudo --set-home apt-get install ca-certificates gpg wget
+    test -f "${_kitware_test_file}" ||
+        wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |
+            gpg --dearmor - | sudo --set-home tee "${_kitware_signing_file}" >/dev/null
+    echo "deb ${_signed_by_str} https://apt.kitware.com/ubuntu/ $1 main" |
+        sudo --set-home tee /etc/apt/sources.list.d/kitware.list >/dev/null
+    sudo --set-home apt-get update
+    test -f "${_kitware_test_file}" || sudo --set-home rm "${_kitware_signing_file}"
+    sudo --set-home apt-get install kitware-archive-keyring
+    sudo --set-home apt-get install cmake
+   
+}
+
+# Download and configure apt packages with custom settings, assuming Ubuntu
+# Usage: ensure_apt_with_custom_conf <path_to_common_apt_packages_list>
+ensure_apt_with_custom_conf() {
+
+    _common_apt_packages="$(<"$1" tr "\n" " " | sed 's/ *$//g')"
+    _curr_username="$(whoami)"
+    _curr_home_dir="/home/${_curr_username}"
+    if [ "${_curr_username}" = "root" ]; then
+        _curr_home_dir="/root"
+    fi
+    _w3m_hidden_dir="${_curr_home_dir}/.w3m"
+    mkdir --parent "${_w3m_hidden_dir}"
+    touch "${_w3m_hidden_dir}/history"
+    # safe because apt package names each NEVER contain whitespace(s)
+    # shellcheck disable=SC2086
+    sudo --set-home apt-get install ${_common_apt_packages} w3m apt-file
+    sudo --set-home apt-file update
+    sudo --set-home update-alternatives --set "pager" "/usr/bin/w3m"
+
+}
+
