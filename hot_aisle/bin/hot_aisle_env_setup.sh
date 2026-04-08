@@ -29,7 +29,7 @@ if ! grep --quiet "DISTRIB_ID=${EXPECTED_DISTRO}" /etc/lsb-release ||
     exit 1
 fi
 if rocminfo | grep --ignore-case --quiet "NOT loaded"; then
-    echo "amdgpu dkms not installed; bailing!" >&2
+    echo "amdgpu dkms not detected; bailing!" >&2
     exit 1
 fi
 ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut -d"-" -f2)"
