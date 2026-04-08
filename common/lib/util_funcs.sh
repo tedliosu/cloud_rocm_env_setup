@@ -76,3 +76,7 @@ ensure_apt_with_custom_conf() {
 
 }
 
+# Install base deep learning projects' required packages into a virtualenv
+# Usage: ensure_base_dl_virtualenv <deep_learning_virtenv_dir> \
+#            <torch_specific_requirements.txt> <non_torch_requirements.txt>
+
