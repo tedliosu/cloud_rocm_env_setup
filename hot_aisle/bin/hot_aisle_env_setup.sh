@@ -18,6 +18,7 @@ cd "$SCRIPT_DIR" || {
 
 # Now we source all needed common functions/variables/etc.
 source "../lib/hot_aisle_vars.sh"
+source "../../common/lib/shared_vars.sh"
 source "../../common/lib/util_funcs.sh"
 
 # Environment assumptions check specific to hot aisle invariants
@@ -53,7 +54,8 @@ PKGS_LISTS_DIR="$(realpath "../../common/etc")"
 run_stage "$MILESTONES_DIR" apt_get_sys_update
 reboot_once_dont_wrap "$MILESTONES_DIR"
 run_stage "$MILESTONES_DIR" ensure_latest_cmake "${EXPECTED_DIST_CODENAME}"
-run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf "${PKGS_LISTS_DIR}/common_apt_reqs.txt"
+run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
+    "${CURR_HOME_DIR}" "${PKGS_LISTS_DIR}/common_apt_reqs.txt"
 
 
 # Change back into old CWD just in case

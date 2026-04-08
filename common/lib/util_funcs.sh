@@ -61,16 +61,11 @@ ensure_latest_cmake() {
 }
 
 # Download and configure apt packages with custom settings, assuming Ubuntu
-# Usage: ensure_apt_with_custom_conf <path_to_common_apt_packages_list>
+# Usage: ensure_apt_with_custom_conf <current_home_dir> <path_to_common_apt_packages_list>
 ensure_apt_with_custom_conf() {
 
-    _common_apt_packages="$(<"$1" tr "\n" " " | sed 's/ *$//g')"
-    _curr_username="$(whoami)"
-    _curr_home_dir="/home/${_curr_username}"
-    if [ "${_curr_username}" = "root" ]; then
-        _curr_home_dir="/root"
-    fi
-    _w3m_hidden_dir="${_curr_home_dir}/.w3m"
+    _common_apt_packages="$(<"$2" tr "\n" " " | sed 's/ *$//g')"
+    _w3m_hidden_dir="$1/.w3m"
     mkdir --parent "${_w3m_hidden_dir}"
     touch "${_w3m_hidden_dir}/history"
     # safe because apt package names each NEVER contain whitespace(s)
