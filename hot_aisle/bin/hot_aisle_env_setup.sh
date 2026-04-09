@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# Arguments parsing
-# TODO
+# TODO: Look into if full setup takes more than 10 minutes, so that we can gate
+#    optional ones behind various arguments
 
 # Enforce CWD is the directory that this script resides in
 OLD_CWDIR="$(pwd -P)" || {
