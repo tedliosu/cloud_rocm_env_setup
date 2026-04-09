@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# TODO: Look into if full setup takes more than 10 minutes, so that we can gate
+# TODO: Look into if full setup takes more than 15 minutes, so that we can gate
 #    optional ones behind various arguments
 
 # Enforce CWD is the directory that this script resides in
@@ -50,6 +50,7 @@ mkdir --parents "$MILESTONES_DIR"
 APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
 TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
 NON_TORCH_DL_PYPKGS_LISTS_PATH="$(realpath "${NON_TORCH_REQS_TXT_RELPATH}")"
+GPU_ARR_PYPKGS_LISTS_PATH="$(realpath "${GPU_ARR_REQS_TXT_RELPATH}")"
 
 
 # BEGIN "MAIN"
@@ -60,6 +61,8 @@ run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
     "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
 run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}" \
     "${EXPECTED_ROCM_VER}" "${TORCH_PYPKGS_LISTS_PATH}" "${NON_TORCH_DL_PYPKGS_LISTS_PATH}"
+run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
+    "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}"
 
 
 # Change back into old CWD just in case

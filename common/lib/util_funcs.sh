@@ -92,3 +92,39 @@ ensure_base_dl_virtualenv() {
     deactivate
 
 }
+
+# Install GPGPU python arrays projects' required packages into a virtualenv
+# Usage: ensure_gpu_arr_virtualenv <gpu_arr_virtenv_dirpath> <cloned_cupy_dirpath> \
+#            <non_cupy_requirements_txt_path>
+ensure_gpu_arr_virtualenv() {
+
+    test -d "$1" && rm --recursive --force "$1"
+    virtualenv "$1"
+    # Parameterized source since this function encapsulate setup logic invariants
+    # shellcheck disable=SC1090,SC1091
+    . "$1/bin/activate"
+    pip install --upgrade pip
+    pip install --requirement "$3"
+    test -d "$2" && rm --recursive --force "$2"
+    git clone https://github.com/cupy/cupy.git "$2"
+    git -C "$2" fetch origin pull/9748/head:pr-9748-hipmask
+    git -C "$2" checkout pr-9748-hipmask
+    git -C "$2" config --global user.email "placeholder@example.com"
+    git -C "$2" config --global user.name "placeholder"
+    git -C "$2" merge 9263620693c892864c52d2703b862dcf1c264c6a --no-edit
+    git -C "$2" submodule update --init --recursive
+    ROCM_HOME="$(hipconfig --rocmpath | cut -d"-" -f1)"
+    HCC_AMDGPU_TARGET="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
+                             jq --raw-output '.card0."GFX Version"' | tr --delete "\n")"
+    CUPY_NUM_BUILD_JOBS="$(nproc)"
+    export ROCM_HOME
+    export HCC_AMDGPU_TARGET
+    export CUPY_NUM_BUILD_JOBS
+    export CUPY_INSTALL_USE_HIP=1
+    pip wheel --wheel-dir "$2/dist" "$2"
+    pip install "$2/dist"/cupy*.whl && \
+        rm --recursive --force "$2"
+    deactivate
+
+}
+
