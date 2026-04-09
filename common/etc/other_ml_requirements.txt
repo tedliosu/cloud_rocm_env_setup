@@ -14,4 +14,4 @@ requests
 safetensors
 scikit-learn
 seaborn[stats]
-tqdm
+tqdm[notebook]
