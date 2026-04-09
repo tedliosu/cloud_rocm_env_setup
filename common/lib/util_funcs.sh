@@ -1,6 +1,6 @@
 
 # Helper function to run a stage
-# Usage: run_stage <milestones_directory> <function_to_run> [function_arguments]...
+# Usage: run_stage <milestones_directory_path> <function_to_run> [function_arguments]...
 run_stage() {
 
     _milestones_dir="$1"
@@ -61,7 +61,7 @@ ensure_latest_cmake() {
 }
 
 # Download and configure apt packages with custom settings, assuming Ubuntu
-# Usage: ensure_apt_with_custom_conf <current_home_dir> <path_to_common_apt_packages_list>
+# Usage: ensure_apt_with_custom_conf <current_home_dirpath> <path_to_common_apt_packages_list>
 ensure_apt_with_custom_conf() {
 
     _common_apt_packages="$(<"$2" tr "\n" " " | sed 's/ *$//g')"
@@ -77,6 +77,17 @@ ensure_apt_with_custom_conf() {
 }
 
 # Install base deep learning projects' required packages into a virtualenv
-# Usage: ensure_base_dl_virtualenv <deep_learning_virtenv_dir> \
-#            <torch_specific_requirements.txt> <non_torch_requirements.txt>
+# Usage: ensure_base_dl_virtualenv <deep_learning_virtenv_dirpath> <rocm_ver_string> \
+#            <torch_specific_requirements_txt_path> <non_torch_requirements_txt_path>
+ensure_base_dl_virtualenv() {
 
+    virtualenv "$1"
+    # Parameterized source since this function encapsulate setup logic invariants
+    # shellcheck disable=SC1090,SC1091
+    . "$1/bin/activate"
+    pip install --upgrade pip
+    pip install --requirement "$3" --index-url "https://download.pytorch.org/whl/rocm$2"
+    pip install --requirement "$4"
+    deactivate
+
+}

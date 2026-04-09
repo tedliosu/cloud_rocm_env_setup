@@ -37,7 +37,7 @@ if [[ ! "$ROCM_DETECTED_VER" =~ $EXPECTED_ROCMVER_REGEX ]]; then
     echo "'hipconfig' reports ROCm userland version $ROCM_DETECTED_VER!" >&2
     echo -e "\n    Please update all environment setup logic and configs" >&2
     echo -e "\n    before rerunning this script, as assumed version is" >&2
-    echo " ${EXPECTED_ROCM_VER}!"
+    echo " ~${EXPECTED_ROCM_VER}!"
     exit 1
 fi
 
@@ -46,8 +46,10 @@ echo "Please enter sudo password when prompted!"
 # Create directory containing idempotent milestone markers
 MILESTONES_DIR="$(realpath "../state_trackers")"
 mkdir --parents "$MILESTONES_DIR"
-# Directory containing packages to be setup lists
-PKGS_LISTS_DIR="$(realpath "../../common/etc")"
+# Resolve real path of packages-list files
+APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
+TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
+NON_TORCH_DL_PYPKGS_LISTS_PATH="$(realpath "${NON_TORCH_REQS_TXT_RELPATH}")"
 
 
 # BEGIN "MAIN"
@@ -55,7 +57,9 @@ run_stage "$MILESTONES_DIR" apt_get_sys_update
 reboot_once_dont_wrap "$MILESTONES_DIR"
 run_stage "$MILESTONES_DIR" ensure_latest_cmake "${EXPECTED_DIST_CODENAME}"
 run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
-    "${CURR_HOME_DIR}" "${PKGS_LISTS_DIR}/common_apt_reqs.txt"
+    "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
+run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}" \
+    "${EXPECTED_ROCM_VER}" "${TORCH_PYPKGS_LISTS_PATH}" "${NON_TORCH_DL_PYPKGS_LISTS_PATH}"
 
 
 # Change back into old CWD just in case
