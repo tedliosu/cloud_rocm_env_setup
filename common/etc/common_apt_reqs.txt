@@ -1,6 +1,7 @@
 build-essential
 curl
 expect
+ffmpeg
 file
 glances
 jq

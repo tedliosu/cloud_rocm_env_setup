@@ -88,6 +88,7 @@ ensure_base_dl_virtualenv() {
     . "$1/bin/activate"
     pip install --upgrade pip
     pip install --requirement "$3" --index-url "https://download.pytorch.org/whl/rocm$2"
+    pip install "torchcodec==0.11.0" --index-url="https://download.pytorch.org/whl/cpu"
     pip install --requirement "$4"
     deactivate
 
