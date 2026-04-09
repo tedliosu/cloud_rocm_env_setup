@@ -81,6 +81,7 @@ ensure_apt_with_custom_conf() {
 #            <torch_specific_requirements_txt_path> <non_torch_requirements_txt_path>
 ensure_base_dl_virtualenv() {
 
+    test -d "$1" && rm --recursive --force "$1"
     virtualenv "$1"
     # Parameterized source since this function encapsulate setup logic invariants
     # shellcheck disable=SC1090,SC1091
