@@ -7,7 +7,7 @@ matplotlib
 mlxtend
 notebook
 numpy>=2,<2.6
-pandas>=2,<4
+pandas[plot,output-formatting]>=2,<4
 pillow
 psutil
 requests
