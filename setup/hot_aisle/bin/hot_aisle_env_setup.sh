@@ -4,13 +4,11 @@ set -euo pipefail
 
 CUPY_ENV_FLAG="--cupy-env-setup"
 COMFYUI_FLAG="--comfyui-addons-setup"
-OLLAMA_FLAG="--ollama-runtime-setup"
 DO_CUPY_ENV=0
 DO_COMFYUI_ADDONS=0
-DO_OLLAMA_RUNTIME=0
 
 usage() {
-    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$OLLAMA_FLAG] [-h|--help]"
+    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [-h|--help]"
     exit 0
 }
 
@@ -19,7 +17,6 @@ while [[ "$#" -gt 0 ]]; do
   case "$1" in
     "$CUPY_ENV_FLAG") DO_CUPY_ENV=1; shift;;
     "$COMFYUI_FLAG") DO_COMFYUI_ADDONS=1; shift;;
-    "$OLLAMA_FLAG") DO_OLLAMA_RUNTIME=1; shift;;
     -h|--help) usage;;
     *) usage;;
   esac
@@ -97,9 +94,6 @@ if (( DO_COMFYUI_ADDONS )); then
         "${COMFYUI_REPO_LOCAL_DIR}" "${COMFYUI_PIN_VER_TAG}" "${TORCH_PYPKGS_LISTS_PATH}" \
         "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${BEFORE_COMFYUI_LOG_PATH}" "${AFTER_COMFYUI_LOG_PATH}"
 fi
-
-# TODO: Remove this following line of code when all variables have been used
-echo "OLLAMA: $DO_OLLAMA_RUNTIME"
 
 
 # Change back into old CWD just in case
