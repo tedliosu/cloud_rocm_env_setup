@@ -29,7 +29,7 @@
         - gpt-oss (2025 version and newer)
         - Mistral Small (3 and above)
         - (optionally) Llama (3.3 and above)
-    - Please see item 1 of [Additional Notes sub-section](#additional-notes) for more details in regards to Ollama runtime setup and validation NOT being a part of the bootstrap scripts.
+    - Please see [Additional Notes](#additional-notes) sub-section for why Ollama runtime setup and validation are intentionally excluded from bootstrap scripts.
 - HIP micro-benches:
     - Elias Konstantinidis's mixbench
     - Custom hipCollections `static_map` kernel-embedded aggregation computation.
@@ -41,8 +41,11 @@
 - CUDA/HIP custom co-rank based iterative mergesort from first principles
 
 ## Additional Notes
-1. Ollama is intentionally NOT installed by the bootstrap scripts.  Ollama installation and model pulls are manual because there is currently (as of mid-2026) no way to pin models pulled from the default Ollama model registry to specific versions, and there has been documented partial coupling of Ollama runtime versions to versions of models hosted on the default Ollama model registry.  In addition, on ROCm systems, mismatched or fragile driver/runtime combinations may cause GPU issues/hangs/etc. during inference, so this repository also avoids treating Ollama inference as an automated bootstrap validation step.
-2. High-capacity solid state storage (>=100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
+1. Ollama is intentionally **not** installed by the bootstrap scripts:
+    - Ollama installation and model pulls are manual because, as of mid-2026, models pulled from the default Ollama registry cannot be pinned to exact immutable versions.
+    - There has also been documented partial coupling between Ollama runtime versions and model versions hosted on the default registry.
+    - On ROCm systems, fragile driver/runtime/hardware/etc. combinations may also cause GPU hangs or other inference-time failures.  Therefore, this repository also does not treat Ollama inference as an automated bootstrap validation step.
+2. High-capacity solid state storage (100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
 
 # TODOs
 
