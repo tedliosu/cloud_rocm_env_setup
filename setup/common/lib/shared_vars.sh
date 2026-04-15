@@ -19,3 +19,5 @@ export TORCH_ONLY_REQS_TXT_RELPATH="${_PROJ_ETC_DIR_RELPATH}/torch_requirements.
 export NON_TORCH_REQS_TXT_RELPATH="${_PROJ_ETC_DIR_RELPATH}/other_ml_requirements.txt"
 export GPU_ARR_REQS_TXT_RELPATH="${_PROJ_ETC_DIR_RELPATH}/gpu_arr_non_cupy_requirements.txt"
 
+export TORCHCODEC_PIN_VER="0.11.0"
+

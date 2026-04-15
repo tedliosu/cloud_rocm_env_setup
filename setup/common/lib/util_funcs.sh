@@ -78,7 +78,8 @@ ensure_apt_with_custom_conf() {
 
 # Install base deep learning projects' required packages into a virtualenv
 # Usage: ensure_base_dl_virtualenv <deep_learning_virtenv_dirpath> <rocm_ver_string> \
-#            <torch_specific_requirements_txt_path> <non_torch_requirements_txt_path>
+#            <torch_specific_requirements_txt_path> <non_torch_requirements_txt_path> \
+#            <torchcodec_ver_str>
 ensure_base_dl_virtualenv() {
 
     test -d "$1" && rm --recursive --force "$1"
@@ -88,7 +89,7 @@ ensure_base_dl_virtualenv() {
     . "$1/bin/activate"
     pip install --upgrade pip
     pip install --requirement "$3" --index-url "https://download.pytorch.org/whl/rocm$2"
-    pip install "torchcodec==0.11.0" --index-url="https://download.pytorch.org/whl/cpu"
+    pip install "torchcodec==$5" --index-url="https://download.pytorch.org/whl/cpu"
     pip install --requirement "$4"
     deactivate
 
