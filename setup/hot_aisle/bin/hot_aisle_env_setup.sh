@@ -63,14 +63,18 @@ fi
 
 echo "Please enter sudo password when prompted!"
 
-# Create directory containing idempotent milestone markers
-MILESTONES_DIR="$(realpath "../state_trackers")"
+# Create directories containing idempotent milestone markers and logs
+MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
+LOGS_DIR="$(realpath "${LOGS_DIR_RELPATH}")"
 mkdir --parents "$MILESTONES_DIR"
+mkdir --parents "$LOGS_DIR"
 # Resolve real path of packages-list files
 APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
 TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
 NON_TORCH_DL_PYPKGS_LISTS_PATH="$(realpath "${NON_TORCH_REQS_TXT_RELPATH}")"
 GPU_ARR_PYPKGS_LISTS_PATH="$(realpath "${GPU_ARR_REQS_TXT_RELPATH}")"
+BEFORE_COMFYUI_LOG_PATH="$(realpath "${PRE_COMFYUI_PIP_FREEZE_RECS}")"
+AFTER_COMFYUI_LOG_PATH="$(realpath "${POST_COMFYUI_PIP_FREEZE_RECS}")"
 
 
 # BEGIN "MAIN"
@@ -88,8 +92,14 @@ if (( DO_CUPY_ENV )); then
         "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}"
 fi
 
+if (( DO_COMFYUI_ADDONS )); then
+    run_stage "$MILESTONES_DIR" ensure_comfyui_virtualenv "${DEEP_LEARN_VIRTENV_DIR}" \
+        "${COMFYUI_REPO_LOCAL_DIR}" "${COMFYUI_PIN_VER_TAG}" "${TORCH_PYPKGS_LISTS_PATH}" \
+        "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${BEFORE_COMFYUI_LOG_PATH}" "${AFTER_COMFYUI_LOG_PATH}"
+fi
+
 # TODO: Remove this following line of code when all variables have been used
-echo "COMFY-UI: $DO_COMFYUI_ADDONS OLLAMA: $DO_OLLAMA_RUNTIME"
+echo "OLLAMA: $DO_OLLAMA_RUNTIME"
 
 
 # Change back into old CWD just in case

@@ -130,3 +130,24 @@ ensure_gpu_arr_virtualenv() {
 
 }
 
+# Install ComfyUI's required packages into a virtualenv
+# Usage: ensure_comfyui_virtualenv <deep_learning_virtenv_dirpath> <comfyui_clone_dir_path> \
+#            <comfyui_version_tag> <torch_specific_requirements_txt_path> <non_torch_requirements_txt_path> \
+#            <before_comfyui_install_pip_freeze_path> <after_comfyui_install_pip_freeze_path>
+ensure_comfyui_virtualenv() {
+
+    test -d "$2" && rm --recursive --force "$2"
+    git clone https://github.com/Comfy-Org/ComfyUI.git "$2"
+    git -C "$2" checkout "$3"
+    git -C "$2" submodule update --init --recursive
+    # Parameterized source since this function encapsulate setup logic invariants
+    # shellcheck disable=SC1090,SC1091
+    . "$1/bin/activate"
+    pip check
+    pip freeze > "$6"
+    pip install --requirement "$2/requirements.txt" --requirement "$5" --constraint "$4"
+    pip check
+    pip freeze > "$7"
+    deactivate
+
+}
