@@ -60,7 +60,8 @@ run_stage "$MILESTONES_DIR" ensure_latest_cmake "${EXPECTED_DIST_CODENAME}"
 run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
     "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
 run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}" \
-    "${EXPECTED_ROCM_VER}" "${TORCH_PYPKGS_LISTS_PATH}" "${NON_TORCH_DL_PYPKGS_LISTS_PATH}"
+    "${EXPECTED_ROCM_VER}" "${TORCH_PYPKGS_LISTS_PATH}" \
+    "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${TORCHCODEC_PIN_VER}"
 run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
     "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}"
 
