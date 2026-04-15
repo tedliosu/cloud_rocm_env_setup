@@ -42,6 +42,9 @@
 ## Additional Notes
 - High-capacity solid state storage (>=100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
 
+# TODOs
+- Refactor installation logic of CuPy into virtualenv once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
+
 # LLM Assistance Usage Disclaimer
 
 - All code and documentation in this repository were drafted with assistance from ChatGPT and Gemini models publicly available circa 2026, but all final code review, integration, validation, testing, etc. were done by me, a human.
