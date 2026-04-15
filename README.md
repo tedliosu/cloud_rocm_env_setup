@@ -42,7 +42,6 @@
 
 ## Additional Notes
 1. Ollama is intentionally NOT installed by the bootstrap scripts.  Ollama installation and model pulls are manual because there is currently (as of mid-2026) no way to pin models pulled from the default Ollama model registry to specific versions, and there has been documented partial coupling of Ollama runtime versions to versions of models hosted on the default Ollama model registry.  In addition, on ROCm systems, mismatched or fragile driver/runtime combinations may cause GPU issues/hangs/etc. during inference, so this repository also avoids treating Ollama inference as an automated bootstrap validation step.
-
 2. High-capacity solid state storage (>=100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
 
 # TODOs
