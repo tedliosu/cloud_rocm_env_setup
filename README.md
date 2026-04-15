@@ -29,9 +29,7 @@
         - gpt-oss (2025 version and newer)
         - Mistral Small (3 and above)
         - (optionally) Llama (3.3 and above)
-
     - Please see item 1 of [Additional Notes sub-section](#additional-notes) for more details in regards to Ollama runtime setup and validation NOT being a part of the bootstrap scripts.
-
 - HIP micro-benches:
     - Elias Konstantinidis's mixbench
     - Custom hipCollections `static_map` kernel-embedded aggregation computation.
