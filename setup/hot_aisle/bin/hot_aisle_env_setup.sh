@@ -2,8 +2,28 @@
 
 set -euo pipefail
 
-# TODO: Look into if full setup takes more than 15 minutes, so that we can gate
-#    optional ones behind various arguments
+CUPY_ENV_FLAG="--cupy-env-setup"
+COMFYUI_FLAG="--comfyui-addons-setup"
+OLLAMA_FLAG="--ollama-runtime-setup"
+DO_CUPY_ENV=0
+DO_COMFYUI_ADDONS=0
+DO_OLLAMA_RUNTIME=0
+
+usage() {
+    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$OLLAMA_FLAG] [-h|--help]"
+    exit 0
+}
+
+# Parse args
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    "$CUPY_ENV_FLAG") DO_CUPY_ENV=1; shift;;
+    "$COMFYUI_FLAG") DO_COMFYUI_ADDONS=1; shift;;
+    "$OLLAMA_FLAG") DO_OLLAMA_RUNTIME=1; shift;;
+    -h|--help) usage;;
+    *) usage;;
+  esac
+done
 
 # Enforce CWD is the directory that this script resides in
 OLD_CWDIR="$(pwd -P)" || {
@@ -62,8 +82,14 @@ run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
 run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}" \
     "${EXPECTED_ROCM_VER}" "${TORCH_PYPKGS_LISTS_PATH}" \
     "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${TORCHCODEC_PIN_VER}"
-run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
-    "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}"
+
+if (( DO_CUPY_ENV )); then
+    run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
+        "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}"
+fi
+
+# TODO: Remove this following line of code when all variables have been used
+echo "COMFY-UI: $DO_COMFYUI_ADDONS OLLAMA: $DO_OLLAMA_RUNTIME"
 
 
 # Change back into old CWD just in case
