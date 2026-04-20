@@ -98,9 +98,9 @@ def _decode_wave_file_n_print_info(filepath: str) -> None:
             f"{mean_amp_item:12.5e}, stdev: {stdev_amp_item:12.5e}")
     print("Checking that stdev and mean " + \
             "transformed as approximately expected...")
-    assert_close(mean_amp_after, 0.6 * mean_amp,
+    assert_close(mean_amp_after, gain_adj_ratio * mean_amp,
                  rtol=relative_tol, atol=absolute_tol)
-    assert_close(stdev_amp_after, 0.6 * stdev_amp,
+    assert_close(stdev_amp_after, gain_adj_ratio * stdev_amp,
                  rtol=relative_tol, atol=absolute_tol)
     print("Testing with 'assert_close' passed! " + \
             f"(rtol {relative_tol:.3e}, atol {absolute_tol:.3e})")
