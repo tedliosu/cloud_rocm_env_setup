@@ -4,7 +4,7 @@
     - Hot Aisle MI300X, single-GPU VM instances
     - (optional) Azure `Standard_NV24ads_V710_v5` instances
         - Assumed base image: **NVV5 V710 ROCm Linux Image**, **Gen2** variant as of mid-2026; independently verified to be built on Ubuntu 24.04 ([product page on Microsoft Marketplace](https://marketplace.microsoft.com/en-us/product/amdinc1746636494855.nvv5_v710_linux_rocm_image))
-    - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally recorded by probe scripts rather than hard-coded here.
+    - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally recorded by probe logic in scripts rather than hard-coded here.
 - Reproducible, *minimal* environment setup with *selectively* pinned Python dependencies, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
 - Safe, resumable bootstrap scripts with reboot handling
 - Minimal validation to detect obviously broken environments (e.g., ROCm availability, basic workload execution)
