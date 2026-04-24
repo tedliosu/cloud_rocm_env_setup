@@ -38,25 +38,9 @@ source "../lib/hot_aisle_vars.sh"
 source "../../common/lib/shared_vars.sh"
 source "../../common/lib/util_funcs.sh"
 
-# Environment assumptions check specific to hot aisle invariants
-if ! grep --quiet "DISTRIB_ID=${EXPECTED_DISTRO}" /etc/lsb-release ||
-   ! grep --quiet "DISTRIB_RELEASE=${EXPECTED_DIST_VER}" /etc/lsb-release; then
-    echo -e "Got unexpected '/etc/lsb-release' with contents:\n$(cat /etc/lsb-release)" >&2
-    echo -e "\n    This IS NOT ${EXPECTED_DISTRO} ${EXPECTED_DIST_VER}; bailing!" >&2
-    exit 1
-fi
-if rocminfo | grep --ignore-case --quiet "NOT loaded"; then
-    echo "amdgpu dkms not detected; bailing!" >&2
-    exit 1
-fi
-ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut -d"-" -f2)"
-if [[ ! "$ROCM_DETECTED_VER" =~ $EXPECTED_ROCMVER_REGEX ]]; then
-    echo "'hipconfig' reports ROCm userland version $ROCM_DETECTED_VER!" >&2
-    echo -e "\n    Please update all environment setup logic and configs" >&2
-    echo -e "\n    before rerunning this script, as assumed version is" >&2
-    echo " ~${EXPECTED_ROCM_VER}!"
-    exit 1
-fi
+# Environment assumptions check
+ensure_basic_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}" \
+                              "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
 
 echo "Please enter sudo password when prompted!"
 

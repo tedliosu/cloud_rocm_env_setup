@@ -19,6 +19,38 @@ run_stage() {
 
 }
 
+# Assert basic environment stats helper, assuming Ubuntu-like distro
+# Usage: ensure_basic_env_sanity_dont_wrap <expected_distro_name> <expected_distro_ver> \
+#                                          <expected_rocm_ver> <expected_rocm_ver_regex>
+ensure_basic_env_sanity_dont_wrap() {
+
+    if ! grep --quiet "DISTRIB_ID=$1" /etc/lsb-release ||
+       ! grep --quiet "DISTRIB_RELEASE=$2" /etc/lsb-release; then
+        echo "Got unexpected '/etc/lsb-release' with contents:" >&2
+        echo >&2
+        cat /etc/lsb-release >&2
+        echo >&2
+        echo  "    This IS NOT $1 $2; bailing!" >&2
+        exit 1
+    fi
+    if rocminfo | grep --ignore-case --quiet "NOT loaded"; then
+        echo "amdgpu dkms not detected; bailing!" >&2
+        exit 1
+    fi
+    ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut -d"-" -f2)"
+    if echo "$ROCM_DETECTED_VER" | \
+       grep --extended-regexp --invert-match --quiet "$4"; then
+        echo "'hipconfig' reports ROCm userland version $ROCM_DETECTED_VER!" >&2
+        echo >&2
+        echo "    Please update all environment setup logic and configs" >&2
+        echo >&2
+        echo "    before rerunning this script, as assumed version is" >&2
+        echo " ~$3!"
+        exit 1
+    fi
+
+}
+
 # System update (no kernel update by default)
 # Usage: no arguments required
 apt_get_sys_update() {
@@ -26,7 +58,7 @@ apt_get_sys_update() {
     sudo --set-home env NEEDRESTART_MODE="a" apt-get upgrade --assume-yes
 }
 
-# Reboot once helper (for ONLY after a system update)
+# Reboot once helper (for after a system update)
 # Usage: reboot_once_dont_wrap <milestones_directory>
 reboot_once_dont_wrap() {
     reboot_marker_file="$1/reboot_once_dont_wrap.done"
