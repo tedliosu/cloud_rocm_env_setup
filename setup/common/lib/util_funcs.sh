@@ -151,6 +151,8 @@ ensure_gpu_arr_virtualenv() {
     HCC_AMDGPU_TARGET="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
                              jq --raw-output '.card0."GFX Version"' | tr --delete "\n")"
     CUPY_NUM_BUILD_JOBS="$(nproc)"
+    echo "GOT: ROCM_HOME=${ROCM_HOME}, HCC_AMDGPU_TARGET=${HCC_AMDGPU_TARGET}," \
+        "CUPY_NUM_BUILD_JOBS=${CUPY_NUM_BUILD_JOBS}"
     export ROCM_HOME
     export HCC_AMDGPU_TARGET
     export CUPY_NUM_BUILD_JOBS
