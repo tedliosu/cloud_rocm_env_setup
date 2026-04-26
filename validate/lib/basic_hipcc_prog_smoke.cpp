@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <string_view>
 
 #define HIP_CHECK_ERR(call)                                         \
@@ -34,6 +35,35 @@ constexpr double FRAC_LAST_CHUNK = 0.66;
 static_assert(ARRAY_CHUNK_LEN % static_cast<int64_t>(THREADS_PER_BLOCK) == 0);
 constexpr int64_t NUM_PER_THREAD_ARR =
     ARRAY_CHUNK_LEN / static_cast<int64_t>(THREADS_PER_BLOCK);
+
+// ChatGPT assisted helper class for getting current HIP device ID/name
+class hip_device {
+ public:
+  // Returns the currently selected HIP device, or nullopt on failure.
+  static std::optional<hip_device> current() noexcept {
+    int id = 0;
+    if (hipGetDevice(&id) != hipSuccess)
+      return std::nullopt;
+
+    hipDeviceProp_t prop{};
+    if (hipGetDeviceProperties(&prop, id) != hipSuccess)
+      return std::nullopt;
+
+    return hip_device{id, prop};
+  }
+
+  int id() const noexcept { return id_; }
+
+  // prop_.name is a fixed-size C string stored inside hipDeviceProp_t.
+  std::string_view name() const noexcept { return prop_.name; }
+
+ private:
+  int id_{-1};
+  hipDeviceProp_t prop_{};
+
+  hip_device(int id, const hipDeviceProp_t& prop) noexcept
+      : id_(id), prop_(prop) {}
+};
 
 __global__ void test_small_copy_kern(double* sample_data_in,
                                      double* sample_data_out,
@@ -82,6 +112,10 @@ int main(void) {
   int64_t arr_len = static_cast<int64_t>(std::floor(
       (static_cast<double>(ARRAY_CHUNK_LEN) *
        (static_cast<double>(NUM_THREADBLOCKS - 1) + FRAC_LAST_CHUNK))));
+
+  auto dev_inst = hip_device::current();
+  std::cout << "Current HIP Device Name: " << dev_inst->name() << "\n";
+
   thrust::device_vector<double> input_vec_dev(
       static_cast<std::size_t>(arr_len));
   thrust::device_vector<double> output_vec_dev(
