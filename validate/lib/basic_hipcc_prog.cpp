@@ -1,3 +1,7 @@
+/*
+ * Smoke test to catch obvious errors relating to compiling and running any
+ * program containing a slightly non-trivial HIP kernel and HIP-based logic.
+ */
 #include <hip/hip_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/logical.h>
@@ -75,10 +79,9 @@ __global__ void test_small_copy_kern(double* sample_data_in,
 }
 
 int main(void) {
-  int64_t arr_len =
-      static_cast<int64_t>(std::floor((static_cast<double>(ARRAY_CHUNK_LEN) *
-                                     (static_cast<double>(NUM_THREADBLOCKS - 1) +
-                                                                   FRAC_LAST_CHUNK))));
+  int64_t arr_len = static_cast<int64_t>(std::floor(
+      (static_cast<double>(ARRAY_CHUNK_LEN) *
+       (static_cast<double>(NUM_THREADBLOCKS - 1) + FRAC_LAST_CHUNK))));
   thrust::device_vector<double> input_vec_dev(
       static_cast<std::size_t>(arr_len));
   thrust::device_vector<double> output_vec_dev(
@@ -107,7 +110,7 @@ int main(void) {
       input_vec_dev.begin(), input_vec_dev.end(), output_vec_dev.begin(),
       elem_wise_comp_vec_dev.begin(),
       [] __device__(double in_vec_elem, double out_vec_elem) -> bool {
-    return in_vec_elem <= out_vec_elem && in_vec_elem >= out_vec_elem;
+        return in_vec_elem <= out_vec_elem && in_vec_elem >= out_vec_elem;
       });
   bool is_all_true =
       thrust::all_of(elem_wise_comp_vec_dev.begin(),
