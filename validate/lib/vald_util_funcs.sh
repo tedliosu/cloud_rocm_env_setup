@@ -29,14 +29,15 @@ validate_basic_triton() {
 validate_basic_hipco() {
 
     _build_dir_name="build"
-    _test_common_str="'STATIC_MAP_HOST_BULK_EXAMPLE' hipCollections smoke test!"
+    _example_bin_name="STATIC_MAP_HOST_BULK_EXAMPLE"
+    _test_common_str="'${_example_bin_name}' hipCollections smoke test!"
     test -d "$1" && rm --recursive --force "$1"
     git clone https://github.com/ROCm/hipCollections.git "$1"
     git -C "$1" checkout "$2"
     git -C "$1" submodule update --init --recursive
     cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
-    cmake --build "$1/${_build_dir_name}" --target STATIC_MAP_HOST_BULK_EXAMPLE
-    if "$1/${_build_dir_name}"/examples/STATIC_MAP_HOST_BULK_EXAMPLE | \
+    cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
+    if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
         grep --ignore-case --invert-match "success"; then
         echo "FAILED ${_test_common_str}"
         exit 1
