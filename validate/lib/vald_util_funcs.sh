@@ -24,7 +24,7 @@ validate_basic_triton() {
 
 # Validate hipCollections static map host bulk API example works
 #     with system ROCm and CMake. (Planned: allow for validation with RDNA 3 systems)
-# Usage: validate_basic_hipco <cloned_hipco_repo_dirpath> <hipco_target_commit_sha> \
+# Usage: validate_basic_hipco <cloned_hipco_repo_abs_dirpath> <hipco_target_commit_sha> \
 #                             <gfx_target_arch(s)>
 validate_basic_hipco() {
 
