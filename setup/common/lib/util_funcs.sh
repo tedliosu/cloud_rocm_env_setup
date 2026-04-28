@@ -97,7 +97,7 @@ ensure_latest_cmake() {
    
 }
 
-# Download and configure apt packages with custom settings, assuming Ubuntu
+# Download, install, and configure apt packages with custom settings, assuming Ubuntu
 # Usage: ensure_apt_with_custom_conf <current_home_dirpath> <path_to_common_apt_packages_list>
 ensure_apt_with_custom_conf() {
 
