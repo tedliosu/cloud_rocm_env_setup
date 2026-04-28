@@ -22,10 +22,27 @@ validate_basic_triton() {
 
 }
 
-# Usage
-#
+# Validate hipCollections static map host bulk API example works
+#     with system ROCm and CMake. (Planned: allow for validation with RDNA 3 systems)
+# Usage: validate_basic_hipco <cloned_hipco_repo_dirpath> <hipco_target_commit_sha> \
+#                             <gfx_target_arch(s)>
 validate_basic_hipco() {
 
-    echo "NOT IMPLEMENTED"
+    _build_dir_name="build"
+    _test_common_str="'STATIC_MAP_HOST_BULK_EXAMPLE' hipCollections smoke test!"
+    test -d "$1" && rm --recursive --force "$1"
+    git clone https://github.com/ROCm/hipCollections.git "$1"
+    git -C "$1" checkout "$2"
+    git -C "$1" submodule update --init --recursive
+    cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
+    cmake --build "$1/${_build_dir_name}" --target STATIC_MAP_HOST_BULK_EXAMPLE
+    if "$1/${_build_dir_name}"/examples/STATIC_MAP_HOST_BULK_EXAMPLE | \
+        grep --ignore-case --invert-match "success"; then
+        echo "FAILED ${_test_common_str}"
+        exit 1
+    else
+        echo "PASSED ${_test_common_str}"
+    fi
+    rm --recursive --force "$1"
 
 }
