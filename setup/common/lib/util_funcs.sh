@@ -11,8 +11,13 @@ run_stage() {
 
     if [ ! -f "${_done_marker_file}" ]; then
         echo "--- starting stage: ${_func_to_run} ---"
+        # ANY failure in the `&&` chain should trigger the bailout
+        # shellcheck disable=SC2015
         "${_func_to_run}" "$@" && touch "${_done_marker_file}" && \
-        echo "--- completed stage: ${_func_to_run} ---"
+        echo "--- completed stage: ${_func_to_run} ---" || {
+            echo "--- FAILED stage: ${_func_to_run} ---"
+            exit 1
+        }
     else
         echo "--- skipping stage: ${_func_to_run} (already complete) ---"
     fi
@@ -158,8 +163,11 @@ ensure_gpu_arr_virtualenv() {
     export CUPY_NUM_BUILD_JOBS
     export CUPY_INSTALL_USE_HIP=1
     pip wheel --wheel-dir "$2/dist" "$2"
-    pip install "$2/dist"/cupy*.whl && \
+    pip install "$2/dist"/cupy*.whl
+    _last_pip_status="$?"
+    if [ "$_last_pip_status" -eq 0 ]; then
         rm --recursive --force "$2"
+    fi
     deactivate
 
 }
