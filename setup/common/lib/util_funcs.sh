@@ -165,7 +165,7 @@ ensure_gpu_arr_virtualenv() {
     pip wheel --wheel-dir "$2/dist" "$2"
     pip install "$2/dist"/cupy*.whl
     _last_pip_status="$?"
-    if [ "$_last_pip_status" -eq 0 ]; then
+    if [ "${_last_pip_status}" -eq 0 ]; then
         rm --recursive --force "$2"
     fi
     deactivate
