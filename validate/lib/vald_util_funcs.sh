@@ -39,7 +39,7 @@ validate_basic_hipco() {
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
         grep --ignore-case --invert-match "success"; then
-        echo "FAILED ${_test_common_str}"
+        echo "FAILED ${_test_common_str}" >&2
         exit 1
     else
         echo "PASSED ${_test_common_str}"

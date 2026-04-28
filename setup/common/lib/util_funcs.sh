@@ -15,7 +15,7 @@ run_stage() {
         # shellcheck disable=SC2015
         "${_func_to_run}" "$@" && touch "${_done_marker_file}" && \
         echo "--- completed stage: ${_func_to_run} ---" || {
-            echo "--- FAILED stage: ${_func_to_run} ---"
+            echo "--- FAILED stage: ${_func_to_run} ---" >&2
             exit 1
         }
     else
@@ -50,7 +50,7 @@ ensure_basic_env_sanity_dont_wrap() {
         echo "    Please update all environment setup logic and configs" >&2
         echo >&2
         echo "    before rerunning this script, as assumed version is" >&2
-        echo " ~$3!"
+        echo " ~$3!" >&2
         exit 1
     fi
 
@@ -102,7 +102,7 @@ ensure_latest_cmake() {
 ensure_apt_with_custom_conf() {
 
     _common_apt_packages="$(<"$2" tr "\n" " " | sed 's/ *$//g')" || {
-        echo "FAILED to retrieve apt packages list!"
+        echo "FAILED to retrieve apt packages list!" >&2
         exit 1
     }
     _w3m_hidden_dir="$1/.w3m"
@@ -156,12 +156,12 @@ ensure_gpu_arr_virtualenv() {
     git -C "$2" merge 9263620693c892864c52d2703b862dcf1c264c6a --no-edit
     git -C "$2" submodule update --init --recursive
     ROCM_HOME="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
-        echo "FAILED to detect 'ROCM_HOME'!"
+        echo "FAILED to detect 'ROCM_HOME'!" >&2
         exit 1
     }
     HCC_AMDGPU_TARGET="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
                              jq --raw-output '.card0."GFX Version"' | tr --delete "\n")" || {
-        echo "FAILED to detect GFX Version of ROCm device 0!"
+        echo "FAILED to detect GFX Version of ROCm device 0!" >&2
         exit 1
     }
     CUPY_NUM_BUILD_JOBS="$(nproc)"
