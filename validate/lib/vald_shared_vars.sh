@@ -1,7 +1,8 @@
 
 export TRITON_REPO_LOCAL_DIRNAME="local_triton_repo"
 export HIPCO_REPO_LOCAL_DIRNAME="local_hipco_repo"
-_PATCHES_DIR_RELPATH="../lib/patches"
+export LIB_DIR_RELPATH="../lib"
+_PATCHES_DIR_RELPATH="${LIB_DIR_RELPATH}/patches"
 export TRITON_EXAMPLE_PATCH_RELPATH="${_PATCHES_DIR_RELPATH}/triton-no-plot-headless.patch"
 
 export TRITON_REPO_UPSTREAM_TAG="v3.6.0"

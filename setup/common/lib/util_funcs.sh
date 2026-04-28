@@ -101,7 +101,10 @@ ensure_latest_cmake() {
 # Usage: ensure_apt_with_custom_conf <current_home_dirpath> <path_to_common_apt_packages_list>
 ensure_apt_with_custom_conf() {
 
-    _common_apt_packages="$(<"$2" tr "\n" " " | sed 's/ *$//g')"
+    _common_apt_packages="$(<"$2" tr "\n" " " | sed 's/ *$//g')" || {
+        echo "FAILED to retrieve apt packages list!"
+        exit 1
+    }
     _w3m_hidden_dir="$1/.w3m"
     mkdir --parent "${_w3m_hidden_dir}"
     touch "${_w3m_hidden_dir}/history"
@@ -152,9 +155,15 @@ ensure_gpu_arr_virtualenv() {
     git -C "$2" config --global user.name "placeholder"
     git -C "$2" merge 9263620693c892864c52d2703b862dcf1c264c6a --no-edit
     git -C "$2" submodule update --init --recursive
-    ROCM_HOME="$(hipconfig --rocmpath | cut -d"-" -f1)"
+    ROCM_HOME="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
+        echo "FAILED to detect 'ROCM_HOME'!"
+        exit 1
+    }
     HCC_AMDGPU_TARGET="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
-                             jq --raw-output '.card0."GFX Version"' | tr --delete "\n")"
+                             jq --raw-output '.card0."GFX Version"' | tr --delete "\n")" || {
+        echo "FAILED to detect GFX Version of ROCm device 0!"
+        exit 1
+    }
     CUPY_NUM_BUILD_JOBS="$(nproc)"
     echo "GOT: ROCM_HOME=${ROCM_HOME}, HCC_AMDGPU_TARGET=${HCC_AMDGPU_TARGET}," \
         "CUPY_NUM_BUILD_JOBS=${CUPY_NUM_BUILD_JOBS}"
