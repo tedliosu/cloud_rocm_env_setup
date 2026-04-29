@@ -148,12 +148,7 @@ ensure_gpu_arr_virtualenv() {
     pip install --upgrade pip
     pip install --requirement "$3"
     test -d "$2" && rm --recursive --force "$2"
-    git clone https://github.com/cupy/cupy.git "$2"
-    git -C "$2" fetch origin pull/9748/head:pr-9748-hipmask
-    git -C "$2" checkout pr-9748-hipmask
-    git -C "$2" config --global user.email "placeholder@example.com"
-    git -C "$2" config --global user.name "placeholder"
-    git -C "$2" merge 9263620693c892864c52d2703b862dcf1c264c6a --no-edit
+    git clone --branch=v14 https://github.com/cupy/cupy.git "$2"
     git -C "$2" submodule update --init --recursive
     ROCM_HOME="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
         echo "FAILED to detect 'ROCM_HOME'!" >&2
