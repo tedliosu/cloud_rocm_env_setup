@@ -79,6 +79,9 @@ else
     echo "CuPy virtualenv and ${CHECK_CUPY_FLAG} flag both not detected, "
     echo "skipping associated validations..."
 fi
+echo "Please enter sudo password when prompted!"
+echo "ufw status output:"
+sudo --set-home ufw status
 
 
 # Change back into old CWD just in case
