@@ -9,6 +9,7 @@
 validate_basic_triton() {
 
     _tutorials_dirpath="python/tutorials"
+    _test_common_str_triton="Triton fp16 matmul tutorial based smoke test!"
     test -d "$1" && rm --recursive --force "$1"
     git clone --filter=blob:none --sparse --branch "$2" \
               https://github.com/triton-lang/triton.git "$1"
@@ -18,6 +19,9 @@ validate_basic_triton() {
     _py_last_status="$?"
     if [ "${_py_last_status}" -eq 0 ]; then
         rm --recursive --force "$1"
+        echo "PASSED ${_test_common_str_triton}"
+    else
+        echo "FAILED ${_test_common_str_triton}"
     fi
 
 }

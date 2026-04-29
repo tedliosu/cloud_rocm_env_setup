@@ -2,3 +2,4 @@
 **/logs
 **/override.conf
 **/hipcc_smoke
+**/tmp_hub_store_*/
