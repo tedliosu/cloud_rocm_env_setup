@@ -48,7 +48,7 @@ HCC_AMDGPU0_ARCH="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
     echo "FAILED to detect GFX Version of ROCm device 0!" >&2
     exit 1
 }
-hipcc --offload-arch="${HCC_AMDGPU0_ARCH}" \
+env HIPCC_VERBOSE=7 hipcc --offload-arch="${HCC_AMDGPU0_ARCH}" \
     "${LIB_DIR_ABS_PATH}/basic_hipcc_prog_smoke.cpp" -o "./${_HIPCC_INIT_SMOKE_EXE}"
 "./${_HIPCC_INIT_SMOKE_EXE}"
 rm "./${_HIPCC_INIT_SMOKE_EXE}"
