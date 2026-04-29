@@ -35,7 +35,12 @@ validate_basic_hipco() {
     git clone https://github.com/ROCm/hipCollections.git "$1"
     git -C "$1" checkout "$2"
     git -C "$1" submodule update --init --recursive
-    cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
+    ROCM_HOME_DIR="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
+        echo "FAILED to detect 'ROCM_HOME_DIR'!" >&2
+        exit 1
+    }
+    env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
+        cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
         grep --ignore-case --invert-match "success"; then
