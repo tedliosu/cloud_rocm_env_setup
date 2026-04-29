@@ -47,11 +47,11 @@ validate_basic_hipco() {
         cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
-        grep --ignore-case --invert-match "success"; then
+        grep --ignore-case "success"; then
+        echo "PASSED ${_test_common_str}"
+    else
         echo "FAILED ${_test_common_str}" >&2
         exit 1
-    else
-        echo "PASSED ${_test_common_str}"
     fi
     rm --recursive --force "$1"
 
