@@ -80,8 +80,7 @@ else
     echo "skipping associated validations..."
 fi
 echo "Please enter sudo password when prompted!"
-echo "ufw status output:"
-sudo --set-home ufw status
+which ufw && sudo --set-home ufw status
 
 
 # Change back into old CWD just in case
