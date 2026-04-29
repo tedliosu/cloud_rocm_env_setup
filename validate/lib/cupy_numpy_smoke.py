@@ -88,20 +88,27 @@ if __name__ == "__main__":
 
     mat_c_cpu_fro_norm = npy.linalg.norm(mat_c_cpu)
     mat_c_cpu_ref_fro_norm = npy.linalg.norm(mat_c_cpu_ref)
+    RTOL_MATMUL = 1e-7
+    ATOL_MATMUL = 1e-6
+    RTOL_MEAN_REDUC = 1e-10
+    ATOL_MEAN_REDUC = 1e-9
     npy.testing.assert_allclose(mat_c_cpu_fro_norm,
                                 mat_c_cpu_ref_fro_norm,
-                                rtol=1e-7, atol=1e-6,
+                                rtol=RTOL_MATMUL, atol=ATOL_MATMUL,
                                 equal_nan=False, strict=True)
-    print("PASSED matmuls on GPU vs CPU test!")
+    print("PASSED matmuls on GPU vs CPU test! " + \
+            f"(rtol={RTOL_MATMUL:.3e}, atol={ATOL_MATMUL:.3e})")
     npy.testing.assert_array_equal(arr_three_cpu,
                                    arr_three_cpu_ref,
                                            strict=True)
     print("PASSED boolean indexing on GPU vs CPU test!")
     npy.testing.assert_allclose(arr_two_mean_cpu,
                                 arr_two_mean_cpu_ref,
-                                rtol=1e-10, atol=1e-9,
+                                rtol=RTOL_MEAN_REDUC, atol=ATOL_MEAN_REDUC,
                                 equal_nan=False, strict=True)
-    print("PASSED reduction of arrays to mean on GPU vs CPU test!")
+    print("PASSED reduction of arrays to mean " + \
+            f"on GPU vs CPU test! (rtol={RTOL_MEAN_REDUC:.3e}, " + \
+            f"atol={ATOL_MEAN_REDUC:.3e})")
     npy.testing.assert_array_equal(mat_e_cpu,
                                    mat_e_cpu_ref,
                                            strict=True)
