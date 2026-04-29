@@ -3,10 +3,12 @@
 set -euo pipefail
 
 CHECK_CUPY_FLAG="--fail-on-no-cupy"
+CHECK_UFW_FLAG="--fail-on-no-ufw"
 DO_CUPY_CHECK=0
+DO_UFW_CHECK=0
 
 usage() {
-    echo "Usage: $0 [$CHECK_CUPY_FLAG] [-h|--help]"
+    echo "Usage: $0 [$CHECK_CUPY_FLAG] [$CHECK_UFW_FLAG] [-h|--help]"
     exit 0
 }
 
@@ -14,6 +16,7 @@ usage() {
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     "$CHECK_CUPY_FLAG") DO_CUPY_CHECK=1; shift;;
+    "$CHECK_UFW_FLAG") DO_UFW_CHECK=1; shift;;
     -h|--help) usage;;
     *) usage;;
   esac
@@ -72,15 +75,41 @@ if [[ -f "${GPU_ARR_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}" ]]; then
     env CUPY_ACCELERATORS="cub" python3 "${LIB_DIR_ABS_PATH}/cupy_numpy_smoke.py"
     deactivate
 elif (( DO_CUPY_CHECK )); then
-    echo "FAILED to detect CuPy virtualenv " >&2
+    echo "FAILED to detect CuPy virtualenv," >&2
     echo "(${CHECK_CUPY_FLAG} flag detected)!" >&2
     exit 1
 else
-    echo "CuPy virtualenv and ${CHECK_CUPY_FLAG} flag both not detected, "
+    echo "CuPy virtualenv and ${CHECK_CUPY_FLAG} flag both not detected,"
     echo "skipping associated validations..."
 fi
-echo "Please enter sudo password when prompted!"
-which ufw && sudo --set-home ufw status
+if which ufw >/dev/null; then
+    echo "Please enter sudo password when prompted!"
+    UFW_STATUS_OUTPUT="$(sudo --set-home ufw status)" || {
+        echo "FAILURE: 'ufw status' command returned non-zero exit code!" >&2
+        exit 1
+    }
+    if echo "$UFW_STATUS_OUTPUT" | \
+        grep --ignore-case --extended-regexp --quiet "status.+active"; then
+        echo "$UFW_STATUS_OUTPUT"
+        echo "PASS active 'ufw' check!"
+    else
+        echo "WARNING: 'ufw' installed but no active 'ufw' detected! instead got:"
+        echo "$UFW_STATUS_OUTPUT"
+        echo "if this was unintended, please run the following commands in the"
+        echo "    following order if applicable (without the single quotes):"
+        echo "    1. 'sudo -H ufw default deny incoming'"
+        echo "    2. 'sudo -H ufw default allow outgoing'"
+        echo "    3. 'sudo -H ufw allow ssh'"
+        echo "    4. 'sudo -H ufw enable'"
+    fi
+elif (( DO_UFW_CHECK )); then
+    echo "FAILED to detect a working ufw installation," >&2
+    echo "(${CHECK_UFW_FLAG} flag detected)!" >&2
+    exit 1
+else
+    echo "'ufw' binary and ${CHECK_UFW_FLAG} flag both not detected,"
+    echo "skipping associated validations..."
+fi
 
 
 # Change back into old CWD just in case
