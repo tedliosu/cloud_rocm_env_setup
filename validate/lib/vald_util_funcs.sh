@@ -11,9 +11,11 @@ validate_basic_triton() {
     _tutorials_dirpath="python/tutorials"
     _test_common_str_triton="Triton fp16 matmul tutorial based smoke test!"
     test -d "$1" && rm --recursive --force "$1"
-    git clone --filter=blob:none --sparse --branch "$2" \
+    git -c advice.detachedHead=false clone \
+              --filter=blob:none --sparse --branch "$2" \
               https://github.com/triton-lang/triton.git "$1"
-    git -C "$1" sparse-checkout set "${_tutorials_dirpath}"
+    git -C "$1" -c advice.detachedHead=false \
+                 sparse-checkout set "${_tutorials_dirpath}"
     git -C "$1" apply "$3"
     python3 "$1/${_tutorials_dirpath}/03-matrix-multiplication.py"
     _py_last_status="$?"
@@ -37,7 +39,7 @@ validate_basic_hipco() {
     _test_common_str="'${_example_bin_name}' hipCollections smoke test!"
     test -d "$1" && rm --recursive --force "$1"
     git clone https://github.com/ROCm/hipCollections.git "$1"
-    git -C "$1" checkout "$2"
+    git -C "$1" -c advice.detachedHead=false checkout "$2"
     git -C "$1" submodule update --init --recursive
     ROCM_HOME_DIR="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
         echo "FAILED to detect 'ROCM_HOME_DIR'!" >&2

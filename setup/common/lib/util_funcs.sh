@@ -184,7 +184,7 @@ ensure_comfyui_virtualenv() {
 
     test -d "$2" && rm --recursive --force "$2"
     git clone https://github.com/Comfy-Org/ComfyUI.git "$2"
-    git -C "$2" checkout "$3"
+    git -C "$2" -c advice.detachedHead=false checkout "$3"
     git -C "$2" submodule update --init --recursive
     # Parameterized source since this function encapsulate setup logic invariants
     # shellcheck disable=SC1090,SC1091

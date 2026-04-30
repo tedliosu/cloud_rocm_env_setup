@@ -110,7 +110,7 @@ if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
     deactivate
     cp --target-directory="${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}" \
                                                            "${COMFYUI_WORKFLOW_PATH}"
-    echo "PASS: ComfyUI FLUX.1 [dev] FP8 inferencing ready for validation!"
+    echo "PASS: ComfyUI FLUX.1 [dev] FP8 assets and workflow ready for manual validation!"
     echo "Please ensure that you have an ssh instance that port-forwards 8188"
     echo "from the remote VM to your local computer that you're accessing the"
     echo "remote VM from, and then run the following commands in the following"
