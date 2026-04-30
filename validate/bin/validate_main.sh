@@ -111,14 +111,19 @@ if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
     cp --target-directory="${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}" \
                                                            "${COMFYUI_WORKFLOW_PATH}"
     echo "PASS: ComfyUI FLUX.1 [dev] FP8 inferencing ready for validation!"
-    echo "Please run the following commands in the following order to launch ComfyUI:"
+    echo "Please ensure that you have an ssh instance that port-forwards 8188"
+    echo "from the remote VM to your local computer that you're accessing the"
+    echo "remote VM from, and then run the following commands in the following"
+    echo "order to launch ComfyUI:"
     echo "    1. source ${DEEP_LEARN_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}"
     echo "    2. cd ${COMFYUI_REPO_LOCAL_DIR}"
     echo "    3. python3 main.py --disable-auto-launch" \
                  "--disable-xformers --disable-dynamic-vram"
-    echo "Then, follow instructions to load the workflow from"
-    echo "   '${COMFYUI_WORKFLOW_PATH}'"
-    echo "in ComfyUI Web UI and run validation smoke tests within the Web UI."
+    echo "Then, follow the instructions specified to:"
+    echo "    1. Access the web UI of the ComfyUI instance that you just launched"
+    echo "    2. Load in the web UI the workflow stored at:"
+    echo "       '${COMFYUI_WORKFLOW_PATH}'"
+    echo "    2. Run validation smoke tests within the Web UI."
 elif (( DO_COMFYUI_CHECK )); then
     echo "FAILED to detect local ComfyUI cloned repository," >&2
     echo "(${CHECK_COMFYUI_FLAG} flag detected)!" >&2
