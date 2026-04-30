@@ -73,7 +73,8 @@ These vendored data files are derived from upstream artifacts and include minor 
 - This file is intended to facilitate environment validation for ComfyUI-based inference using FLUX.1/FLUX.x [dev]-class models.
 - The workflow references FP8 model weights and uses tiled VAE decode for compatibility with both Hot Aisle MI300X instances and 24 GiB VRAM Azure Pro V710 instances.
     - This is intentional: FP16 or higher-precision FLUX.1/FLUX.x [dev]-class inference is likely to exceed the usable VRAM budget on 24 GiB Azure Pro V710 instances.
-    - xFormers-based memory savings are not assumed for RDNA targets.  During testing, non-tiled non-xFormers VAE decoding for FLUX.1/FLUX.x [dev]-class workflows was not reliable within a <=24 GiB single-GPU VRAM budget, so this validation workflow uses tiled VAE decoding instead.
+    - xFormers-based memory savings are not assumed for RDNA targets.
+        - During testing, with FLUX.1 [dev]-class workflows on single devices with <=24 GiB VRAM, ComfyUI reported running out of memory during regular VAE decoding (without xFormers) and retried with tiled VAE decoding.  This validation workflow therefore uses tiled VAE decoding explicitly.
     - As of April 2026, end-to-end xFormers builds on RDNA ROCm stacks remain too fragile to assume for portable validation.
 - The first queued run in the workflow uses the seed stored in the workflow JSON as a deterministic baseline.  Subsequent runs may use randomized seeds as a lightweight manual fuzz/soak check for throughput and obvious image corruption.
 - This workflow is intended for environment validation, not maximum-quality or maximum-throughput FLUX-class benchmarking.
