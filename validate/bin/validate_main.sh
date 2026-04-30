@@ -3,12 +3,14 @@
 set -euo pipefail
 
 CHECK_CUPY_FLAG="--fail-on-no-cupy"
+CHECK_COMFYUI_FLAG="--fail-on-no-comfyui"
 CHECK_UFW_FLAG="--fail-on-no-ufw"
 DO_CUPY_CHECK=0
+DO_COMFYUI_CHECK=0
 DO_UFW_CHECK=0
 
 usage() {
-    echo "Usage: $0 [$CHECK_CUPY_FLAG] [$CHECK_UFW_FLAG] [-h|--help]"
+    echo "Usage: $0 [$CHECK_CUPY_FLAG] [$CHECK_COMFYUI_FLAG] [$CHECK_UFW_FLAG] [-h|--help]"
     exit 0
 }
 
@@ -16,6 +18,7 @@ usage() {
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     "$CHECK_CUPY_FLAG") DO_CUPY_CHECK=1; shift;;
+    "$CHECK_COMFYUI_FLAG") DO_COMFYUI_CHECK=1; shift;;
     "$CHECK_UFW_FLAG") DO_UFW_CHECK=1; shift;;
     -h|--help) usage;;
     *) usage;;
@@ -41,11 +44,15 @@ source "../lib/vald_util_funcs.sh"
 # Resolve real path of patches files/'lib' directory/etc.
 LIB_DIR_ABS_PATH="$(realpath "${LIB_DIR_RELPATH}")"
 TRITON_EXAMP_PATCH_PATH="$(realpath "${TRITON_EXAMPLE_PATCH_RELPATH}")"
+COMFYUI_WORKFLOW_PATH="$(realpath "${FLUX_1_DEV_WORKFLOW_RELPATH}")"
 
 
 # BEGIN "MAIN"
 _ACTIV_SRC_SCRIPT_RELPATH="bin/activate"
 _HIPCC_INIT_SMOKE_EXE="hipcc_smoke"
+_CHECKPOINTS_DIR_RELPATH="models/checkpoints"
+_WORKFLOWS_DIR_RELPATH="user/default/workflows"
+_CHECKPOINTS_INDIC_FILE="${_CHECKPOINTS_DIR_RELPATH}/put_checkpoints_here"
 HCC_AMDGPU0_ARCH="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
                          jq --raw-output '.card0."GFX Version"' | tr --delete "\n")" || {
     echo "FAILED to detect GFX Version of ROCm device 0!" >&2
@@ -80,6 +87,41 @@ elif (( DO_CUPY_CHECK )); then
     exit 1
 else
     echo "CuPy virtualenv and ${CHECK_CUPY_FLAG} flag both not detected,"
+    echo "skipping associated validations..."
+fi
+if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
+    _MODEL_FILENAME="$(jq --raw-output "${COMFYUI_WORKFLOW_MODLNAME_FILTER}" \
+                                                       "${COMFYUI_WORKFLOW_PATH}")" || {
+        echo "FAILED to parse ComfyUI workflow JSON" \
+             "for model checkpoint filename!" >&2
+        exit 1
+    }
+    mkdir --parent "${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}"
+    # shellcheck disable=SC1091,SC1090
+    source "${DEEP_LEARN_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}"
+    hf download --repo-type "${COMFYUI_VALD_MODEL_REPO_TYPE}" \
+                --revision "${COMFYUI_VALD_MODEL_REPO_COMMIT}" \
+                --local-dir "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_DIR_RELPATH}" \
+                "${COMFYUI_VALD_MODEL_REPO_RELPATH}" "${_MODEL_FILENAME}"
+    deactivate
+    cp --target-directory="${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}" \
+                                                           "${COMFYUI_WORKFLOW_PATH}"
+    echo "PASS: ComfyUI FLUX.1 [dev] FP8 inferencing ready for validation!"
+    echo "Please run the following commands in the following order to launch ComfyUI:"
+    echo "    1. source ${DEEP_LEARN_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}"
+    echo "    2. cd ${COMFYUI_REPO_LOCAL_DIR}"
+    echo "    3. python3 main.py --disable-auto-launch" \
+                 "--disable-xformers --disable-dynamic-vram"
+    echo "Then, follow instructions to load the workflow from"
+    echo "   '${COMFYUI_WORKFLOW_PATH}'"
+    echo "in ComfyUI Web UI and run validation smoke tests within the Web UI."
+elif (( DO_COMFYUI_CHECK )); then
+    echo "FAILED to detect local ComfyUI cloned repository," >&2
+    echo "(${CHECK_COMFYUI_FLAG} flag detected)!" >&2
+    exit 1
+else
+    echo "local ComfyUI cloned repostiory and" \
+        "${CHECK_COMFYUI_FLAG} flag both not detected,"
     echo "skipping associated validations..."
 fi
 if which ufw >/dev/null; then
