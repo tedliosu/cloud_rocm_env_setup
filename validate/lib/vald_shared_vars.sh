@@ -13,4 +13,4 @@ export COMFYUI_VALD_MODEL_REPO_TYPE="model"
 export COMFYUI_VALD_MODEL_REPO_RELPATH="Comfy-Org/flux1-dev"
 export COMFYUI_VALD_MODEL_REPO_COMMIT="ca7d619b1bcd7156ca897f55efb2370eba3d9e20"
 
-export COMFYUI_WORKFLOW_MODLNAME_FILTER=".nodes.[] | select(.type == \"CheckpointLoaderSimple\").widgets_values.[0]"
+export COMFYUI_WORKFLOW_MODLNAME_FILTER=".nodes.[] | select(.type == \\\"CheckpointLoaderSimple\\\").widgets_values.[0]"

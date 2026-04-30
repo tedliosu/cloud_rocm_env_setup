@@ -96,7 +96,11 @@ if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
              "for model checkpoint filename!" >&2
         exit 1
     }
+    _WORKFLOW_FILENAME="$(basename "${COMFYUI_WORKFLOW_PATH}")"
     mkdir --parent "${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}"
+    # the rm's make this script reentrant; redownloading/recopying here is always OK
+    rm --force "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_DIR_RELPATH}/${_MODEL_FILENAME}"
+    rm --force "${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}/${_WORKFLOW_FILENAME}"
     # shellcheck disable=SC1091,SC1090
     source "${DEEP_LEARN_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}"
     hf download --repo-type "${COMFYUI_VALD_MODEL_REPO_TYPE}" \
