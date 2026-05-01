@@ -77,9 +77,13 @@ validate_basic_triton "${CURR_HOME_DIR}/${TRITON_REPO_LOCAL_DIRNAME}" \
     "${TRITON_REPO_UPSTREAM_TAG}" "${TRITON_EXAMP_PATCH_PATH}"
 deactivate
 if [[ -f "${GPU_ARR_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}" ]]; then
+    _ONEAPI_TBB_LIBPATHS="/opt/intel/oneapi/tbb/${ONEAPI_TBB_PIN_VER}/lib"
+    _ONEAPI_TBB_LIBPATHS="${_ONEAPI_TBB_LIBPATHS}:/opt/intel/oneapi/tcm/${ONEAPI_TCM_PIN_VER}/lib"
     # shellcheck disable=SC1091,SC1090
     source "${GPU_ARR_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}"
     env CUPY_ACCELERATORS="cub" python3 "${LIB_DIR_ABS_PATH}/cupy_numpy_smoke.py"
+    env LD_LIBRARY_PATH="${_ONEAPI_TBB_LIBPATHS}" python3 "${LIB_DIR_ABS_PATH}/numba_smoke.py"
+    echo "NOTE: Numba test used LD_LIBRARY_PATH='${_ONEAPI_TBB_LIBPATHS}'"
     deactivate
 elif (( DO_CUPY_CHECK )); then
     echo "FAILED to detect CuPy virtualenv," >&2
