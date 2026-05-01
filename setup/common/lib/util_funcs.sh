@@ -56,6 +56,24 @@ ensure_basic_env_sanity_dont_wrap() {
 
 }
 
+# Disable a problematic PPA
+# Usage: ppa_disable_dont_wrap <full_path_to_apt_list_file>
+ppa_disable_dont_wrap() {
+
+    _file_backup_suffix="bak"
+    if [ -f "$1" ]; then
+        sudo --set-home mv "$1" "${1}.${_file_backup_suffix}"
+        echo "PPA(s) in '$1' successfully disabled!"
+    elif [ -f "${1}.${_file_backup_suffix}" ]; then
+        echo "PPA(s) in '$1' already disabled!"
+    else
+        echo "ERROR; '$1' is NOT a valid path to a file" >&2
+        echo "containing one or more PPAs!" >&2
+        exit 1
+    fi
+
+}
+
 # System update (no kernel update by default)
 # Usage: no arguments required
 apt_get_sys_update() {
