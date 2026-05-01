@@ -41,7 +41,7 @@ validate_basic_hipco() {
     git clone https://github.com/ROCm/hipCollections.git "$1"
     git -C "$1" -c advice.detachedHead=false checkout "$2"
     git -C "$1" submodule update --init --recursive
-    ROCM_HOME_DIR="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
+    ROCM_HOME_DIR="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
         echo "FAILED to detect 'ROCM_HOME_DIR'!" >&2
         exit 1
     }

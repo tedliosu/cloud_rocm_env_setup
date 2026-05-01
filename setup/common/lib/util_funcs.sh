@@ -42,7 +42,7 @@ ensure_basic_env_sanity_dont_wrap() {
         echo "amdgpu dkms not detected; bailing!" >&2
         exit 1
     fi
-    ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut -d"-" -f2)"
+    ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut --delimiter="-" --fields=2)"
     if echo "$ROCM_DETECTED_VER" | \
        grep --extended-regexp --invert-match --quiet "$4"; then
         echo "'hipconfig' reports ROCm userland version $ROCM_DETECTED_VER!" >&2
@@ -104,8 +104,9 @@ ensure_latest_cmake() {
     _signed_by_str="[signed-by=${_kitware_signing_file}]"
     sudo --set-home apt-get install --assume-yes ca-certificates gpg wget
     test -f "${_kitware_test_file}" ||
-        wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |
-            gpg --dearmor - | sudo --set-home tee "${_kitware_signing_file}" >/dev/null
+        wget --output-document=- \
+            https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |
+                gpg --dearmor - | sudo --set-home tee "${_kitware_signing_file}" >/dev/null
     echo "deb ${_signed_by_str} https://apt.kitware.com/ubuntu/ $1 main" |
         sudo --set-home tee /etc/apt/sources.list.d/kitware.list >/dev/null
     sudo --set-home apt-get update
@@ -113,6 +114,23 @@ ensure_latest_cmake() {
     sudo --set-home apt-get install --assume-yes --reinstall kitware-archive-keyring
     sudo --set-home apt-get install --assume-yes cmake
    
+}
+
+# Newest Intel oneAPI TBB libraries setup, assuming Ubuntu
+# Usage: ensure_oneapi_tbb_libs <oneapi_tbb_version>
+ensure_oneapi_tbb_libs() {
+
+    _oneapi_signing_file="/usr/share/keyrings/oneapi-archive-keyring.gpg"
+    _signed_by_str_oneapi="[signed-by=${_oneapi_signing_file}]"
+    sudo --set-home apt-get install --assume-yes ca-certificates gpg wget
+    wget --output-document=- \
+        https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | \
+            gpg --dearmor - | sudo --set-home tee "${_oneapi_signing_file}" > /dev/null
+    echo "deb ${_signed_by_str_oneapi} https://apt.repos.intel.com/oneapi all main" | \
+                       sudo --set-home tee /etc/apt/sources.list.d/oneAPI.list >/dev/null
+    sudo --set-home apt-get update
+    sudo --set-home apt-get install --assume-yes "intel-oneapi-tbb-$1"
+
 }
 
 # Download, install, and configure apt packages with custom settings, assuming Ubuntu
@@ -168,7 +186,7 @@ ensure_gpu_arr_virtualenv() {
     test -d "$2" && rm --recursive --force "$2"
     git clone --branch=v14 https://github.com/cupy/cupy.git "$2"
     git -C "$2" submodule update --init --recursive
-    ROCM_HOME="$(hipconfig --rocmpath | cut -d"-" -f1)" || {
+    ROCM_HOME="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
         echo "FAILED to detect 'ROCM_HOME'!" >&2
         exit 1
     }

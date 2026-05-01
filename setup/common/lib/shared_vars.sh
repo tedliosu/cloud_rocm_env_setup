@@ -27,3 +27,6 @@ export POST_COMFYUI_PIP_FREEZE_RECS="${LOGS_DIR_RELPATH}/after_comfyui.deep_lear
 export TORCHCODEC_PIN_VER="0.11.0"
 export COMFYUI_PIN_VER_TAG="v0.19.0"
 
+export ONEAPI_TBB_PIN_VER="2023.0"
+export ONEAPI_TCM_PIN_VER="1.5"
+
