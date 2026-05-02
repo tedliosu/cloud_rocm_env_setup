@@ -56,6 +56,26 @@ ensure_basic_env_sanity_dont_wrap() {
 
 }
 
+# Check web hosted file availability using wget with http(s)
+# Usage: check_wget_fetch <web_url_to_file>
+# Returns: 0 on success of web hosted file fetch; 1 otherwise
+check_wget_fetch() {
+
+    _prereq_pkgs_wget_check="ca-certificates wget"
+    # safe because apt package names each NEVER contain whitespace(s)
+    # shellcheck disable=SC2086
+    dpkg --status ${_prereq_pkgs_wget_check} >/dev/null 2>&1 || \
+        sudo --set-home apt-get install --assume-yes ${_prereq_pkgs_wget_check}
+    if wget --quiet --tries=3 --timeout=10 --output-document=/dev/null "$1"; then
+        echo "PASS: $1 is reachable!"
+        return 0
+    else
+        echo "WARNING: $1 is NOT reachable!" >&2
+        return 1
+    fi
+
+}
+
 # Disable a problematic PPA
 # Usage: ppa_disable_dont_wrap <full_path_to_apt_list_file>
 ppa_disable_dont_wrap() {
@@ -102,10 +122,14 @@ ensure_latest_cmake() {
     _kitware_test_file="/usr/share/doc/kitware-archive-keyring/copyright"
     _kitware_signing_file="/usr/share/keyrings/kitware-archive-keyring.gpg"
     _signed_by_str="[signed-by=${_kitware_signing_file}]"
-    sudo --set-home apt-get install --assume-yes ca-certificates gpg wget
+    _prereq_pkgs="ca-certificates gpg wget"
+    # safe because apt package names each NEVER contain whitespace(s)
+    # shellcheck disable=SC2086
+    dpkg --status ${_prereq_pkgs} >/dev/null 2>&1 || \
+        sudo --set-home apt-get install --assume-yes ${_prereq_pkgs}
     test -f "${_kitware_test_file}" ||
-        wget --output-document=- \
-            https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |
+        wget --quiet --output-document=- \
+            https://apt.kitware.com/keys/kitware-archive-latest.asc |
                 gpg --dearmor - | sudo --set-home tee "${_kitware_signing_file}" >/dev/null
     echo "deb ${_signed_by_str} https://apt.kitware.com/ubuntu/ $1 main" |
         sudo --set-home tee /etc/apt/sources.list.d/kitware.list >/dev/null
@@ -122,10 +146,13 @@ ensure_oneapi_tbb_libs() {
 
     _oneapi_signing_file="/usr/share/keyrings/oneapi-archive-keyring.gpg"
     _signed_by_str_oneapi="[signed-by=${_oneapi_signing_file}]"
-    sudo --set-home apt-get install --assume-yes ca-certificates gpg wget
-    wget --output-document=- \
-        https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
-                                                                           2>/dev/null | \
+    _prereq_pkgs="ca-certificates gpg wget"
+    # safe because apt package names each NEVER contain whitespace(s)
+    # shellcheck disable=SC2086
+    dpkg --status ${_prereq_pkgs} >/dev/null 2>&1 || \
+        sudo --set-home apt-get install --assume-yes ${_prereq_pkgs}
+    wget --quiet --output-document=- \
+        https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | \
             gpg --dearmor - | sudo --set-home tee "${_oneapi_signing_file}" >/dev/null
     echo "deb ${_signed_by_str_oneapi} https://apt.repos.intel.com/oneapi all main" | \
                        sudo --set-home tee /etc/apt/sources.list.d/oneAPI.list >/dev/null
