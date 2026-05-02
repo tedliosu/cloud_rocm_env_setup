@@ -145,7 +145,8 @@ if which ufw >/dev/null; then
         exit 1
     }
     if echo "$UFW_STATUS_OUTPUT" | \
-        grep --ignore-case --extended-regexp --quiet "status.+active"; then
+        grep --ignore-case --extended-regexp \
+                --quiet "status:[[:space:]]+active"; then
         echo "$UFW_STATUS_OUTPUT"
         echo "PASS active 'ufw' check!"
     else
