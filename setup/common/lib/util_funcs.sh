@@ -230,17 +230,18 @@ ensure_apt_with_custom_conf() {
 #                                <current_home_dirpath> <tmp_files_dirpath>
 ensure_github_fastfetch() {
 
-    _api_json="$4/github_fastfetch_api.json"
+    _api_json_filepath="$4/github_fastfetch_api.json"
     _deb_download_path="$4/$2"
     _fastfetch_config_dir="$3/.config/fastfetch"
     _jq_download_query=".assets[] | select(.name == \"$2\").browser_download_url"
     mkdir --parent "$4"
-    wget --quiet --output-document="${_api_json}" \
+    wget --quiet --output-document="${_api_json_filepath}" \
         "https://api.github.com/repos/fastfetch-cli/fastfetch/releases/tags/$1" || {
         echo "FAILED: 'wget' GitHub API JSON for 'fastfetch' tag ${1}!" >&2
         exit 1
     }
-    _deb_download_url="$(jq --raw-output "${_jq_download_query}")" || {
+    _deb_download_url="$(jq --raw-output \
+                             "${_jq_download_query}" "${_api_json_filepath}")" || {
         echo "FAILED: querying download link from API JSON!" >&2
         exit 1
     }
