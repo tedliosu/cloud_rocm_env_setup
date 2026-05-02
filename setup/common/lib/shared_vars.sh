@@ -17,6 +17,7 @@ export COMFYUI_REPO_LOCAL_DIR="${CURR_HOME_DIR}/local_comfyui_clone"
 _PROJ_ETC_DIR_RELPATH="../../common/etc"
 export MILESTONES_DIR_RELPATH="../state_trackers"
 export LOGS_DIR_RELPATH="../logs"
+export TEMP_DIR_RELPATH="../temp"
 export APT_ONLY_REQS_TXT_RELPATH="${_PROJ_ETC_DIR_RELPATH}/common_apt_reqs.txt"
 export TORCH_ONLY_REQS_TXT_RELPATH="${_PROJ_ETC_DIR_RELPATH}/torch_requirements.txt"
 export NON_TORCH_REQS_TXT_RELPATH="${_PROJ_ETC_DIR_RELPATH}/other_ml_requirements.txt"
@@ -29,4 +30,7 @@ export COMFYUI_PIN_VER_TAG="v0.19.0"
 
 export ONEAPI_TBB_PIN_VER="2023.0"
 export ONEAPI_TCM_PIN_VER="1.5"
+
+export FASTFETCH_PIN_VER="2.62.1"
+export FASTFETCH_DEB_FILENAME="fastfetch-linux-amd64.deb"
 

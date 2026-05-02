@@ -234,6 +234,7 @@ ensure_github_fastfetch() {
     _deb_download_path="$4/$2"
     _fastfetch_config_dir="$3/.config/fastfetch"
     _jq_download_query=".assets[] | select(.name == \"$2\").browser_download_url"
+    mkdir --parent "$4"
     wget --quiet --output-document="${_api_json}" \
         "https://api.github.com/repos/fastfetch-cli/fastfetch/releases/tags/$1" || {
         echo "FAILED: 'wget' GitHub API JSON for 'fastfetch' tag ${1}!" >&2
@@ -249,6 +250,7 @@ ensure_github_fastfetch() {
     fastfetch --gen-config-full
     jq ".logo.source = \"ubuntu_old\"" "${_fastfetch_config_dir}/config.jsonc" | \
                                         sponge "${_fastfetch_config_dir}/config.jsonc"
+    which fastfetch >/dev/null 2>&1 && rm --recursive "$4"
 
 }
 

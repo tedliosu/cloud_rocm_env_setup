@@ -1,5 +1,6 @@
 **/state_trackers
 **/logs
+**/temp
 **/override.conf
 **/hipcc_smoke
 **/tmp_hub_store_*/
