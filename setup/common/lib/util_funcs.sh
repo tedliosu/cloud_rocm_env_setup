@@ -24,6 +24,45 @@ run_stage() {
 
 }
 
+# Add user echo'ed by 'logname' to 'video' and 'render' groups if the
+#     user is not in those groups already, and then reboot the system
+#     for changes to take effect; rebooting is not strictly required
+#     but we can't always assume login shell
+# Usage: no arguments required
+ensure_groups_maybe_reboot_dont_wrap() {
+
+    _groups_changed=0
+    _env_username="$(logname)" || {
+        echo "FAILED to get 'LOGNAME'!" >&2
+        exit 1
+    }
+    echo "Ensuring that user '${_env_username}' is" \
+         "in 'video' and 'render' groups..."
+
+    if id --name --groups "${_env_username}" | \
+        grep --quiet --word-regexp --invert-match "video"; then
+        echo "'${_env_username}' NOT in video group, adding..."
+        sudo --set-home usermod --append --groups video "${_env_username}"
+        _groups_changed=1
+    fi
+
+    if id --name --groups "${_env_username}" | \
+        grep --quiet --word-regexp --invert-match "render"; then
+        echo "'${_env_username}' NOT in render group, adding..."
+        sudo --set-home usermod --append --groups render "${_env_username}"
+        _groups_changed=1
+    fi
+
+    if [ "${_groups_changed}" -eq 0 ]; then
+        echo "User already belongs to render and video groups."
+    else
+        echo "User group membership(s) changed, rebooting..."
+        sudo --set-home reboot
+        exit 0
+    fi
+
+}
+
 # Assert basic environment stats helper, assuming Ubuntu-like distro
 # Usage: ensure_basic_env_sanity_dont_wrap <expected_distro_name> <expected_distro_ver> \
 #                                          <expected_rocm_ver> <expected_rocm_ver_regex>
@@ -57,9 +96,9 @@ ensure_basic_env_sanity_dont_wrap() {
 }
 
 # Check web hosted file availability using wget with http(s)
-# Usage: check_wget_fetch <web_url_to_file>
+# Usage: check_wget_fetch_dont_wrap <web_url_to_file>
 # Returns: 0 on success of web hosted file fetch; 1 otherwise
-check_wget_fetch() {
+check_wget_fetch_dont_wrap() {
 
     _prereq_pkgs_wget_check="ca-certificates wget"
     # safe because apt package names each NEVER contain whitespace(s)
@@ -177,6 +216,39 @@ ensure_apt_with_custom_conf() {
     sudo --set-home apt-get install --assume-yes ${_common_apt_packages} w3m apt-file
     sudo --set-home apt-file update
     sudo --set-home update-alternatives --set "pager" "/usr/bin/w3m"
+
+}
+
+
+### ALL FUNCTIONS BELOW ASSUME THAT ALL NEEDED PYTHON SYSTEM PACKAGES SUCH AS
+###     python3-pip, python3-virtualenv, etc, AS WELL AS UTLITIES LIKE git, wget,
+###     jq, ca-certificates, moreutils, etc, ARE ALREADY PRESENT ON SYSTEM
+
+
+# Download, install, and configure fastfetch from GitHub releases
+# Usage: ensure_github_fastfetch <fastfetch_release_tag> <fastfetch_release_debname> \
+#                                <current_home_dirpath> <tmp_files_dirpath>
+ensure_github_fastfetch() {
+
+    _api_json="$4/github_fastfetch_api.json"
+    _deb_download_path="$4/$2"
+    _fastfetch_config_dir="$3/.config/fastfetch"
+    _jq_download_query=".assets[] | select(.name == \"$2\").browser_download_url"
+    wget --quiet --output-document="${_api_json}" \
+        "https://api.github.com/repos/fastfetch-cli/fastfetch/releases/tags/$1" || {
+        echo "FAILED: 'wget' GitHub API JSON for 'fastfetch' tag ${1}!" >&2
+        exit 1
+    }
+    _deb_download_url="$(jq --raw-output "${_jq_download_query}")" || {
+        echo "FAILED: querying download link from API JSON!" >&2
+        exit 1
+    }
+    wget --quiet --output-document="${_deb_download_path}" "${_deb_download_url}"
+    sudo --set-home dpkg --install "${_deb_download_path}"
+    mkdir --parent "${_fastfetch_config_dir}"
+    fastfetch --gen-config-full
+    jq ".logo.source = \"ubuntu_old\"" "${_fastfetch_config_dir}/config.jsonc" | \
+                                        sponge "${_fastfetch_config_dir}/config.jsonc"
 
 }
 
