@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ac60482..329c5ea 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -43,7 +43,7 @@ mark_as_advanced(USE_WARPSIZE_32)
+ list(APPEND SUPPORTED_WS_64_ARCHS "gfx90a" "gfx908" "gfx942"
+                                   "gfx90a:xnack+" "gfx942:xnack+"
+                                   "gfx90a:xnack-" "gfx942:xnack-")
+-list(APPEND SUPPORTED_WS_32_ARCHS "gfx1100")
++list(APPEND SUPPORTED_WS_32_ARCHS "gfx1100" "gfx1101")
+ list(APPEND EXPERIMENTAL_WS_64_ARCHS "gfx950" "gfx950:xnack+" "gfx950:xnack-")
+ 
+ if(USE_WARPSIZE_32)

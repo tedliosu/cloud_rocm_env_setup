@@ -34,8 +34,20 @@ The patch files themselves are authored by Yensong Ted Li and are licensed under
 
 ### hipCollections
 
-- Planned for Azure Pro V710 VM instances only.
-- This section will be completed once the corresponding patch is integrated into this repository.
+- Upstream GitHub repository: `ROCm/hipCollections`
+- Upstream license: Apache 2.0
+- Upstream license text: [`LICENSES/hipCollections-Apache-2.0.txt`](./LICENSES/hipCollections-Apache-2.0.txt)
+- Patch file: [`validate/lib/patches/hipcollections-enable-gfx1101.patch`](./validate/lib/patches/hipcollections-enable-gfx1101.patch)
+
+**Upstream target details**
+
+- Patched file(s):
+    - `CMakeLists.txt`
+- Upstream commit: `77f2e84e4b6f9d667d8733967301dbdad4e795de`
+
+**Patch purpose**
+
+- Add/enable the target architecture needed for Azure Pro V710 validation using hipCollections' `STATIC_MAP_HOST_BULK_EXAMPLE`.
 
 ---
 
