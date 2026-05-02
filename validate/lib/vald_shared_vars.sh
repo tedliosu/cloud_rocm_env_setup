@@ -5,6 +5,7 @@ export LIB_DIR_RELPATH="../lib"
 _PATCHES_DIR_RELPATH="${LIB_DIR_RELPATH}/patches"
 _VALD_ETC_DIR_RELPATH="../etc"
 export TRITON_EXAMPLE_PATCH_RELPATH="${_PATCHES_DIR_RELPATH}/triton-no-plot-headless.patch"
+export HIPCO_CMAKE_PATCH_RELPATH="${_PATCHES_DIR_RELPATH}/hipcollections-enable-gfx1101.patch"
 export FLUX_1_DEV_WORKFLOW_RELPATH="${_VALD_ETC_DIR_RELPATH}/flux_dev_checkpoint_example_tiled_vae_mod.json"
 
 export TRITON_REPO_UPSTREAM_TAG="v3.6.0"

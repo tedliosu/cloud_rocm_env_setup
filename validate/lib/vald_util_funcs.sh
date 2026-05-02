@@ -29,9 +29,9 @@ validate_basic_triton() {
 }
 
 # Validate hipCollections static map host bulk API example works
-#     with system ROCm and CMake. (Planned: allow for validation with RDNA 3 systems)
+#     with system ROCm and CMake.
 # Usage: validate_basic_hipco <cloned_hipco_repo_abs_dirpath> <hipco_target_commit_sha> \
-#                             <gfx_target_arch(s)>
+#                             <gfx_target_arch(s)> <cmakelists_patch_path>
 validate_basic_hipco() {
 
     _build_dir_name="build"
@@ -49,8 +49,15 @@ validate_basic_hipco() {
     if [ -z "${CMAKE_PREFIX_PATH+hasval}" ]; then
         CMAKE_PREFIX_PATH=""
     fi
-    env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
-        cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
+    if echo "$3" | grep --quiet "gfx110[0|1]"; then
+        git -C "$1" apply "$4"
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
+                cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" \
+                                                            -B "$1/${_build_dir_name}"
+    else
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
+            cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
+    fi
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
         grep --ignore-case "success"; then

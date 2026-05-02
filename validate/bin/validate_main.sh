@@ -44,6 +44,7 @@ source "../lib/vald_util_funcs.sh"
 # Resolve real path of patches files/'lib' directory/etc.
 LIB_DIR_ABS_PATH="$(realpath "${LIB_DIR_RELPATH}")"
 TRITON_EXAMP_PATCH_PATH="$(realpath "${TRITON_EXAMPLE_PATCH_RELPATH}")"
+HIPCO_BUILD_PATCH_PATH="$(realpath "${HIPCO_CMAKE_PATCH_RELPATH}")"
 COMFYUI_WORKFLOW_PATH="$(realpath "${FLUX_1_DEV_WORKFLOW_RELPATH}")"
 
 
@@ -63,7 +64,7 @@ env HIPCC_VERBOSE=7 hipcc --offload-arch="${HCC_AMDGPU0_ARCH}" \
 "./${_HIPCC_INIT_SMOKE_EXE}"
 rm "./${_HIPCC_INIT_SMOKE_EXE}"
 validate_basic_hipco "${CURR_HOME_DIR}/${HIPCO_REPO_LOCAL_DIRNAME}" \
-    "${HIPCO_REPO_UPSTREAM_COMMIT}" "${HCC_AMDGPU0_ARCH}"
+    "${HIPCO_REPO_UPSTREAM_COMMIT}" "${HCC_AMDGPU0_ARCH}" "${HIPCO_BUILD_PATCH_PATH}"
 if [[ ! -f "${DEEP_LEARN_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}" ]]; then
     echo "FAILED to detect deep learning base virtualenv!" >&2
     exit 1
