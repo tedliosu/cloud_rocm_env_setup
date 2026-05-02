@@ -124,8 +124,9 @@ ensure_oneapi_tbb_libs() {
     _signed_by_str_oneapi="[signed-by=${_oneapi_signing_file}]"
     sudo --set-home apt-get install --assume-yes ca-certificates gpg wget
     wget --output-document=- \
-        https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | \
-            gpg --dearmor - | sudo --set-home tee "${_oneapi_signing_file}" > /dev/null
+        https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+                                                                           2>/dev/null | \
+            gpg --dearmor - | sudo --set-home tee "${_oneapi_signing_file}" >/dev/null
     echo "deb ${_signed_by_str_oneapi} https://apt.repos.intel.com/oneapi all main" | \
                        sudo --set-home tee /etc/apt/sources.list.d/oneAPI.list >/dev/null
     sudo --set-home apt-get update
