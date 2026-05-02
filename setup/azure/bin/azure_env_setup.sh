@@ -50,7 +50,7 @@ ensure_basic_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}" \
                               "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
 
 
-# Create directories containing idempotent milestone markers and logs
+# Create/resolve directories containing idempotent milestone markers, logs, temp files, etc.
 MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
 LOGS_DIR="$(realpath "${LOGS_DIR_RELPATH}")"
 TEMP_DIR="$(realpath "${TEMP_DIR_RELPATH}")"
