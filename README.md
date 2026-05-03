@@ -51,6 +51,24 @@
 # TODOs
 
 - Refactor installation logic of CuPy into virtualenv once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
+- Investigate if ImportError experienced during shutdown of ComfyUI via `CTRL+C` in the terminal on Azure Pro V710 instances is due to not saving the modified workflow JSON after randomized seeding, an issue with attempting to shutdown ComfyUI too quickly in general, or something else.
+- Clarify the following in this repository's documentation:
+    - Some Hot Aisle VM instances, due to pre-installed kernel upgrades, will require manual confirmation from user to proceed during a standard `apt-get upgrade`.
+    - On Azure Pro V710 VM instances, PyTorch (as of version 2.11.x) will throw a warning about experimental attention implementation support that can be enabled with appropriate environment variable; this repository intentionally does not enable that experimental feature out-of-the-box and leaves enabling it up to the end user.
+    - Since CuPy must usually be built from source for support with latest ROCm version pre-installed in the cloud VM(s), as well as for architectures that are less commonly validated upstream like the Pro V710's `gfx1101`, this repository does NOT attempt to install CuPy from pre-built wheels to standardize environment setup.
+        - However, this trade-off comes at a cost of not being able to use the `HSA_OVERRIDE_GFX_VERSION` environment variable to do tasks like checking for architecture-specific behaviors within a given architecture family (e.g. RDNA 3, CDNA 3, etc.)
+        - Therefore, setting the environment variable `CUPY_BUILD_GFX11_FALLBACK=1` when running the environment setup main script will trigger the environment setup logic for CuPy to build for `gfx1100` as well, whenever the setup logic has detected that the native architecture being built for is either `gfx1101` or `gfx1102`.
+            - From personal experience, `gfx1101` and `gfx1102` are the only confirmed architectures in the RDNA 3 family (not to be confused with RDNA *3.5*, such as `gfx1151`) which work out of the box directly with standard ROCm user-land and DKMS installations (as of ROCm 7.2.x)
+            - Even though from personal experience, there are no cloud vendors hosting `gfx1102` GPUs, support for building CuPy for `gfx1100` simultaneously when building for `gfx1102` has been included because:
+                - No additional patches/modifications/etc. to CuPy and/or ROCm itself are required for such support
+                - Testing has revealed that on certain `gfx1102` cards like the 7600 XT, hipBLAS/rocBLAS will select very sub-optimal GEMM kernels for the native architecture when performing operations like `matmul` in CuPy.
+                - To force more optimal kernel selection on such cards, not only `HSA_OVERRIDE_GFX_VERSION=11.0.0` must be set when running CuPy, but also CuPy must already be built for `gfx1100`; otherwise CuPy will segfault during runtime from personal experience.
+        - Please note that there are NO additional environment variables equivalent to `CUPY_BUILD_GFX11_FALLBACK` for non-RDNA 3 architecture families like CDNA 3 (e.g. `gfx942`) and RDNA 2 (e.g. `gfx1030`) that affects the environment setup logic for CuPy in this repository
+            - There is only one valid HIP architecture target in the CDNA 3 family, i.e. `gfx942`, and building CuPy with HIP architectures during environment setup which don't share the same family as the GPU architectures of the target cloud environments of this repository is outside this repository's scope.
+    - Since this repository does not assume that user will provide HuggingFace API token(s) when doing environment setup, warning about unauthenticated requests to the HF Hub is to be expected under such a 'non-assumption'.
+        - User may register API tokens on cloud environment if user wishes to do so, but user MUST understand the security implications of such an action beforehand.
+    - For VM instances like Azure Pro V710, where the user can specify to install `fastfetch` from official GitHub releases directly during the environment setup process, the proceeding environment validation script(s) do NOT automate the validation process of a successful custom `fastfetch` install, since `fastfetch` is NOT a utility that is required for the supported workloads advertised
+        - Nonetheless, user may directly run the `fastfetch` command manually after fastfetch is installed and set-up to check that the installation and set-up was done correctly.
 
 # LLM Assistance Usage Disclaimer
 

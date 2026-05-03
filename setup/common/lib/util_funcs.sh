@@ -279,6 +279,7 @@ ensure_base_dl_virtualenv() {
 #            <non_cupy_requirements_txt_path>
 ensure_gpu_arr_virtualenv() {
 
+    _gfx11_fallback_arch="gfx1100"
     test -d "$1" && rm --recursive --force "$1"
     virtualenv "$1"
     # Parameterized source since this function encapsulate setup logic invariants
@@ -298,9 +299,32 @@ ensure_gpu_arr_virtualenv() {
         echo "FAILED to detect GFX Version of ROCm device 0!" >&2
         exit 1
     }
+    # Note: logic inside this if statement assumes that 'HCC_AMDGPU_TARGET' contains ONLY ONE
+    #     valid 'amdgpu' HIP arch
+    if [ -n "${CUPY_BUILD_GFX11_FALLBACK+enabled}" ] && \
+                   [ "${CUPY_BUILD_GFX11_FALLBACK}" -eq 1 ]; then
+        if [ "${HCC_AMDGPU_TARGET}" = "${_gfx11_fallback_arch}" ]; then
+            echo "Building for '${_gfx11_fallback_arch}' as fallback arch requested," \
+                                                        "but '${_gfx11_fallback_arch}' is" >&2
+            echo "    already 'native' arch! NOT proceeding to modify 'HCC_AMDGPU_TARGET'" >&2
+            echo "    for building CuPy..." >&2
+        elif echo "${HCC_AMDGPU_TARGET}" | grep --quiet "^gfx110[1|2]$"; then
+            echo "Building for '${_gfx11_fallback_arch}' as fallback arch requested," \
+                                                                    "and 'native' arch"
+            echo "    is supported RDNA 3 non-'${_gfx11_fallback_arch}' arch; " \
+                                               "appending '${_gfx11_fallback_arch}' to"
+            echo "    'HCC_AMDGPU_TARGET'..."
+            HCC_AMDGPU_TARGET="${HCC_AMDGPU_TARGET},${_gfx11_fallback_arch}"
+        else
+            echo "WARNING: Building for '${_gfx11_fallback_arch}' as fallback arch" >&2
+            echo "    requested, but 'native' arch of '${HCC_AMDGPU_TARGET}' is NOT" >&2
+            echo "    compatible with such a request! NOT proceeding to modify" >&2
+            echo "    'HCC_AMDGPU_TARGET' for building CuPy..." >&2
+        fi
+    fi
     CUPY_NUM_BUILD_JOBS="$(nproc)"
-    echo "GOT: ROCM_HOME=${ROCM_HOME}, HCC_AMDGPU_TARGET=${HCC_AMDGPU_TARGET}," \
-        "CUPY_NUM_BUILD_JOBS=${CUPY_NUM_BUILD_JOBS}"
+    echo "GOT: ROCM_HOME='${ROCM_HOME}', HCC_AMDGPU_TARGET='${HCC_AMDGPU_TARGET}'," \
+        "CUPY_NUM_BUILD_JOBS='${CUPY_NUM_BUILD_JOBS}'"
     export ROCM_HOME
     export HCC_AMDGPU_TARGET
     export CUPY_NUM_BUILD_JOBS
