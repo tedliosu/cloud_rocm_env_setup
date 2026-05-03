@@ -49,7 +49,7 @@ validate_basic_hipco() {
     if [ -z "${CMAKE_PREFIX_PATH+hasval}" ]; then
         CMAKE_PREFIX_PATH=""
     fi
-    if echo "$3" | grep --quiet "gfx110[0|1]"; then
+    if echo "$3" | grep --quiet "gfx110[01]"; then
         git -C "$1" apply "$4"
         env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
                 cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" \
