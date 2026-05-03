@@ -10,7 +10,8 @@ DO_COMFYUI_ADDONS=0
 DO_FASTFETCH=0
 
 usage() {
-    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_SETUP_FLAG] [-h|--help]"
+    echo "Usage: [env CUPY_BUILD_GFX11_FALLBACK=1]" \
+         "$0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_SETUP_FLAG] [-h|--help]"
     exit 0
 }
 
