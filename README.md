@@ -51,7 +51,9 @@
 # TODOs
 
 - Refactor installation logic of CuPy into virtualenv with build logging once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
-- Investigate if ImportError experienced during shutdown of ComfyUI via `CTRL+C` in the terminal on Azure Pro V710 instances is due to not saving the modified workflow JSON after randomized seeding, an issue with attempting to shutdown ComfyUI too quickly in general, or something else.
+- "Exception ignored `ImportError`" message of `filelock` package experienced during shutdown of ComfyUI (as of version 0.19.0) via `CTRL+C` in the terminal on Azure Pro V710 instances is a confirmed issue; apparently according to [this GitHub issue comment](https://github.com/Comfy-Org/ComfyUI/issues/12846#issuecomment-4029573105) it is just 'Python dependency noise' and not any kind of real software breakage.
+    - Testing confirms that starting up ComfyUI again after shutting down with the `ImportError` message does not result in any corruption of model weights or workflows.
+    - User is still strongly recommended to save all open workflows before exiting the ComfyUI Web UI and shutting down the ComfyUI server.
 - Clarify the following in this repository's documentation:
     - Some Hot Aisle VM instances, due to pre-installed kernel upgrades, will require manual confirmation from user to proceed during a standard `apt-get upgrade`.
     - On Azure Pro V710 VM instances, PyTorch (as of version 2.11.x) will throw a warning about experimental attention implementation support that can be enabled with appropriate environment variable; this repository intentionally does not enable that experimental feature out-of-the-box and leaves enabling it up to the end user.
