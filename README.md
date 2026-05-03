@@ -50,7 +50,7 @@
 
 # TODOs
 
-- Refactor installation logic of CuPy into virtualenv once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
+- Refactor installation logic of CuPy into virtualenv with build logging once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
 - Investigate if ImportError experienced during shutdown of ComfyUI via `CTRL+C` in the terminal on Azure Pro V710 instances is due to not saving the modified workflow JSON after randomized seeding, an issue with attempting to shutdown ComfyUI too quickly in general, or something else.
 - Clarify the following in this repository's documentation:
     - Some Hot Aisle VM instances, due to pre-installed kernel upgrades, will require manual confirmation from user to proceed during a standard `apt-get upgrade`.
