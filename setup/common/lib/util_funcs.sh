@@ -18,9 +18,9 @@ run_stage() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         if [ ! -f "${_done_marker_file}" ]; then
-            echo "[PLAN ONLY] ${_skip_stage_msg}"
-        else
             echo "[PLAN ONLY] --- run stage ${_func_to_run} ---"
+        else
+            echo "[PLAN ONLY] ${_skip_stage_msg}"
         fi
         return 0
     fi
