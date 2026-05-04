@@ -51,6 +51,12 @@
 # TODOs
 
 - Refactor installation logic of CuPy into virtualenv with build logging once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
+- Add following concept to documentation:
+    - If a stage fails:
+        - inspect the error
+        - delete the affected venv/repo directory if needed
+        - delete the relevant .done marker to force rerun
+        - rerun the script to skip completed stages
 - "Exception ignored `ImportError`" message of `filelock` package experienced during shutdown of ComfyUI (as of version 0.19.0) via `CTRL+C` in the terminal on Azure Pro V710 instances is a confirmed issue; apparently according to [this GitHub issue comment](https://github.com/Comfy-Org/ComfyUI/issues/12846#issuecomment-4029573105) it is just 'Python dependency noise' and not any kind of real software breakage.
     - Testing confirms that starting up ComfyUI again after shutting down with the `ImportError` message does not result in any corruption of model weights or workflows.
     - User is still strongly recommended to save all open workflows before exiting the ComfyUI Web UI and shutting down the ComfyUI server.
