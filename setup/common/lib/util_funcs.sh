@@ -18,7 +18,7 @@ run_stage() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         if [ ! -f "${_done_marker_file}" ]; then
-            echo "[PLAN ONLY] --- run stage ${_func_to_run} ---"
+            echo "[PLAN ONLY] --- would run stage ${_func_to_run} ---"
         else
             echo "[PLAN ONLY] ${_skip_stage_msg}"
         fi
@@ -54,9 +54,9 @@ ensure_groups_maybe_reboot_dont_wrap() {
     }
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Ensure that user '${_env_username}' is" \
+        echo "[PLAN ONLY] Would ensure that user '${_env_username}' is" \
              "in 'video' and 'render' groups."
-        echo "[PLAN ONLY]     Then, reboot if group membership(s) changed."
+        echo "[PLAN ONLY]     Then, would reboot if group membership(s) changed."
         return 0
     fi
 
@@ -93,7 +93,7 @@ ensure_groups_maybe_reboot_dont_wrap() {
 ensure_basic_env_sanity_dont_wrap() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Ensure that current environment is $1 $2 distro,"
+        echo "[PLAN ONLY] Would ensure that current environment is $1 $2 distro,"
         echo "[PLAN ONLY]     ensure that amdgpu dkms is loaded according to 'rocminfo',"
         echo "[PLAN ONLY]     and ensure that 'hipconfig' reports ROCm version ~$3."
         return 0
@@ -132,9 +132,9 @@ ensure_basic_env_sanity_dont_wrap() {
 check_wget_fetch_dont_wrap() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Ensure that '$1' is reachable,"
-        echo "[PLAN ONLY]     by performing test download using 'wget'; 'wget' is installed"
-        echo "[PLAN ONLY]     using apt-get before test download if it isn't available."
+        echo "[PLAN ONLY] Would check whether '$1' is reachable,"
+        echo "[PLAN ONLY]     using 'wget'; real run would install 'wget' first"
+        echo "[PLAN ONLY]     if unavailable."
         return 0
     fi
 
@@ -161,10 +161,10 @@ ppa_disable_dont_wrap() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         if [ -f "${1}.${_file_backup_suffix}" ]; then
-            echo "[PLAN ONLY] Report that PPA(s) in '$1'"
+            echo "[PLAN ONLY] Would report that PPA(s) in '$1'"
             echo "[PLAN ONLY]     are already disabled."
         else
-            echo "[PLAN ONLY] Attempt to disable PPA(s) in '$1'"
+            echo "[PLAN ONLY] Would attempt to disable PPA(s) in '$1'"
             echo "[PLAN ONLY]     via 'mv' command."
         fi
         return 0
@@ -197,7 +197,7 @@ reboot_once_dont_wrap() {
     _reboot_skip_msg="--- skipping stage: reboot_once_dont_wrap (already complete) ---"
    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         if [ ! -f "${reboot_marker_file}" ]; then
-            echo "[PLAN ONLY] Record reboot request and reboot system"
+            echo "[PLAN ONLY] Would record reboot request and reboot system"
         else
             echo "[PLAN ONLY] ${_reboot_skip_msg}"
         fi
