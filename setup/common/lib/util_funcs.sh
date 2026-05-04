@@ -133,8 +133,8 @@ check_wget_fetch_dont_wrap() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         echo "[PLAN ONLY] Ensure that '$1' is reachable,"
-        echo "[PLAN ONLY]     via test download using 'wget'; 'wget' is installed using"
-        echo "[PLAN ONLY]     apt-get before test download if it isn't available."
+        echo "[PLAN ONLY]     by performing test download using 'wget'; 'wget' is installed"
+        echo "[PLAN ONLY]     using apt-get before test download if it isn't available."
         return 0
     fi
 
