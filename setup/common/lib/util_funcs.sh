@@ -14,6 +14,16 @@ run_stage() {
     _func_to_run="$1"
     shift
     _done_marker_file="${_milestones_dir}/${_func_to_run}.done"
+    _skip_stage_msg="--- skipping stage: ${_func_to_run} (already complete) ---"
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        if [ ! -f "${_done_marker_file}" ]; then
+            echo "[PLAN ONLY] ${_skip_stage_msg}"
+        else
+            echo "[PLAN ONLY] --- run stage ${_func_to_run} ---"
+        fi
+        return 0
+    fi
 
     if [ ! -f "${_done_marker_file}" ]; then
         echo "--- starting stage: ${_func_to_run} ---"
@@ -25,7 +35,7 @@ run_stage() {
             exit 1
         }
     else
-        echo "--- skipping stage: ${_func_to_run} (already complete) ---"
+        echo "${_skip_stage_msg}"
     fi
 
 }
@@ -42,6 +52,14 @@ ensure_groups_maybe_reboot_dont_wrap() {
         echo "FAILED to get 'LOGNAME'!" >&2
         exit 1
     }
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Ensure that user '${_env_username}' is" \
+             "in 'video' and 'render' groups."
+        echo "[PLAN ONLY] Then, reboot if group membership(s) changed."
+        return 0
+    fi
+
     echo "Ensuring that user '${_env_username}' is" \
          "in 'video' and 'render' groups..."
 
@@ -73,6 +91,13 @@ ensure_groups_maybe_reboot_dont_wrap() {
 # Usage: ensure_basic_env_sanity_dont_wrap <expected_distro_name> <expected_distro_ver> \
 #                                          <expected_rocm_ver> <expected_rocm_ver_regex>
 ensure_basic_env_sanity_dont_wrap() {
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Ensure that current environment is $1 $2 distro,"
+        echo "[PLAN ONLY] ensure that amdgpu dkms is loaded according to 'rocminfo',"
+        echo "[PLAN ONLY] and ensure that 'hipconfig' reports ROCm version ~$3."
+        return 0
+    fi
 
     if ! grep --quiet "DISTRIB_ID=$1" /etc/lsb-release ||
        ! grep --quiet "DISTRIB_RELEASE=$2" /etc/lsb-release; then
@@ -106,6 +131,13 @@ ensure_basic_env_sanity_dont_wrap() {
 # Returns: 0 on success of web hosted file fetch; 1 otherwise
 check_wget_fetch_dont_wrap() {
 
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Ensure that '$1' is reachable,"
+        echo "[PLAN ONLY] via test download using 'wget'; 'wget' is installed using"
+        echo "[PLAN ONLY] apt-get before test download if it isn't available."
+        return 0
+    fi
+
     _prereq_pkgs_wget_check="ca-certificates wget"
     # safe because apt package names each NEVER contain whitespace(s)
     # shellcheck disable=SC2086
@@ -126,6 +158,18 @@ check_wget_fetch_dont_wrap() {
 ppa_disable_dont_wrap() {
 
     _file_backup_suffix="bak"
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        if [ -f "${1}.${_file_backup_suffix}" ]; then
+            echo "[PLAN ONLY] Report that PPA(s) in '$1'"
+            echo "[PLAN ONLY] are already disabled."
+        else
+            echo "[PLAN ONLY] Attempt to disable PPA(s) in '$1'"
+            echo "[PLAN ONLY] via 'mv' command."
+        fi
+        return 0
+    fi
+
     if [ -f "$1" ]; then
         sudo --set-home mv "$1" "${1}.${_file_backup_suffix}"
         echo "PPA(s) in '$1' successfully disabled!"
@@ -150,13 +194,22 @@ apt_get_sys_update() {
 # Usage: reboot_once_dont_wrap <milestones_directory>
 reboot_once_dont_wrap() {
     reboot_marker_file="$1/reboot_once_dont_wrap.done"
+    _reboot_skip_msg="--- skipping stage: reboot_once_dont_wrap (already complete) ---"
+   if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        if [ ! -f "${reboot_marker_file}" ]; then
+            echo "[PLAN ONLY] Record reboot request and reboot system"
+        else
+            echo "[PLAN ONLY] ${_reboot_skip_msg}"
+        fi
+        return 0
+    fi
     if [ ! -f "$reboot_marker_file" ]; then
         echo "Reboot required, performing ONE reboot..."
         touch "$reboot_marker_file"
         sudo --set-home reboot
         exit 0
     else
-        echo "--- skipping stage: reboot_once_dont_wrap (already complete) ---"
+        echo "${_reboot_skip_msg}"
     fi
 }
 

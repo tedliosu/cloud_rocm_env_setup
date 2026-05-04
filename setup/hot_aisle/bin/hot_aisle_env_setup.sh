@@ -5,12 +5,13 @@ set -euo pipefail
 CUPY_ENV_FLAG="--cupy-env-setup"
 COMFYUI_FLAG="--comfyui-addons-setup"
 FASTF_PPA_DISABLE_FLAG="--disable-fastfetch-ppa"
+SHOW_PLAN_ONLY_FLAG="--show-plan-only"
 DO_CUPY_ENV=0
 DO_COMFYUI_ADDONS=0
 DISABLE_FASTF_PPA=0
 
 usage() {
-    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_PPA_DISABLE_FLAG] [-h|--help]"
+    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_PPA_DISABLE_FLAG] [$SHOW_PLAN_ONLY_FLAG] [-h|--help]"
     exit 0
 }
 
@@ -20,6 +21,7 @@ while [[ "$#" -gt 0 ]]; do
     "$CUPY_ENV_FLAG") DO_CUPY_ENV=1; shift;;
     "$COMFYUI_FLAG") DO_COMFYUI_ADDONS=1; shift;;
     "$FASTF_PPA_DISABLE_FLAG") DISABLE_FASTF_PPA=1; shift;;
+    "$SHOW_PLAN_ONLY_FLAG") export SHOW_PLAN_ONLY=1; shift;;
     -h|--help) usage;;
     *) usage;;
   esac
