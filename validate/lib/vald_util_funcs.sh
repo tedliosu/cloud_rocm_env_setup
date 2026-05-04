@@ -23,7 +23,8 @@ validate_basic_triton() {
         rm --recursive --force "$1"
         echo "PASSED ${_test_common_str_triton}"
     else
-        echo "FAILED ${_test_common_str_triton}"
+        echo "FAILED ${_test_common_str_triton}" >&2
+        exit 1
     fi
 
 }
