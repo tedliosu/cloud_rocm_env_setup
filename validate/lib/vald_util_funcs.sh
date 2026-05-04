@@ -45,18 +45,15 @@ validate_basic_hipco() {
         echo "FAILED to detect 'ROCM_HOME_DIR'!" >&2
         exit 1
     }
-    # IMPORTANT - env var could be unset, so we check!
-    if [ -z "${CMAKE_PREFIX_PATH+hasval}" ]; then
-        CMAKE_PREFIX_PATH=""
-    fi
+    # IMPORTANT - env var could be unset, so we use default empty!
     if echo "$3" | grep --quiet "gfx110[01]"; then
         git -C "$1" apply "$4"
-        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
-                cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" \
-                                                            -B "$1/${_build_dir_name}"
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/lib/cmake" \
+                  cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" \
+                                                              -B "$1/${_build_dir_name}"
     else
-        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:${ROCM_HOME_DIR}/lib/cmake" \
-            cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/lib/cmake" \
+              cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
     fi
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \

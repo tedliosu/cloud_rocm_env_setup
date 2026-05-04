@@ -301,8 +301,7 @@ ensure_gpu_arr_virtualenv() {
     }
     # Note: logic inside this if statement assumes that 'HCC_AMDGPU_TARGET' contains ONLY ONE
     #     valid 'amdgpu' HIP arch
-    if [ -n "${CUPY_BUILD_GFX11_FALLBACK+enabled}" ] && \
-                   [ "${CUPY_BUILD_GFX11_FALLBACK}" -eq 1 ]; then
+    if [ "${CUPY_BUILD_GFX11_FALLBACK:-0}" -eq 1 ]; then
         if [ "${HCC_AMDGPU_TARGET}" = "${_gfx11_fallback_arch}" ]; then
             echo "Building for '${_gfx11_fallback_arch}' as fallback arch requested," \
                                                         "but '${_gfx11_fallback_arch}' is" >&2
