@@ -44,7 +44,11 @@ source "../lib/azure_vars.sh"
 source "../../common/lib/shared_vars.sh"
 source "../../common/lib/util_funcs.sh"
 
-echo "Please enter sudo password when prompted!"
+if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+    echo "[PLAN ONLY] No sudo commands will be executed."
+else
+    echo "Please enter sudo password when prompted!"
+fi
 
 # Ensure user access to GPU
 ensure_groups_maybe_reboot_dont_wrap
@@ -94,6 +98,12 @@ if (( DO_COMFYUI_ADDONS )); then
     run_stage "$MILESTONES_DIR" ensure_comfyui_virtualenv "${DEEP_LEARN_VIRTENV_DIR}" \
         "${COMFYUI_REPO_LOCAL_DIR}" "${COMFYUI_PIN_VER_TAG}" "${TORCH_PYPKGS_LISTS_PATH}" \
         "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${BEFORE_COMFYUI_LOG_PATH}" "${AFTER_COMFYUI_LOG_PATH}"
+fi
+
+if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+   echo "[PLAN ONLY] No setup stages were executed."
+   echo "[PLAN ONLY] No milestone marker files were created."
+   echo "[PLAN ONLY] Local state/log directories may have been created."
 fi
 
 
