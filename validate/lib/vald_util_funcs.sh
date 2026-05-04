@@ -2,6 +2,12 @@
 # Utility shell functions each used to encapsulate non-trivial amounts of logic
 #     needed for basic validation of specific ROCm workloads
 
+# Source global helpers used in this script;
+#    note that this sourcing assumes that the
+#    main runner script will reside in directory
+#    '../bin' relative to this script!
+. "../../lib/comm_util_funcs.sh"
+
 # Validate Triton JIT works and resulting kernel runs using upstream Triton fp16 GEMM
 #     tutorial code
 # Usage: validate_basic_triton <cloned_triton_repo_dirpath> <cloned_triton_repo_branch_id> \
@@ -10,7 +16,7 @@ validate_basic_triton() {
 
     _tutorials_dirpath="python/tutorials"
     _test_common_str_triton="Triton fp16 matmul tutorial based smoke test!"
-    test -d "$1" && rm --recursive --force "$1"
+    test -d "$1" && guarded_rm_rf "$1"
     git -c advice.detachedHead=false clone \
               --filter=blob:none --sparse --branch "$2" \
               https://github.com/triton-lang/triton.git "$1"
@@ -20,7 +26,7 @@ validate_basic_triton() {
     python3 "$1/${_tutorials_dirpath}/03-matrix-multiplication.py"
     _py_last_status="$?"
     if [ "${_py_last_status}" -eq 0 ]; then
-        rm --recursive --force "$1"
+        guarded_rm_rf "$1"
         echo "PASSED ${_test_common_str_triton}"
     else
         echo "FAILED ${_test_common_str_triton}" >&2
@@ -38,7 +44,7 @@ validate_basic_hipco() {
     _build_dir_name="build"
     _example_bin_name="STATIC_MAP_HOST_BULK_EXAMPLE"
     _test_common_str="'${_example_bin_name}' hipCollections smoke test!"
-    test -d "$1" && rm --recursive --force "$1"
+    test -d "$1" && guarded_rm_rf "$1"
     git clone https://github.com/ROCm/hipCollections.git "$1"
     git -C "$1" -c advice.detachedHead=false checkout "$2"
     git -C "$1" submodule update --init --recursive
@@ -64,6 +70,6 @@ validate_basic_hipco() {
         echo "FAILED ${_test_common_str}" >&2
         exit 1
     fi
-    rm --recursive --force "$1"
+    guarded_rm_rf "$1"
 
 }

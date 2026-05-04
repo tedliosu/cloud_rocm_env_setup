@@ -1,4 +1,10 @@
 
+# Source global helpers used in this script;
+#    note that this sourcing assumes that the
+#    main runner script will reside in directory
+#    '../../*/bin' relative to this script!
+. "../../../lib/comm_util_funcs.sh"
+
 # Helper function to run a stage
 # Usage: run_stage <milestones_directory_path> <function_to_run> [function_arguments]...
 run_stage() {
@@ -261,7 +267,7 @@ ensure_github_fastfetch() {
 #            <torchcodec_ver_str>
 ensure_base_dl_virtualenv() {
 
-    test -d "$1" && rm --recursive --force "$1"
+    test -d "$1" && guarded_rm_rf "$1"
     virtualenv "$1"
     # Parameterized source since this function encapsulate setup logic invariants
     # shellcheck disable=SC1090,SC1091
@@ -280,14 +286,14 @@ ensure_base_dl_virtualenv() {
 ensure_gpu_arr_virtualenv() {
 
     _gfx11_fallback_arch="gfx1100"
-    test -d "$1" && rm --recursive --force "$1"
+    test -d "$1" && guarded_rm_rf "$1"
     virtualenv "$1"
     # Parameterized source since this function encapsulate setup logic invariants
     # shellcheck disable=SC1090,SC1091
     . "$1/bin/activate"
     pip install --upgrade pip
     pip install --requirement "$3"
-    test -d "$2" && rm --recursive --force "$2"
+    test -d "$2" && guarded_rm_rf "$2"
     git clone --branch=v14 https://github.com/cupy/cupy.git "$2"
     git -C "$2" submodule update --init --recursive
     ROCM_HOME="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
@@ -332,7 +338,7 @@ ensure_gpu_arr_virtualenv() {
     pip install "$2/dist"/cupy*.whl
     _last_pip_status="$?"
     if [ "${_last_pip_status}" -eq 0 ]; then
-        rm --recursive --force "$2"
+        guarded_rm_rf "$2"
     fi
     deactivate
 
@@ -344,7 +350,7 @@ ensure_gpu_arr_virtualenv() {
 #            <before_comfyui_install_pip_freeze_path> <after_comfyui_install_pip_freeze_path>
 ensure_comfyui_virtualenv() {
 
-    test -d "$2" && rm --recursive --force "$2"
+    test -d "$2" && guarded_rm_rf "$2"
     git clone https://github.com/Comfy-Org/ComfyUI.git "$2"
     git -C "$2" -c advice.detachedHead=false checkout "$3"
     git -C "$2" submodule update --init --recursive
