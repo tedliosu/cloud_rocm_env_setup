@@ -53,7 +53,7 @@
 - Refactor installation logic of CuPy into virtualenv with build logging once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
 - Add following concept to documentation:
     - If a stage fails:
-        - inspect the error
+        - inspect and resolve the error
         - delete the affected venv/repo directory if needed
         - delete the relevant .done marker to force rerun
         - rerun the script to skip completed stages
