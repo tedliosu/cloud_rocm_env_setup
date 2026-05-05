@@ -19,7 +19,7 @@
 # Target Workloads
 
 ## Public or To Be Made Public
-- Custom Canny edge detection pipeline written with CuPy from first principles
+- Custom Canny edge detection operator written with CuPy from first principles
 - ResNet-50 vs ViT-B/16 classification and resource usage performance project
 - ComfyUI 2D image generation:
     - FLUX.x [dev] (where "x" is 1 or greater)
@@ -37,7 +37,7 @@
     - (optional) gather-GEMM via Triton with scrambled row maps
 
 ## Private ONLY
-- MLP in CuPy from first principles trained with vanilla mini-batch SGD and MSE loss, with training and testing on MNIST_784 dataset provided by Scikit-Learn OpenML
+- MLP in CuPy from first principles trained with vanilla mini-batch SGD and MSE loss, with training, validation, and testing on MNIST_784 dataset provided by Scikit-Learn OpenML
 - Comparison of classification performance and loss curves of various custom Voice Activity Detection models implemented in PyTorch
 - CUDA/HIP custom co-rank based iterative mergesort from first principles
 
