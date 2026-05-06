@@ -38,16 +38,25 @@ validate_basic_triton() {
 # Validate hipCollections static map host bulk API example works
 #     with system ROCm and CMake.
 # Usage: validate_basic_hipco <cloned_hipco_repo_abs_dirpath> <hipco_target_commit_sha> \
-#                             <gfx_target_arch(s)> <cmakelists_patch_path>
+#                             <gfx_target_arch(s)> <cmakelists_patch_path> \
+#                             <cloned_rocm_ds_cmake_repo_abs_dirpath> <rocm_ds_cmake_target_commit_sha> \
+#                             <version_json_patch_path>
 validate_basic_hipco() {
 
     _build_dir_name="build"
+    _lib_cmake_relpath="lib/cmake"
+    _rapids_cmake_relpath="rapids-cmake"
     _example_bin_name="STATIC_MAP_HOST_BULK_EXAMPLE"
     _test_common_str="'${_example_bin_name}' hipCollections smoke test!"
     test -d "$1" && guarded_rm_rf "$1"
     git clone https://github.com/ROCm/hipCollections.git "$1"
     git -C "$1" -c advice.detachedHead=false checkout "$2"
     git -C "$1" submodule update --init --recursive
+    test -d "$5" && guarded_rm_rf "$5"
+    git clone https://github.com/ROCm-DS/ROCmDS-cmake.git "$5"
+    git -C "$5" -c advice.detachedHead=false checkout "$6"
+    git -C "$5" submodule update --init --recursive
+    git -C "$5" apply "$7"
     ROCM_HOME_DIR="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
         echo "FAILED to detect 'ROCM_HOME_DIR'!" >&2
         exit 1
@@ -55,13 +64,17 @@ validate_basic_hipco() {
     # IMPORTANT - env var could be unset, so we use default empty!
     if echo "$3" | grep --quiet "gfx110[01]"; then
         git -C "$1" apply "$4"
-        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/lib/cmake" \
-                  cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF \
-                                         -DBUILD_BENCHMARKS=OFF -S "$1" -B "$1/${_build_dir_name}"
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/${_lib_cmake_relpath}" \
+                                 RAPIDS_CMAKE_MODULE_PATH="$5/${_rapids_cmake_relpath}" cmake \
+                                 -Drapids-cmake-dir="$5/${_rapids_cmake_relpath}" -DUSE_WARPSIZE_32=1 \
+                                 -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF \
+                                 -S "$1" -B "$1/${_build_dir_name}"
     else
-        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/lib/cmake" \
-            cmake -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF \
-                                                             -S "$1" -B "$1/${_build_dir_name}"
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/${_lib_cmake_relpath}" \
+                                 RAPIDS_CMAKE_MODULE_PATH="$5/${_rapids_cmake_relpath}" cmake \
+                                 -Drapids-cmake-dir="$5/${_rapids_cmake_relpath}" \
+                                 -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF \
+                                 -S "$1" -B "$1/${_build_dir_name}"
     fi
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
@@ -71,6 +84,6 @@ validate_basic_hipco() {
         echo "FAILED ${_test_common_str}" >&2
         exit 1
     fi
-    guarded_rm_rf "$1"
+    guarded_rm_rf "$1" "$5"
 
 }
