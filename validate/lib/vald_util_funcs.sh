@@ -56,11 +56,12 @@ validate_basic_hipco() {
     if echo "$3" | grep --quiet "gfx110[01]"; then
         git -C "$1" apply "$4"
         env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/lib/cmake" \
-                  cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" \
-                                                              -B "$1/${_build_dir_name}"
+                  cmake -DUSE_WARPSIZE_32=1 -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF \
+                                         -DBUILD_BENCHMARKS=OFF -S "$1" -B "$1/${_build_dir_name}"
     else
         env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/lib/cmake" \
-              cmake -DCMAKE_HIP_ARCHITECTURES="$3" -S "$1" -B "$1/${_build_dir_name}"
+            cmake -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF \
+                                                             -S "$1" -B "$1/${_build_dir_name}"
     fi
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
     if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
