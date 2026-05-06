@@ -1,0 +1,13 @@
+diff --git a/rapids-cmake/cpm/versions.json b/rapids-cmake/cpm/versions.json
+index 3b461b4..2f91a12 100644
+--- a/rapids-cmake/cpm/versions.json
++++ b/rapids-cmake/cpm/versions.json
+@@ -105,7 +105,7 @@
+     "libhipcxx" : {
+       "version" : "2.7.0",
+       "git_url" : "https://github.com/${RAPIDS_CMAKE_ROCM_ORG}/libhipcxx",
+-      "git_tag" : "release/rocmds-25.10"
++      "git_tag" : "9ac637b66019a8fcf6796f8cfd7b2c13f76313b6"
+     },
+     "hipbench": {
+       "version": "0.2",

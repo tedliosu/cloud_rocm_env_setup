@@ -49,6 +49,23 @@ The patch files themselves are authored by Yensong Ted Li and are licensed under
 
 - Add/enable the target architecture needed for Azure Pro V710 validation using hipCollections' `STATIC_MAP_HOST_BULK_EXAMPLE`.
 
+### ROCm-DS CMake
+
+- Upstream GitHub repository: `ROCm-DS/ROCmDS-cmake`
+- Upstream license: Apache 2.0
+- Upstream license text: [`LICENSES/ROCm-DS-CMake-Apache-2.0.txt`](./LICENSES/ROCm-DS-CMake-Apache-2.0.txt)
+- Patch file: [`validate/lib/patches/rocm-ds-cmake-libhipcxx-pin.patch`](./validate/lib/patches/rocm-ds-cmake-libhipcxx-pin.patch)
+
+**Upstream target details**
+
+- Patched file(s):
+    - `rapids-cmake/cpm/versions.json`
+- Upstream commit: `3d18139480d28a77ea0b2e5980f2d2317a114a91`
+
+**Patch purpose**
+
+- Pin the `libhipcxx` dependency needed for Azure Pro V710 validation with the hipCollections' `STATIC_MAP_HOST_BULK_EXAMPLE` to an immutable snapshot.
+
 ---
 
 ## Data Files
