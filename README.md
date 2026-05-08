@@ -62,6 +62,11 @@
     - Testing confirms that starting up ComfyUI again after shutting down with the `ImportError` message does not result in any corruption of model weights or workflows.
     - User is still strongly recommended to save all open workflows before exiting the ComfyUI Web UI and shutting down the ComfyUI server.
 - Clarify the following in this repository's documentation:
+    - add instructions on how to use this repository, as well as how to do the manual setup and validation steps like ollama and final comfyui steps
+    - Add note that links to custom public projects will be added to this repo when the public project is ready to be showcased in relation to this repository
+    - add a table of contents with links if documentation gets too long for a single file
+    - add in contributing section that issues are welcome but pull request are currently not accepted due to not enough bandwidth to review them, but that may change moving forward
+    - preliminary testing with building hipDF locally on rocm 7.1.1 and 7.2.0 i.e. versions newer than the validated rocm 7.0.2, revealed ecosystem drift related compatibility issues that caused build errors during the building of the hipDF c++ engine; therefore this repo intentionally excludes hipDF because trying to install an older ROCm version on a system with ROCm libraries already installed may lead to packages stomping from personal experience, and forward porting hipDF to be compatible with newer ROCm versions consumes too much bandwidth.
     - Average expected time taken to do minimal vs full setup and validation for both instance types
     - Some Hot Aisle VM instances, due to pre-installed kernel upgrades, will require manual confirmation from user to proceed during a standard `apt-get upgrade`.
     - On Azure Pro V710 VM instances, PyTorch (as of version 2.11.x) will throw a warning about experimental attention implementation support that can be enabled with appropriate environment variable; this repository intentionally does not enable that experimental feature out-of-the-box and leaves enabling it up to the end user.
