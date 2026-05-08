@@ -62,6 +62,7 @@
     - Testing confirms that starting up ComfyUI again after shutting down with the `ImportError` message does not result in any corruption of model weights or workflows.
     - User is still strongly recommended to save all open workflows before exiting the ComfyUI Web UI and shutting down the ComfyUI server.
 - Clarify the following in this repository's documentation:
+    - Average expected time taken to do minimal vs full setup and validation for both instance types
     - Some Hot Aisle VM instances, due to pre-installed kernel upgrades, will require manual confirmation from user to proceed during a standard `apt-get upgrade`.
     - On Azure Pro V710 VM instances, PyTorch (as of version 2.11.x) will throw a warning about experimental attention implementation support that can be enabled with appropriate environment variable; this repository intentionally does not enable that experimental feature out-of-the-box and leaves enabling it up to the end user.
     - Since CuPy must usually be built from source for support with latest ROCm version pre-installed in the cloud VM(s), as well as for architectures that are less commonly validated upstream like the Pro V710's `gfx1101`, this repository does NOT attempt to install CuPy from pre-built wheels to standardize environment setup. (TODO: remove stuff below about `gfx1102` from README.md below and code to be less confusing)
