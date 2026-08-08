@@ -366,7 +366,7 @@ ensure_gpu_arr_virtualenv() {
                                                         "but '${_gfx11_fallback_arch}' is" >&2
             echo "    already 'native' arch! NOT proceeding to modify 'HCC_AMDGPU_TARGET'" >&2
             echo "    for building CuPy..." >&2
-        elif echo "${HCC_AMDGPU_TARGET}" | grep --quiet "^gfx110[12]$"; then
+        elif echo "${HCC_AMDGPU_TARGET}" | grep --quiet "^gfx1101$"; then
             echo "Building for '${_gfx11_fallback_arch}' as fallback arch requested," \
                                                                     "and 'native' arch"
             echo "    is supported RDNA 3 non-'${_gfx11_fallback_arch}' arch; " \
@@ -376,7 +376,7 @@ ensure_gpu_arr_virtualenv() {
         else
             echo "WARNING: Building for '${_gfx11_fallback_arch}' as fallback arch" >&2
             echo "    requested, but 'native' arch of '${HCC_AMDGPU_TARGET}' is NOT" >&2
-            echo "    compatible with such a request! NOT proceeding to modify" >&2
+            echo "    a compatible and/or supported option! NOT proceeding to modify" >&2
             echo "    'HCC_AMDGPU_TARGET' for building CuPy..." >&2
         fi
     fi
