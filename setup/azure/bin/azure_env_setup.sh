@@ -75,7 +75,8 @@ AFTER_COMFYUI_LOG_PATH="$(realpath "${POST_COMFYUI_PIP_FREEZE_RECS}")"
 # BEGIN "MAIN"
 run_stage "$MILESTONES_DIR" apt_get_sys_update
 reboot_once_dont_wrap "$MILESTONES_DIR"
-run_stage "$MILESTONES_DIR" ensure_latest_cmake "${EXPECTED_DIST_CODENAME}"
+run_stage "$MILESTONES_DIR" ensure_pinned_cmake \
+    "${EXPECTED_DIST_CODENAME}" "${CMAKE_APT_PIN_VER}"
 run_stage "$MILESTONES_DIR" ensure_oneapi_tbb_libs "${ONEAPI_TBB_PIN_VER}"
 run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
     "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"

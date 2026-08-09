@@ -214,8 +214,8 @@ reboot_once_dont_wrap() {
 }
 
 # up-to-date CMake setup, assuming Ubuntu
-# Usage: ensure_latest_cmake <ubuntu_distro_codename>
-ensure_latest_cmake() {
+# Usage: ensure_pinned_cmake <ubuntu_distro_codename> <cmake_pinned_version>
+ensure_pinned_cmake() {
 
     _kitware_test_file="/usr/share/doc/kitware-archive-keyring/copyright"
     _kitware_signing_file="/usr/share/keyrings/kitware-archive-keyring.gpg"
@@ -234,7 +234,7 @@ ensure_latest_cmake() {
     sudo --set-home apt-get update
     test -f "${_kitware_test_file}" || sudo --set-home rm "${_kitware_signing_file}"
     sudo --set-home apt-get install --assume-yes --reinstall kitware-archive-keyring
-    sudo --set-home apt-get install --assume-yes cmake
+    sudo --set-home apt-get install --assume-yes "cmake=$2"
    
 }
 

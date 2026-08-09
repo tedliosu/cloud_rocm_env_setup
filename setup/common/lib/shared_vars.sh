@@ -32,6 +32,8 @@ export CUPY_PIN_VER_TAG="v14.1.1"
 export ONEAPI_TBB_PIN_VER="2023.0"
 export ONEAPI_TCM_PIN_VER="1.5"
 
+export CMAKE_APT_PIN_VER="4.4.2-0kitware1ubuntu24.04.1"
+
 export FASTFETCH_PIN_VER="2.62.1"
 export FASTFETCH_DEB_FILENAME="fastfetch-linux-amd64.deb"
 
