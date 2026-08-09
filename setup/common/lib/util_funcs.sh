@@ -335,7 +335,7 @@ ensure_base_dl_virtualenv() {
 
 # Install GPGPU python arrays projects' required packages into a virtualenv
 # Usage: ensure_gpu_arr_virtualenv <gpu_arr_virtenv_dirpath> <cloned_cupy_dirpath> \
-#            <non_cupy_requirements_txt_path>
+#            <non_cupy_requirements_txt_path> <cupy_version_tag>
 ensure_gpu_arr_virtualenv() {
 
     _gfx11_fallback_arch="gfx1100"
@@ -347,7 +347,8 @@ ensure_gpu_arr_virtualenv() {
     pip install --upgrade pip
     pip install --requirement "$3"
     test -d "$2" && guarded_rm_rf "$2"
-    git clone --branch=v14 https://github.com/cupy/cupy.git "$2"
+    git clone https://github.com/cupy/cupy.git "$2"
+    git -C "$2" -c advice.detachedHead=false checkout "$4"
     git -C "$2" submodule update --init --recursive
     ROCM_HOME="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
         echo "FAILED to detect 'ROCM_HOME'!" >&2

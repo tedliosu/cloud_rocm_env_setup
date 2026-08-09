@@ -91,7 +91,7 @@ run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}
 
 if (( DO_CUPY_ENV )); then
     run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
-        "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}"
+        "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}" "${CUPY_PIN_VER_TAG}"
 fi
 
 if (( DO_COMFYUI_ADDONS )); then

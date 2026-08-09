@@ -50,7 +50,6 @@
 
 # TODOs
 
-- Refactor installation logic of CuPy into virtualenv with build logging once an updated version has been released with appropriate patches; make sure that CuPy version is parameterized with respect to function used to perform installation!
 - Add following concept to documentation:
     - If a stage fails:
         - inspect and resolve the error
