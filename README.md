@@ -50,40 +50,123 @@
 
 # TODOs
 
-- Add following concept to documentation:
-    - If a stage fails:
-        - inspect and resolve the error
-        - delete the affected venv/repo directory if needed
-        - delete the relevant .done marker to force rerun
-        - rerun the script to skip completed stages
-- "Exception ignored `ImportError`" message of `filelock` package experienced during shutdown of ComfyUI (as of version 0.19.0) via `CTRL+C` in the terminal on Azure Pro V710 instances is a confirmed issue; apparently according to [this GitHub issue comment](https://github.com/Comfy-Org/ComfyUI/issues/12846#issuecomment-4029573105) it is just 'Python dependency noise' and not any kind of real software breakage.
-    - Testing confirms that starting up ComfyUI again after shutting down with the `ImportError` message does not result in any corruption of model weights or workflows.
-    - User is still strongly recommended to save all open workflows before exiting the ComfyUI Web UI and shutting down the ComfyUI server.
-- Clarify the following in this repository's documentation:
-    - add instructions on how to use this repository, as well as how to do the manual setup and validation steps like ollama and final comfyui steps
-    - Add note that links to custom public projects will be added to this repo when the public project is ready to be showcased in relation to this repository
-    - add a table of contents with links if documentation gets too long for a single file
-    - add in contributing section that issues are welcome but pull request are currently not accepted due to not enough bandwidth to review them, but that may change moving forward
-    - preliminary testing with building hipDF locally on rocm 7.1.1 and 7.2.0 i.e. versions newer than the validated rocm 7.0.2, revealed ecosystem drift related compatibility issues that caused build errors during the building of the hipDF c++ engine; therefore this repo intentionally excludes building hipDF from source because trying to install an older ROCm version on a system with ROCm libraries already installed may lead to packages stomping from personal experience, and forward porting hipDF to be compatible with newer ROCm versions consumes too much bandwidth.
-    - Average expected time taken to do minimal vs full setup and validation for both instance types
-    - Some Hot Aisle VM instances, due to pre-installed kernel upgrades, will require manual confirmation from user to proceed during a standard `apt-get upgrade`.
-    - On Azure Pro V710 VM instances, PyTorch (as of version 2.11.x) will throw a warning about experimental attention implementation support that can be enabled with appropriate environment variable; this repository intentionally does not enable that experimental feature out-of-the-box and leaves enabling it up to the end user.
-    - Since CuPy must usually be built from source for support with latest ROCm version pre-installed in the cloud VM(s), as well as for architectures that are less commonly validated upstream like the Pro V710's `gfx1101`, this repository does NOT attempt to install CuPy from pre-built wheels to standardize environment setup.
-        - However, this trade-off comes at a cost of not being able to use the `HSA_OVERRIDE_GFX_VERSION` environment variable to do tasks like checking for architecture-specific behaviors within a given architecture family (e.g. RDNA 3, CDNA 3, etc.)
-        - Therefore, setting the environment variable `CUPY_BUILD_GFX11_FALLBACK=1` when running the environment setup main script will trigger the environment setup logic for CuPy to build for `gfx1100` as well, whenever the setup logic has detected that the native architecture being built for is `gfx1101`.
-            - From personal experience, `gfx1101` and `gfx1102` are the only confirmed architectures in the RDNA 3 family (not to be confused with RDNA *3.5*, such as `gfx1151`) which work out of the box directly with standard ROCm user-land and DKMS installations (as of ROCm 7.2.x)
-            - However, from personal experience, there are no cloud vendors hosting `gfx1102` GPUs, and `gfx1102` is supported by a even smaller fraction of ROCm components compared to `gfx1101` (e.g. no `libhipcxx` support without source modifications); thus support for building CuPy for `gfx1100` simultaneously when building for `gfx1102` has NOT been included
-                - In addition, testing as of ROCm 7.x has revealed that on certain `gfx1101` cards like the Pro V710 available in Azure VMs, hipBLAS/rocBLAS will with some certain problem shapes select very sub-optimal GEMM kernels for the native architecture when performing operations like `matmul` in CuPy.
-                - To force more optimal kernel selection on such cards, not only `HSA_OVERRIDE_GFX_VERSION=11.0.0` must be set when running CuPy, but also CuPy must already be built for `gfx1100`; otherwise CuPy will segfault during runtime from personal experience.
-        - Please note that when the native HIP architecture is `gfx1101` AND building CuPy for `gfx1100` simultaneously during environment setup has been already requested, NONE of the proceeding automated validation logic attempts to check by default if the resulting CuPy binaries will support running with the `HSA_OVERRIDE_GFX_VERSION=11.0.0` environment variable setting.
-            - This is intentional, because currently there is no known documented way to independently confirm what HIP architectures CuPy was built for in an automated way reliably from the resulting CuPy build itself.
-            - (Also document here how user can sanity check for themselves using the 'cupy_numpy_smoke.py' script whether `HSA_OVERRIDE_GFX_VERSION=11.0.0` will crash CuPy during runtime.)
-        - Please note that there are NO additional environment variables equivalent to `CUPY_BUILD_GFX11_FALLBACK` for non-RDNA 3 architecture families like CDNA 3 (e.g. `gfx942`) and RDNA 2 (e.g. `gfx1030`) that affects the environment setup logic for CuPy in this repository
-            - There is only one valid HIP architecture target in the CDNA 3 family that is currently in production hardware, i.e. `gfx942`, and building CuPy with HIP architectures during environment setup which don't share the same family as the GPU architectures of the target cloud environments of this repository is outside this repository's scope.
-    - Since this repository does not assume that user will provide HuggingFace API token(s) when doing environment setup, warning about unauthenticated requests to the HF Hub is to be expected under such a 'non-assumption'.
-        - User may register API tokens on cloud environment if user wishes to do so, but user MUST understand the security implications of such an action beforehand.
-    - For VM instances like Azure Pro V710, where the user can specify to install `fastfetch` from official GitHub releases directly during the environment setup process, the proceeding environment validation script(s) do NOT automate the validation process of a successful custom `fastfetch` install, since `fastfetch` is NOT a utility that is required for the supported workloads advertised
-        - Nonetheless, user may directly run the `fastfetch` command manually after fastfetch is installed and set-up to check that the installation and set-up was done correctly.
+## Current Focus
+
+### Quick Start and Common Use Path
+
+- [ ] Add instructions for using this repository:
+    - Document the setup command for each supported provider.
+    - Explain `--show-plan-only` and the optional setup flags.
+    - Explain expected reboot and rerun behavior.
+    - Document the standard validation command and optional validation flags.
+    - Document the manual Ollama setup and validation path.
+    - Document the final manual ComfyUI setup and validation steps.
+
+### Recovery and Resumability
+
+- [ ] Document recovery from a failed setup stage:
+    - Inspect and resolve the original error.
+    - Identify the virtual environment, repository clone, or other artifacts owned by the failed stage.
+    - Delete stage-owned artifacts only when rebuilding them is necessary.
+    - Delete only the relevant `.done` marker to force that stage to rerun.
+    - Rerun the setup script so completed stages remain skipped.
+    - Document the exact marker and artifact locations instead of recommending broad directory deletion.
+
+- [ ] Document approximate setup and validation times:
+    - Minimal setup and validation on Hot Aisle MI300X.
+    - Full setup and validation on Hot Aisle MI300X.
+    - Minimal setup and validation on Azure Pro V710.
+    - Full setup and validation on Azure Pro V710.
+    - Present these as rough observations rather than guarantees.
+
+## Known Compatibility Notes
+
+### ComfyUI
+
+- [ ] Revalidate and document the `filelock` shutdown warning observed with ComfyUI version 0.19.0 on Azure Pro V710:
+    - An `Exception ignored ImportError` message may appear when stopping ComfyUI with `CTRL+C`.
+    - Previous testing found no resulting corruption of model weights or workflows.
+    - Users should still save open workflows before exiting the Web UI or stopping the server.
+    - Confirm that the [linked upstream issue comment](https://github.com/Comfy-Org/ComfyUI/issues/12846#issuecomment-4029573105) still supports describing this as harmless Python dependency noise.
+
+### Hot Aisle System Updates
+
+- [ ] Document that some Hot Aisle VM images may require user confirmation during `apt-get upgrade` because of preinstalled kernel upgrades.
+    - Revalidate this behavior against the current noninteractive upgrade logic before publishing the note.
+
+### Azure PyTorch Attention
+
+- [ ] Document the experimental attention warning emitted by PyTorch 2.11.x on Azure Pro V710.
+    - Explain that the repository intentionally leaves the experimental attention implementation disabled by default.
+    - Treat enabling it as an optional per-workload experiment.
+
+### hipDF
+
+- [ ] Document why hipDF source builds are excluded from the supported bootstrap:
+    - Local testing found compatibility failures across newer ROCm ecosystem combinations.
+    - Installing an older ROCm stack over provider-installed ROCm libraries risks package conflicts or package stomping.
+    - Forward-porting hipDF and maintaining downstream compatibility patches is outside the repository's scope.
+    - Keep any packaged hipDF validation on an explicitly aligned environment separate from the supported Hot Aisle and Azure baseline.
+
+## CuPy Build and Architecture Behavior
+
+- [ ] Document why CuPy is built from source:
+    - Current ROCm versions and less commonly validated targets such as Azure Pro V710 `gfx1101` may not be adequately supported by prebuilt wheels.
+    - The source build uses the native detected HIP architecture by default.
+
+- [ ] Document `CUPY_BUILD_GFX11_FALLBACK=1`:
+    - When the native architecture is `gfx1101`, this option also builds CuPy for `gfx1100`.
+    - This makes an optional `HSA_OVERRIDE_GFX_VERSION=11.0.0` experiment possible because the required `gfx1100` code objects are present.
+    - Without compatible code objects, using the override may cause a segmentation fault or another runtime failure.
+    - Never enable the HSA override by default.
+
+- [ ] Document the motivation and limits of the `gfx1100` fallback:
+    - Some tested `gfx1101` problem shapes selected substantially slower native rocBLAS or hipBLAS kernels.
+    - Treat override-assisted results as optional compatibility or performance experiments, not baseline validation results.
+    - Do not promise that the override improves every workload.
+
+- [ ] Document the automated validation boundary:
+    - Default validation does not run CuPy with `HSA_OVERRIDE_GFX_VERSION=11.0.0`.
+    - Validation of the dual-target build is left to the user because there is currently no known documented and reliable way to independently determine, from the resulting CuPy build itself, which HIP architectures were compiled into it.
+    - Document how users can manually run `cupy_numpy_smoke.py` with the override as a runtime sanity check.
+    - Make clear that this manual check confirms only whether the tested workload runs successfully. It does not independently enumerate or verify every architecture compiled into CuPy.
+    - Warn that running with an incompatible override may cause a segmentation fault or another runtime failure.
+
+- [ ] Document the exact architecture scope of the dual-target build:
+    - `CUPY_BUILD_GFX11_FALLBACK=1` adds `gfx1100` only when the detected native architecture is `gfx1101`.
+    - Other RDNA 3 targets, including discrete GPU targets such as `gfx1102` and integrated GPU targets such as `gfx1103` and `gfx1104`, do not receive the same dual-target build behavior.
+    - There are no equivalent fallback environment variables for those targets or for other architecture families.
+    - Broader support for these architectures in newer ROCm releases does not imply support by this repository's CuPy build logic.
+    - This repository currently limits the fallback behavior to the validated Azure Pro V710 `gfx1101` use case.
+    - Supporting additional targets should require a validated repository use case rather than being added solely for architecture-family symmetry.
+
+## Expected Warnings and Optional Utilities
+
+### Hugging Face Hub
+
+- [ ] Document that unauthenticated Hugging Face Hub warnings are expected:
+    - Environment setup does not assume that the user will provide an API token.
+    - Users may configure a token manually after considering the security implications of storing credentials on a cloud VM.
+
+### fastfetch
+
+- [ ] Document the fastfetch validation boundary:
+    - Azure users may optionally install fastfetch from an official GitHub release during setup.
+    - fastfetch is not required by any supported workload, so the main validation script does not validate it.
+    - Users can run `fastfetch` manually to confirm the optional installation.
+
+## Project Information
+
+- [ ] Add a note that links to custom public projects will be added when those projects are ready to be showcased with this repository.
+
+- [ ] Add a contributing section:
+    - Issues are welcome.
+    - Pull requests are not currently accepted because of limited review bandwidth.
+    - This policy may change in the future.
+
+## Conditional Documentation Maintenance
+
+- [ ] Add a linked table of contents if the README becomes too long to navigate comfortably.
 
 # LLM Assistance Usage Disclaimer
 
