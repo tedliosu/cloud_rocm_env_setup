@@ -52,15 +52,56 @@
 
 ## Current Focus
 
-### Quick Start and Common Use Path
+### Hot Aisle UFW Setup and Validation
 
-- [ ] Add instructions for using this repository:
-    - Document the setup command for each supported provider.
+- [ ] Establish and validate the baseline Hot Aisle host-firewall state:
+    - Account for Hot Aisle Ubuntu 24.04 images where UFW is installed but inactive by default.
+    - Ensure UFW is installed before attempting to configure it.
+    - Set the default incoming policy to deny.
+    - Set the default outgoing policy to allow.
+    - Allow TCP port 22 for SSH before enabling UFW.
+    - Make the setup behavior idempotent.
+    - Do not reset UFW or remove unrelated existing firewall rules.
+    - Keep source-IP allowlisting, dynamic DNS, and VPN infrastructure outside this repository's scope.
+    - Report UFW active state, incoming default policy, outgoing default policy, and SSH/TCP port 22 allowance as separate validation results.
+    - Preserve those fields in future structured receipt output without making receipt implementation part of this task.
+
+### CuPy Build Logging
+
+- [ ] Preserve the full CuPy source and wheel build output in an explicit build log:
+    - Store the log in the existing setup logs location.
+    - Keep enough live terminal output to show that the build is progressing.
+    - If the build fails, print the log path and a useful tail or other bounded failure context.
+    - Preserve the underlying build command's exit status when logging its output.
+
+### hipCollections Aggregation Methodology
+
+- [ ] Update the planned hipCollections aggregation methodology and documentation:
+    - Prefer host-bulk `insert_or_apply` for the planned `static_map` aggregation workload.
+    - Avoid using a custom kernel-embedded aggregation implementation as the primary methodology.
+    - Explain that this reduces benchmarking confounds caused by custom implementation skill rather than the library primitive itself.
+    - Do not redesign the existing `STATIC_MAP_HOST_BULK_EXAMPLE` smoke test solely for this documentation change.
+
+### Hot Aisle Quick Start and Common Use Path
+
+- [ ] Add instructions for using this repository on Hot Aisle MI300X:
+    - Document the Hot Aisle setup command.
     - Explain `--show-plan-only` and the optional setup flags.
     - Explain expected reboot and rerun behavior.
     - Document the standard validation command and optional validation flags.
     - Document the manual Ollama setup and validation path.
     - Document the final manual ComfyUI setup and validation steps.
+
+### Planned CuPy Custom-Kernel Validation Coverage
+
+- [ ] After the Hot Aisle Quick Start is complete, add a richer CuPy custom-kernel smoke test:
+    - Cover representative custom and JIT-compiled kernel capabilities required by the supported CuPy Canny workload.
+    - Exercise templates and `atomicCAS`.
+    - Exercise both 32-bit and 64-bit integer paths, including behavior relevant to `int32` and `uint64`.
+    - Scope the exact coverage across `ElementwiseKernel`, `RawKernel`, and `RawModule` during implementation based on the smallest representative tests for the supported workload.
+    - Treat a failure as a potential CuPy, ROCm, compiler, or runtime compatibility defect rather than assuming it is specific to this repository.
+    - Keep the test small and deterministic so that it remains appropriate for environment smoke validation.
+    - Do not make completing this coverage a prerequisite for publishing the Hot Aisle Quick Start.
 
 ### Recovery and Resumability
 
@@ -165,6 +206,8 @@
     - This policy may change in the future.
 
 ## Conditional Documentation Maintenance
+
+- [ ] After the Hot Aisle common-use path is established, add equivalent Azure Pro V710 setup and validation instructions.
 
 - [ ] Add a linked table of contents if the README becomes too long to navigate comfortably.
 
