@@ -235,7 +235,7 @@ ensure_pinned_cmake() {
     test -f "${_kitware_test_file}" || sudo --set-home rm "${_kitware_signing_file}"
     sudo --set-home apt-get install --assume-yes --reinstall kitware-archive-keyring
     sudo --set-home apt-get install --assume-yes "cmake=$2"
-   
+
 }
 
 # Newest Intel oneAPI TBB libraries setup, assuming Ubuntu
