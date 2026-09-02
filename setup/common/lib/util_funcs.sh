@@ -267,9 +267,12 @@ ensure_apt_with_custom_conf() {
         echo "FAILED to retrieve apt packages list!" >&2
         exit 1
     }
-    _w3m_hidden_dir="$1/.w3m"
-    mkdir --parent "${_w3m_hidden_dir}"
-    touch "${_w3m_hidden_dir}/history"
+    _w3m_hidden_dirname=".w3m"
+    _w3m_hist_filename="history"
+    mkdir --parent "$1/${_w3m_hidden_dirname}"
+    sudo --set-home mkdir --parent "/root/${_w3m_hidden_dirname}"
+    touch "$1/${_w3m_hidden_dirname}/${_w3m_hist_filename}"
+    sudo --set-home touch "/root/${_w3m_hidden_dirname}/${_w3m_hist_filename}"
     # safe because apt package names each NEVER contain whitespace(s)
     # shellcheck disable=SC2086
     sudo --set-home apt-get install --assume-yes ${_common_apt_packages} w3m apt-file
