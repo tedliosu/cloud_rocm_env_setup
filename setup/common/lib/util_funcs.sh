@@ -5,6 +5,31 @@
 #    '../../*/bin' relative to this script!
 . "../../../lib/comm_util_funcs.sh"
 
+# Any reference of "BASELINE" below means REPO-SPECIFIC DEFINED BASELINE!
+readonly _UFW_INSTALLED_FRESH="UFW_FRESH"
+readonly _UFW_KNOWN_BASELINE="UFW_BASELINE"
+readonly _UFW_CUSTOM_STATE="UFW_CUSTOM_STAT"
+readonly _UFW_UNK_STATE="UFW_UNKNOWN_STAT"
+# Trailing whitespace in this is INTENTIONAL for fingerprinting!
+readonly _UFW_BASELINE_STATUS_CONTENTS="Status: active
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW       Anywhere                  
+22/tcp (v6)                ALLOW       Anywhere (v6)             "
+readonly _UFW_FRESH_STATUS_CONTENTS="Status: inactive"
+readonly _UFW_BASELINE_ADDED_CONTENTS="Added user rules (see 'ufw status' for running firewall):
+ufw allow 22/tcp"
+readonly _UFW_FRESH_ADDED_CONTENTS="Added user rules (see 'ufw status' for running firewall):
+(None)"
+readonly _UFW_EXPECTED_DEFAULTS_CONTENTS="IPV6=yes
+DEFAULT_INPUT_POLICY=\"DROP\"
+DEFAULT_OUTPUT_POLICY=\"ACCEPT\"
+DEFAULT_FORWARD_POLICY=\"DROP\"
+DEFAULT_APPLICATION_POLICY=\"SKIP\""
+readonly _NEWLINE='
+'
+
 # Helper function to run a stage
 # Usage: run_stage <milestones_directory_path> <function_to_run> [function_arguments]...
 run_stage() {
@@ -39,6 +64,243 @@ run_stage() {
     fi
 
 }
+
+# Check that the collected /etc/default/ufw values contain each expected key
+#     exactly once.
+# Usage: _ufw_defaults_are_interpretable <collected_default_values>
+# Returns: 0 if the collected values are interpretable; 1 otherwise
+_ufw_defaults_are_interpretable() {
+
+    [ "$(printf "%s\n" "${1}" | wc -l)" -eq 5 ] || return 1
+
+    [ "$(printf "%s\n" "${1}" |
+        grep --extended-regexp --count '^IPV6=(yes|no)$')" -eq 1 ] || return 1
+
+    for _ufw_default_key in DEFAULT_INPUT_POLICY DEFAULT_OUTPUT_POLICY \
+        DEFAULT_FORWARD_POLICY; do
+        [ "$(printf "%s\n" "${1}" |
+            grep --extended-regexp --count \
+                "^${_ufw_default_key}=\"(ACCEPT|DROP|REJECT)\"$")" -eq 1 ] ||
+            return 1
+    done
+
+    [ "$(printf "%s\n" "${1}" |
+        grep --extended-regexp --count \
+            '^DEFAULT_APPLICATION_POLICY="(ACCEPT|DROP|REJECT|SKIP)"$')" -eq 1 ] ||
+        return 1
+
+}
+
+# Classify separately collected UFW observations. The classification is printed
+#     to stdout; this function does not return it by mutating caller state.
+# Usage: _classify_ufw_state <ufw_status> <ufw_show_added> <ufw_defaults>
+# Returns: 0 after printing the UFW classification
+_classify_ufw_state() {
+
+    if [ "${1}" = "${_UFW_BASELINE_STATUS_CONTENTS}" ] &&
+        [ "${2}" = "${_UFW_BASELINE_ADDED_CONTENTS}" ] &&
+        [ "${3}" = "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" ]; then
+        printf "%s\n" "${_UFW_KNOWN_BASELINE}"
+        return 0
+    elif [ "${1}" = "${_UFW_FRESH_STATUS_CONTENTS}" ] &&
+        [ "${2}" = "${_UFW_FRESH_ADDED_CONTENTS}" ] &&
+        [ "${3}" = "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" ]; then
+        printf "%s\n" "${_UFW_INSTALLED_FRESH}"
+        return 0
+    fi
+
+    case $(printf "%s\n" "${1}" | sed -n '1p') in
+        "Status: active"|"Status: inactive")
+            if _ufw_defaults_are_interpretable "${3}"; then
+                printf "%s\n" "${_UFW_CUSTOM_STATE}"
+            else
+                printf "%s\n" "${_UFW_UNK_STATE}"
+            fi
+            ;;
+        *)
+            printf "%s\n" "${_UFW_UNK_STATE}"
+            ;;
+    esac
+
+}
+
+# Print the collected UFW observations without attempting to interpret arbitrary
+#     custom rules.
+# Usage: _print_ufw_diagnostics <classification> <ufw_status> <ufw_show_added> \
+#                                  <ufw_defaults>
+# Returns: 0 after printing the collected UFW diagnostics
+_print_ufw_diagnostics() {
+
+    printf '%s\n' "--- WARNING: UFW classification is ${1} ---" >&2
+    printf '%s\n' "--- collected 'ufw status' output is ---" >&2
+    printf '%s\n' "${2}" >&2
+    printf '%s\n' "--- collected 'ufw show added' output is ---" >&2
+    printf '%s\n' "${3}" >&2
+    printf '%s\n' "--- collected /etc/default/ufw values are ---" >&2
+    printf '%s\n' "${4}" >&2
+    printf '%s\n' "--- EXPECTED UFW baseline is ---" >&2
+    printf '%s\n' "${_UFW_BASELINE_STATUS_CONTENTS}" >&2
+    printf '%s\n' "${_UFW_BASELINE_ADDED_CONTENTS}" >&2
+    printf '%s\n' "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" >&2
+    printf '%s\n' "--- NOT modifying current UFW state! ---" >&2
+
+    dpkg-query --show \
+        --showformat='--- INFO: UFW detected dpkg version: ${Version} ---\n' \
+        ufw 2>/dev/null || :
+
+}
+
+# Confirm that SSH_CONNECTION contains exactly four non-empty fields on one line
+#     and that its server-side port is the project baseline port, TCP/22.
+# Usage: _current_ssh_connection_uses_port_22 <ssh_connection_value>
+# Returns: 0 if SSH_CONNECTION is valid and uses server port 22; 1 otherwise
+_current_ssh_connection_uses_port_22() {
+
+    case ${1} in
+        *"${_NEWLINE}"*)
+            echo "ERROR: SSH_CONNECTION must not contain multiple lines!" >&2
+            return 1
+            ;;
+    esac
+
+    if ! printf "%s\n" "${1}" |
+        grep --extended-regexp --line-regexp --quiet \
+            '[^[:blank:]]+([[:blank:]]+[^[:blank:]]+){3}'; then
+        echo "ERROR: SSH_CONNECTION should contain exactly 4" >&2
+        echo "    non-empty fields all on the same line!" >&2
+        return 1
+    fi
+
+    set -- "${1}" "$(printf "%s\n" "${1}" | awk '{ print $4 }')"
+    if [ "${2}" != "22" ]; then
+        echo "--- WARNING: expected current SSH server port is 22 ---" >&2
+        echo "---     got port ${2} instead ---" >&2
+        echo "--- NOT modifying current UFW state! ---" >&2
+        return 1
+    fi
+
+}
+
+# Check whether the UFW baseline is already satisfied or can be safely applied,
+#     and apply it only from the exact known FRESH state.
+# This top-level function owns the script's collected-observation working values.
+# Usage: no arguments required
+# Returns: 0 for plan-only, BASELINE, CUSTOM, or successfully initialized FRESH;
+#          1 for UNKNOWN or any unsafe/failed initialization condition
+check_n_apply_ufw_base_or_warn_dont_wrap() (
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would inspect current UFW state and apply the project"
+        echo "[PLAN ONLY]     firewall baseline only from a known fresh state."
+        return 0
+    fi
+
+    # Keep command output used for exact UFW comparisons stable without changing
+    #     the locale of unrelated setup stages.
+    LC_ALL=C
+    export LC_ALL
+
+    if ! command -v ufw >/dev/null 2>&1; then
+        echo "UFW installation NOT detected; proceeding to install 'ufw'..."
+        if ! sudo --set-home apt-get install --assume-yes ufw; then
+            echo "ERROR: unable to install 'ufw'!" >&2
+            return 1
+        fi
+    fi
+
+    if ! _collected_ufw_status=$(sudo --set-home ufw status 2>/dev/null) ||
+        ! _collected_ufw_added=$(sudo --set-home ufw show added 2>/dev/null) ||
+        ! _collected_ufw_defaults=$(sudo --set-home \
+            grep --extended-regexp \
+                '^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)=' \
+                /etc/default/ufw 2>/dev/null); then
+        echo "ERROR: unable to collect current UFW state!" >&2
+        echo "   Please check output of each of following commands manually:" >&2
+        echo "     1. sudo -H ufw status" >&2
+        echo "     2. sudo -H ufw show added" >&2
+        echo "     3. sudo -H grep -E '^(IPV6|DEFAULT_.*_POLICY)=' /etc/default/ufw" >&2
+        return 1
+    fi
+    _ufw_classification=$(_classify_ufw_state "${_collected_ufw_status}" \
+        "${_collected_ufw_added}" "${_collected_ufw_defaults}")
+
+    dpkg-query --show \
+        --showformat='INFO: detected Ubuntu UFW package version: ${Version}.\n' \
+        ufw 2>/dev/null || :
+
+    case ${_ufw_classification} in
+        "${_UFW_KNOWN_BASELINE}")
+            echo "UFW baseline state already in effect; not modifying current UFW state..."
+            return 0
+            ;;
+        "${_UFW_INSTALLED_FRESH}")
+            echo "UFW is in a known fresh state; proceeding to apply a sane UFW baseline state..."
+            ;;
+        "${_UFW_CUSTOM_STATE}")
+            _print_ufw_diagnostics "${_ufw_classification}" \
+                "${_collected_ufw_status}" "${_collected_ufw_added}" \
+                "${_collected_ufw_defaults}"
+            return 0
+            ;;
+        "${_UFW_UNK_STATE}")
+            _print_ufw_diagnostics "${_ufw_classification}" \
+                "${_collected_ufw_status}" "${_collected_ufw_added}" \
+                "${_collected_ufw_defaults}"
+            return 1
+            ;;
+        *)
+            echo "ERROR: internal UFW classification failure!" >&2
+            return 1
+            ;;
+    esac
+
+    if ! _current_ssh_connection_uses_port_22 "${SSH_CONNECTION-}"; then
+        return 1
+    fi
+
+    echo "Configuring UFW baseline from known good fresh state..."
+    if ! sudo --set-home ufw allow 22/tcp; then
+        echo "ERROR: unable to add the UFW TCP/22 allow rule!" >&2
+        return 1
+    elif ! sudo --set-home ufw default allow outgoing; then
+        echo "ERROR: unable to set the UFW default outgoing policy!" >&2
+        echo "WARNING: UFW may now be in a partial custom state; no rollback was attempted." >&2
+        return 1
+    elif ! sudo --set-home ufw default deny incoming; then
+        echo "ERROR: unable to set the UFW default incoming policy!" >&2
+        echo "WARNING: UFW may now be in a partial custom state; no rollback was attempted." >&2
+        return 1
+    elif ! sudo --set-home ufw --force enable; then
+        echo "ERROR: unable to enable UFW!" >&2
+        echo "WARNING: UFW may now be in a partial custom state; no rollback was attempted." >&2
+        return 1
+    fi
+    echo "UFW baseline configuration commands completed."
+
+    if ! _collected_ufw_status=$(sudo --set-home ufw status 2>/dev/null) ||
+        ! _collected_ufw_added=$(sudo --set-home ufw show added 2>/dev/null) ||
+        ! _collected_ufw_defaults=$(sudo --set-home \
+            grep --extended-regexp \
+                '^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)=' \
+                /etc/default/ufw 2>/dev/null); then
+        echo "ERROR: unable to collect UFW state after baseline configuration!" >&2
+        return 1
+    fi
+    _ufw_classification=$(_classify_ufw_state "${_collected_ufw_status}" \
+        "${_collected_ufw_added}" "${_collected_ufw_defaults}")
+
+    if [ "${_ufw_classification}" = "${_UFW_KNOWN_BASELINE}" ]; then
+        echo "UFW baseline configuration sanity check passed!"
+        return 0
+    fi
+
+    echo "ERROR: UFW baseline configuration sanity check failed!" >&2
+    _print_ufw_diagnostics "${_ufw_classification}" \
+        "${_collected_ufw_status}" "${_collected_ufw_added}" \
+        "${_collected_ufw_defaults}"
+    return 1
+
+)
 
 # Add user echo'ed by 'logname' to 'video' and 'render' groups if the
 #     user is not in those groups already, and then reboot the system

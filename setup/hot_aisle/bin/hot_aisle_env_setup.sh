@@ -68,6 +68,7 @@ AFTER_COMFYUI_LOG_PATH="$(realpath "${POST_COMFYUI_PIP_FREEZE_RECS}")"
 
 
 # BEGIN "MAIN"
+check_n_apply_ufw_base_or_warn_dont_wrap
 if ! check_wget_fetch_dont_wrap "${FASTFETCH_PPA_URL}"; then
     echo "WARNING: due to PPA reachability issues, proceeding" >&2
     echo "    as if '${FASTF_PPA_DISABLE_FLAG}' flag was passed to" >&2
