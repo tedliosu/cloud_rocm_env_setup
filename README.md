@@ -79,14 +79,6 @@
     - Keep the test small and deterministic so that it remains appropriate for environment smoke validation.
     - Do not make completing this coverage a prerequisite for publishing the Hot Aisle Quick Start.
 
-### CuPy Build Logging
-
-- [ ] Preserve the full CuPy source and wheel build output in an explicit build log:
-    - Store the log in the existing setup logs location.
-    - Keep enough live terminal output to show that the build is progressing.
-    - If the build fails, print the log path and a useful tail or other bounded failure context.
-    - Preserve the underlying build command's exit status when logging its output.
-
 ### hipCollections Aggregation Methodology
 
 - [ ] Update the planned hipCollections aggregation methodology and documentation:

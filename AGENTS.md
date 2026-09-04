@@ -229,9 +229,9 @@ existing architecture handling. The experimental AMD DevCloud packaged
 environment instead uses packaged `amd-cupy`. Do not force either installation
 model onto the other environments merely for structural consistency.
 
-When implementing the README build-logging task for the source-build paths,
-retain the underlying build exit status, keep a full explicit log, provide
-useful bounded failure context, and avoid hiding all progress from the terminal.
+For the source-build paths, retain the underlying CuPy build exit status, keep
+a full explicit log, provide useful bounded failure context, and avoid hiding
+all progress from the terminal.
 
 ## hipCollections and hipDF boundaries
 
