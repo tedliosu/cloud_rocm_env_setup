@@ -15,6 +15,7 @@
 - Bundling in this repository of any actual code for the workloads listed in [Target Workloads](#target-workloads), whether the workloads are public OR private
 - Redistribution of proprietary drivers, runtimes, binaries, and source code
 - Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
+- General-purpose firewall reconciliation, source-IP allowlisting, dynamic DNS, or VPN infrastructure
 
 # Target Workloads
 
@@ -51,20 +52,6 @@
 # TODOs
 
 ## Current Focus
-
-### Hot Aisle UFW Setup and Validation
-
-- [ ] Establish and validate the baseline Hot Aisle host-firewall state:
-    - Account for Hot Aisle Ubuntu 24.04 images where UFW is installed but inactive by default.
-    - Ensure UFW is installed before attempting to configure it.
-    - Set the default incoming policy to deny.
-    - Set the default outgoing policy to allow.
-    - Allow TCP port 22 for SSH before enabling UFW.
-    - Make the setup behavior idempotent.
-    - Do not reset UFW or remove unrelated existing firewall rules.
-    - Keep source-IP allowlisting, dynamic DNS, and VPN infrastructure outside this repository's scope.
-    - Report UFW active state, incoming default policy, outgoing default policy, and SSH/TCP port 22 allowance as separate validation results.
-    - Preserve those fields in future structured receipt output without making receipt implementation part of this task.
 
 ### CuPy Build Logging
 
@@ -208,6 +195,8 @@
 ## Conditional Documentation Maintenance
 
 - [ ] After the Hot Aisle common-use path is established, add equivalent Azure Pro V710 setup and validation instructions.
+
+- [ ] Add structured validation receipt output, including the shared UFW classification, after a common summary and reporting design is justified.
 
 - [ ] Add a linked table of contents if the README becomes too long to navigate comfortably.
 
