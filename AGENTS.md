@@ -46,6 +46,21 @@ reference to separate future work. Structured validation receipts and the
 general firewall-management non-goal are examples of information that was
 preserved this way.
 
+## Context-compaction durability
+
+Agents may not have reliable access to the client's live context-usage counter
+or exact compaction threshold. When the maintainer reports high context usage,
+or when an agent detects that conversation compaction has occurred, audit newly
+established durable decisions against current Git, `README.md`, and `AGENTS.md`
+before beginning the next substantial task.
+
+Context pressure alone does not authorize repository edits. If durable
+information is missing, propose the smallest appropriate README or AGENTS
+change and preserve the normal review and approval gate. Do not create raw
+conversation dumps, parallel backlogs, or speculative TODOs merely to preserve
+chat context. Do not rewrite information that Git or existing documentation
+already records adequately.
+
 ## Project contract
 
 This repository bootstraps and smoke-validates practical ROCm cloud VMs for
