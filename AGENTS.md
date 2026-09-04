@@ -210,10 +210,17 @@ The custom CuPy Canny workload critically depends on custom and JIT-compiled
 CuPy primitives. Templates, `atomicCAS`, and both 32-bit and 64-bit integer
 paths are required compatibility coverage, not optional feature exploration.
 
-Keep the eventual smoke small and deterministic, but do not minimize it until
-it stops representing the required workload capabilities. Scope the precise
-division among `ElementwiseKernel`, `RawKernel`, and `RawModule` during
-implementation rather than declaring one interface in advance.
+The implemented smoke uses one primitive-level `ElementwiseKernel`, not a
+miniature union-connect or connected-components algorithm. It runs both a tiny
+deterministic semantic case and a million-attempt scale case for `int32`,
+`int64`, and high-range `uint64` values. Preserve its independent NumPy
+references for final values and `atomicCAS` returned-old-value counts. Do not
+expand it into CCL, root chasing, hysteresis, or performance benchmarking.
+
+On ROCm 7.2 HIPRTC, the smoke deliberately uses the version-sensitive
+`__hip_internal` type traits without a fallback that could hide interface
+drift. Its CUDA NVRTC branch uses `cuda::std` traits as an inexpensive local
+development check. A CUDA pass does not substitute for ROCm acceptance.
 
 A failure may identify a CuPy, ROCm, compiler, or runtime defect affecting
 other users. Do not automatically dismiss it as an application-only problem.

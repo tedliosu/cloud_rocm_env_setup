@@ -62,22 +62,20 @@
     - Target one known MI300X environment and a fixed or constrained package recipe rather than arbitrary ROCm and package combinations.
     - Probe and record the actual OS, ROCm, Python, `amd-cupy`, and `amd-hipcim` versions in a version-stamped environment record.
     - Add a small packaged hipCIM correctness smoke relevant to the supported Canny workload.
-    - Run the Canny-critical CuPy custom-kernel smoke once it is implemented, without bundling the application project itself.
+    - Run the implemented Canny-critical CuPy custom-kernel smoke without bundling the application project itself.
     - Fail clearly when the known environment or package assumptions no longer hold.
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
     - Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
-### Canny-Critical CuPy Custom-Kernel Validation Coverage
+### Canny-Critical CuPy Custom-Kernel ROCm Acceptance
 
-- [ ] Add a richer CuPy custom-kernel smoke test for capabilities required by the supported CuPy Canny workload:
-    - Cover representative custom and JIT-compiled kernel capabilities required by the supported CuPy Canny workload.
-    - Exercise templates and `atomicCAS`.
-    - Exercise both 32-bit and 64-bit integer paths, including behavior relevant to `int32` and `uint64`.
-    - Scope the exact coverage across `ElementwiseKernel`, `RawKernel`, and `RawModule` during implementation based on the smallest representative tests for the supported workload.
-    - Treat this as validation of required supported-workload primitives rather than optional feature exploration.
+- [ ] Validate the implemented CuPy custom-kernel smoke on Hot Aisle MI300X with the supported ROCm 7.2 and source-built CuPy path:
+    - Confirm that HIPRTC compiles the intentional version-sensitive `__hip_internal` trait path.
+    - Run the tiny semantic and million-attempt scale `atomicCAS` cases for `int32`, `int64`, and high-range `uint64` values against their deterministic NumPy references.
+    - Treat the completed local CUDA/NVRTC run as implementation evidence rather than a substitute for ROCm acceptance.
     - Treat a failure as a potential CuPy, ROCm, compiler, or runtime compatibility defect rather than assuming it is specific to this repository.
-    - Keep the test small and deterministic so that it remains appropriate for environment smoke validation.
-    - Do not make completing this coverage a prerequisite for publishing the Hot Aisle Quick Start.
+    - Do not expand the smoke into CCL, root chasing, hysteresis, or performance benchmarking.
+    - Do not make the pending ROCm acceptance a prerequisite for publishing the Hot Aisle Quick Start.
 
 ### hipCollections Aggregation Methodology
 
