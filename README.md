@@ -53,6 +53,31 @@
 
 ## Current Focus
 
+### Experimental AMD DevCloud hipCIM and CuPy Path
+
+- [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
+    - Keep AMD DevCloud instance provisioning manual.
+    - Automate the demonstrated in-VM bare-OS ROCm and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path.
+    - Target one known MI300X environment and a fixed or constrained package recipe rather than arbitrary ROCm and package combinations.
+    - Probe and record the actual OS, ROCm, Python, `amd-cupy`, and `amd-hipcim` versions in a version-stamped environment record.
+    - Add a small packaged hipCIM correctness smoke relevant to the supported Canny workload.
+    - Run the Canny-critical CuPy custom-kernel smoke once it is implemented, without bundling the application project itself.
+    - Fail clearly when the known environment or package assumptions no longer hold.
+    - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
+    - Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
+
+### Canny-Critical CuPy Custom-Kernel Validation Coverage
+
+- [ ] Add a richer CuPy custom-kernel smoke test for capabilities required by the supported CuPy Canny workload:
+    - Cover representative custom and JIT-compiled kernel capabilities required by the supported CuPy Canny workload.
+    - Exercise templates and `atomicCAS`.
+    - Exercise both 32-bit and 64-bit integer paths, including behavior relevant to `int32` and `uint64`.
+    - Scope the exact coverage across `ElementwiseKernel`, `RawKernel`, and `RawModule` during implementation based on the smallest representative tests for the supported workload.
+    - Treat this as validation of required supported-workload primitives rather than optional feature exploration.
+    - Treat a failure as a potential CuPy, ROCm, compiler, or runtime compatibility defect rather than assuming it is specific to this repository.
+    - Keep the test small and deterministic so that it remains appropriate for environment smoke validation.
+    - Do not make completing this coverage a prerequisite for publishing the Hot Aisle Quick Start.
+
 ### CuPy Build Logging
 
 - [ ] Preserve the full CuPy source and wheel build output in an explicit build log:
@@ -78,17 +103,6 @@
     - Document the standard validation command and optional validation flags.
     - Document the manual Ollama setup and validation path.
     - Document the final manual ComfyUI setup and validation steps.
-
-### Planned CuPy Custom-Kernel Validation Coverage
-
-- [ ] After the Hot Aisle Quick Start is complete, add a richer CuPy custom-kernel smoke test:
-    - Cover representative custom and JIT-compiled kernel capabilities required by the supported CuPy Canny workload.
-    - Exercise templates and `atomicCAS`.
-    - Exercise both 32-bit and 64-bit integer paths, including behavior relevant to `int32` and `uint64`.
-    - Scope the exact coverage across `ElementwiseKernel`, `RawKernel`, and `RawModule` during implementation based on the smallest representative tests for the supported workload.
-    - Treat a failure as a potential CuPy, ROCm, compiler, or runtime compatibility defect rather than assuming it is specific to this repository.
-    - Keep the test small and deterministic so that it remains appropriate for environment smoke validation.
-    - Do not make completing this coverage a prerequisite for publishing the Hot Aisle Quick Start.
 
 ### Recovery and Resumability
 
@@ -134,7 +148,7 @@
     - Local testing found compatibility failures across newer ROCm ecosystem combinations.
     - Installing an older ROCm stack over provider-installed ROCm libraries risks package conflicts or package stomping.
     - Forward-porting hipDF and maintaining downstream compatibility patches is outside the repository's scope.
-    - Keep any packaged hipDF validation on an explicitly aligned environment separate from the supported Hot Aisle and Azure baseline.
+    - Keep packaged hipDF validation as a possible later extension of the explicitly aligned experimental AMD DevCloud path, separate from the supported Hot Aisle and Azure baseline.
 
 ## CuPy Build and Architecture Behavior
 
