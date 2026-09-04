@@ -1,0 +1,461 @@
+# Repository Agent Instructions
+
+These instructions apply to the entire repository. They are intended to remain
+useful even when no prior conversation or external recovery context is
+available.
+
+## Sources of truth and context recovery
+
+1. Read this file and the complete top-level `README.md` before planning work.
+2. Treat the current Git repository as authoritative for implementation and
+   commit state. Historical conversation summaries describe intent, not proof
+   that a change was applied.
+3. Treat the organized `README.md` TODO section as the single canonical
+   technical backlog and its ordering as the current priority order.
+4. Do not create `TODO.md`, maintain a parallel backlog in another file, or
+   rely on chat memory as the only record of open work.
+5. External recovery notes, receipts, and conversations may be supplied by the
+   maintainer, but the repository must not require files outside the checkout
+   to understand its supported behavior or current backlog.
+6. If external context conflicts with committed code, report the discrepancy.
+   Do not silently assume the external description was implemented.
+7. Newer dated receipts supersede older planning assumptions about the same
+   environment or decision. Preserve version-specific findings as historical
+   evidence rather than permanent project requirements.
+
+`AGENTS.md` is a maintained working agreement, not an immutable historical
+record. Update it through the same review and approval workflow when durable
+scope decisions, realistic effort estimates, maintainer availability
+constraints, or repository practices materially change. Treat estimates as
+planning aids rather than commitments, and qualify or remove them when they
+become stale. Such updates must not create a parallel technical backlog or
+silently override current committed behavior.
+
+When removing a completed README TODO, inspect every nested bullet first and
+classify it as one of the following:
+
+- completed implementation or documentation that can be removed from the
+  active backlog;
+- a durable scope or safety boundary that belongs in `Guarantees`,
+  `Non-Goals`, or user documentation;
+- a separate deferred task that must remain in the backlog;
+- wording superseded by a later decision that should be removed.
+
+Do not let completing a parent TODO accidentally delete the repository's only
+reference to separate future work. Structured validation receipts and the
+general firewall-management non-goal are examples of information that was
+preserved this way.
+
+## Project contract
+
+This repository bootstraps and smoke-validates practical ROCm cloud VMs for
+ML and GPGPU development. It should answer whether a supported environment can
+run the repository's small HIP, PyTorch, CuPy, Triton, ComfyUI, and selected
+optional validation paths without obvious stack breakage.
+
+Keep the repository narrow:
+
+- It is a VM bootstrap and smoke-validation project.
+- It is not production infrastructure as code.
+- It is not a general cloud orchestrator.
+- It is not a benchmark framework.
+- It is not a downstream ROCm distribution or compatibility solver.
+- It does not promise support for every ROCm release, GPU architecture, or
+  package combination.
+- It does not bundle the application projects named as supported workloads.
+
+The maintainer has limited bandwidth while completing a master's program.
+Prefer the smallest reproducible change that improves setup, validation,
+diagnostics, or documentation. If a change begins turning into its own
+subsystem, stop and reconsider its scope.
+
+Useful runtime targets are approximately:
+
+- baseline setup plus validation: around 20 minutes on a healthy VM;
+- setup with optional components plus validation: preferably no more than
+  around 40 minutes;
+- validation on an already provisioned VM: approximately 3 to 5 minutes.
+
+These are rough planning targets, not performance guarantees.
+
+## Provider boundaries
+
+### Supported environments
+
+The supported cloud environments are:
+
+- Hot Aisle single-GPU MI300X, `gfx942`, as the primary high-throughput target;
+- Azure `Standard_NV24ads_V710_v5`, Radeon Pro V710 MxGPU, `gfx1101`, as an
+  optional compatibility and fallback target.
+
+Keep provider orchestration explicit in the corresponding setup scripts.
+Share only boring primitives through common utility files. Do not replace the
+provider scripts with a generic multi-cloud framework.
+
+Cloud images change. Probe the actual OS, kernel, ROCm path, driver, GPU
+architecture, and relevant package versions. Do not turn an observed image
+version into a permanent cross-provider assumption. Unknown but plausible
+provider versions should normally be reported and validated rather than
+automatically downgraded.
+
+### Experimental AMD DevCloud path
+
+AMD DevCloud is not currently part of the Hot Aisle and Azure guarantee. Its
+legitimate role is a narrow experimental MI300X environment for packaged AMD
+hipCIM, CuPy, and, only when genuinely needed, packaged hipDF components.
+
+Preserve these boundaries:
+
+- AMD DevCloud instance provisioning remains manual.
+- Automate only the demonstrated in-VM bare-OS ROCm and packaged environment.
+- Target one known MI300X environment and a fixed or constrained recipe.
+- Probe and record the actual environment and package versions.
+- Fail clearly when the known assumptions stop holding.
+- Do not require feature parity with Hot Aisle or Azure.
+- Do not support arbitrary ROCm and Python package matrices.
+- Do not source-build or forward-port hipDF.
+- Do not create or maintain a downstream GPU-library patch collection for this
+  path.
+
+The README records a prospective Canny presentation use case. Do not assume
+that presentation is confirmed or that the maintainer is continuously
+available before its date. Ask for current scheduling context before turning
+that possibility into a deadline-driven expansion.
+
+## Closed decisions that must not be reopened implicitly
+
+### RX 7600 XT retirement
+
+The RX 7600 XT `gfx1102` desktop is retired inventory awaiting sale or handoff,
+not an active ROCm workstation.
+
+- Do not recommend additional local `gfx1102` testing as a prerequisite for
+  retirement or sale.
+- Do not make repository work depend on restoring that machine.
+- Do not repeat the already completed cloud-substitution drill.
+- Sale listing, pricing, packaging, and handoff are personal logistics, not
+  repository tasks.
+
+### Hot Aisle substitution and profiling
+
+The Hot Aisle MI300X substitution and hardware-counter profiling question has
+been answered sufficiently. Do not repeat it merely to reconfirm retirement.
+
+Observed `rocprof-compute` behavior from ROCm 7.2.4 and profiler 3.4.0 was
+version-specific. In particular, isolated Python dependencies, a pandas 2.3.3
+workaround, ROCPD use, application replay behavior, and analyzer warnings must
+not become permanent bootstrap assumptions.
+
+`rocprof-compute` automation is deferred, not permanently prohibited. If a
+future project genuinely requires repeatable MI-series profiling, a small
+version-aware helper may be worthwhile after probing the then-current tools.
+It must not delay the current bootstrap, documentation, or experimental
+DevCloud work.
+
+The longer-term H200 versus MI300X execution-motif study belongs in a separate
+project. Do not turn it into this repository's backlog unless the maintainer
+explicitly changes scope.
+
+## Baseline versus experimental behavior
+
+Baseline validation must use the native detected architecture and ordinary
+provider-supported environment. Experimental knobs and performance results
+must be opt-in and labeled non-baseline.
+
+Never enable `HSA_OVERRIDE_GFX_VERSION` by default. It changes the architecture
+reported to the runtime but does not create missing code objects. An override
+can cause segmentation faults, invalid-device-function failures, or other
+runtime errors when binaries were not compiled for the reported target.
+
+The optional Azure CuPy `gfx1101` plus `gfx1100` build is an intentional narrow
+compatibility and performance mechanism. Do not generalize it to `gfx1102`,
+`gfx1103`, `gfx1104`, other RDNA targets, or unrelated architecture families
+without a validated repository use case.
+
+Do not silently let an externally set HSA override contaminate a baseline
+result. Follow the README's documented validation boundary and keep any manual
+override-assisted smoke explicitly experimental.
+
+Treat `ROCBLAS_USE_HIPBLASLT` as a version- and architecture-sensitive
+performance option, not a correctness requirement or universal speedup.
+
+## Canny and CuPy validation
+
+The custom CuPy Canny workload critically depends on custom and JIT-compiled
+CuPy primitives. Templates, `atomicCAS`, and both 32-bit and 64-bit integer
+paths are required compatibility coverage, not optional feature exploration.
+
+Keep the eventual smoke small and deterministic, but do not minimize it until
+it stops representing the required workload capabilities. Scope the precise
+division among `ElementwiseKernel`, `RawKernel`, and `RawModule` during
+implementation rather than declaring one interface in advance.
+
+A failure may identify a CuPy, ROCm, compiler, or runtime defect affecting
+other users. Do not automatically dismiss it as an application-only problem.
+The packaged hipCIM correctness smoke and the custom CuPy primitive smoke answer
+different questions; one must not be used as a substitute for the other.
+
+Do not copy the full Canny application into this repository. Application work
+belongs in its own project.
+
+CuPy is intentionally built from source for the current environments. Preserve
+the pinned source-build behavior and architecture handling. When implementing
+the README build-logging task, retain the underlying build exit status, keep a
+full explicit log, provide useful bounded failure context, and avoid hiding all
+progress from the terminal.
+
+## hipCollections and hipDF boundaries
+
+The current hipCollections validation smoke uses the
+`STATIC_MAP_HOST_BULK_EXAMPLE`. Do not redesign that smoke merely to satisfy
+the separate aggregation-methodology documentation task.
+
+For planned aggregation methodology, prefer host-bulk `insert_or_apply` over a
+custom kernel-embedded aggregation implementation. This reduces benchmarking
+confounds caused by custom implementation skill rather than the library
+primitive itself.
+
+Preserve immutable hipCollections and ROCmDS-CMake dependency pins and the
+purpose of narrow compatibility patches. Do not remove an ugly workaround only
+because cleaner-looking code seems possible. First identify the validated
+compatibility reason and test the replacement on the relevant targets.
+
+Packaged hipDF on an explicitly aligned experimental environment is distinct
+from hipDF source builds. Source-building, forward-porting, and maintaining
+rocThrust, rocPRIM, libhipcxx, or hipDF compatibility patches remain outside
+the supported baseline and normal maintenance budget.
+
+## UFW safety contract
+
+Hot Aisle and Azure both invoke the shared conservative UFW initializer. Azure
+network security controls are defense in depth, not a replacement for the
+guest firewall. Future providers may skip or relax guest-firewall validation
+when UFW is unavailable or not user-controlled.
+
+The UFW state model is intentionally narrow:
+
+- `FRESH`: UFW is installed, exactly inactive, has no UFW-added user rules,
+  and has the expected package-default policies. Only this state may be
+  modified automatically.
+- `BASELINE`: UFW is exactly active, has default-deny incoming and
+  default-allow outgoing policies, and has exactly the project-created TCP/22
+  rule set. This state is a no-op.
+- `CUSTOM`: UFW output is interpretable but differs from FRESH and the exact
+  project baseline. Preserve it and report diagnostics.
+- `UNKNOWN`: required output cannot be interpreted confidently. Preserve it,
+  report diagnostics, and refuse automatic firewall changes.
+
+The governing principle is:
+
+```text
+recognize EMPTY state
+recognize OUR exact baseline
+otherwise hands off
+```
+
+The complete known `ufw status` output is deliberately part of the exact FRESH
+and BASELINE fingerprints, alongside `ufw show added` and the selected
+`/etc/default/ufw` values. Do not replace that recognition with first-line-only
+status parsing unless the maintainer explicitly reopens this decision. An
+output or formatting change conservatively producing a non-baseline
+classification is an acceptable false negative; recognizing changed behavior
+as the known baseline is not.
+
+Do not build a general UFW reconciliation engine. Do not reset UFW, delete or
+reorder existing rules, broaden restricted SSH access, loosen default-deny
+outgoing configurations, or repair active custom configurations.
+
+Use exact C-locale interfaces for classification. Do not use fuzzy checks such
+as `grep active`, because `inactive` contains `active`. Prefer exact status
+lines, `ufw show added`, and exact values from `/etc/default/ufw`. Parsing
+failure must reduce confidence and must never increase willingness to modify.
+
+Before initializing FRESH state over SSH, use the current SSH session to verify
+that the server-side port is TCP/22. Do not discover an arbitrary SSH port and
+adopt it as a new project baseline. Apply changes in this order:
+
+1. allow TCP/22;
+2. set default allow outgoing;
+3. set default deny incoming;
+4. enable UFW.
+
+If UFW is missing, refresh APT metadata only on that missing-package path before
+installing it. Do not force an extra metadata refresh when UFW is already
+installed, and do not add cache-age tracking without a demonstrated need.
+
+UFW validation shares the setup classifier and remains observational:
+
+- default strict mode: only BASELINE passes;
+- `--relax-ufw-checks`: classify and report every state without gating the
+  overall validation run;
+- `--skip-ufw-checks`: perform and report no UFW validation;
+- skip and relax are mutually exclusive.
+
+Do not restore the old fuzzy active-state check or automatic repair guidance.
+Do not add independent semantic parsing for active state, policies, or TCP/22
+beyond the inputs required by the shared classifier.
+
+## Bash and repository structure conventions
+
+Preserve existing code style unless it interferes with correctness, safety, or
+the explicit task. Do not opportunistically normalize surrounding Bash.
+
+- Constants belong near the top of the appropriate file.
+- Constants tightly coupled to common classifier functions may remain beside
+  those functions; do not create `comm_shared_vars.sh` merely for structural
+  symmetry.
+- Functions used across file boundaries must not use a leading underscore.
+- Private helpers and private working variables may use leading underscores.
+- Prefer braced variable references, especially for private variables.
+- Document function arguments using the surrounding `# Usage:` style and add
+  concise `# Returns:` documentation when return status is meaningful.
+- Existing setup entry scripts intentionally use a marked main section instead
+  of a `main` function. Do not begin new setup actions before that marker.
+- Idempotent checks that must run on every invocation should normally remain
+  outside milestone-wrapped stages.
+- Non-stage setup helpers follow the existing `_dont_wrap` suffix convention.
+- Keep locale changes scoped with a subshell when exact parsing requires
+  `LC_ALL=C`, unless the repository later adopts an explicit global locale
+  contract.
+- Avoid implied cross-function global mutation when numbered arguments and
+  printed return values remain simple.
+- Avoid magic sentinel strings for unavailable observations.
+- Account for `set -euo pipefail`, pipeline status, command-substitution status,
+  and commands that may legitimately return nonzero.
+- Preserve the underlying command's exit status when adding logging pipelines.
+
+Use Bash where the existing runner requires Bash. POSIX-compatible helper code
+is welcome when it remains natural, but do not refactor working Bash merely to
+claim POSIX compliance.
+
+## System safety and package handling
+
+Provider-supported OS, driver, kernel, and APT state should remain conservative.
+
+- Do not casually downgrade or mix system ROCm package generations.
+- Do not globally replace ROCm libraries, TBB, or dynamic-linker configuration
+  when a local environment or narrow wrapper is sufficient.
+- Do not make Docker mandatory. The provider VM and its host ROCm stack are
+  part of the validation target.
+- Use timeouts selectively for network fetches, package operations, clones,
+  downloads, or commands known to block. Do not put timeouts around everything.
+- Treat optional repository failures separately from core Ubuntu, AMD, or
+  provider failures.
+- Never recommend broad artifact deletion for stage recovery. Identify the
+  exact stage marker and artifacts owned by that stage.
+
+Ollama installation and model pulls remain manual because mutable registry
+artifacts cannot currently be pinned reliably enough for the bootstrap
+contract. Fastfetch remains optional and outside workload validation.
+
+## Validation and evidence rules
+
+Setup success is not equivalent to workload success. Validate important
+packages by importing and exercising them with a small real workload.
+
+Prefer:
+
+```text
+probe -> run small real workload -> record result -> document limitation
+```
+
+over:
+
+```text
+assume -> abstract -> generalize -> discover drift later
+```
+
+Keep baseline validation fast, deterministic, and native. Optional or
+experimental checks must be clearly separated and must not contaminate baseline
+claims.
+
+Keep the main validator provider-neutral and capability-oriented across Hot
+Aisle, Azure, and potentially AMD DevCloud. Provider or environment
+fingerprints should mainly determine whether checks are applicable rather than
+create separate provider-specific validation implementations. Add provider
+specialization only when a concrete environmental difference requires it.
+
+Receipts should record observed reality rather than force historical versions.
+The general structured receipt and validation-summary design is deferred until
+it is justified. A narrow experimental path may still record a simple
+version-stamped environment record without first building a general receipt
+framework.
+
+Do not canonize observed cloud performance numbers as guarantees. Distinguish
+cold-start, JIT, and cache effects from steady-state measurements when timing
+is relevant.
+
+## Editing and review workflow
+
+Before editing:
+
+1. inspect `git status`, the relevant committed code, and the README backlog;
+2. determine what is already implemented;
+3. state the smallest expected file and diff boundary;
+4. identify any deviation from a previously reviewed prototype or behavior;
+5. ask for approval first when the maintainer requested a plan or review gate.
+
+When a proposed action, pause, refusal, or scope boundary materially follows
+from this file or the README, identify the relevant section and briefly connect
+it to the decision. This is especially important when a request appears to
+conflict with an approval gate, safety boundary, closed decision, or canonical
+backlog priority. Do not add citations mechanically to every routine action
+when they would not improve clarity.
+
+During editing:
+
+- Use the smallest coherent diff.
+- Preserve unrelated user changes in a dirty worktree.
+- Do not modify files outside the repository unless explicitly authorized.
+- Do not create multiple backup, context, or TODO files inside the repository
+  as an alternative to Git.
+- Do not use stashes unless they materially simplify a real conflict, and do
+  not create a pile of stashes.
+- Keep setup, validation, documentation, and provider-policy changes in focused
+  commits when their behavior and rollback boundaries differ.
+
+After editing:
+
+- show or summarize the exact diff for maintainer review;
+- run `git diff --check`;
+- run syntax checks for changed shell and Python files;
+- run ShellCheck consistently with the repository's sourced-file structure;
+- test important state matrices with mocks when live cloud access is unnecessary;
+- use a supported cloud instance only when local or mocked checks can no longer
+  answer the acceptance question;
+- do not make expensive cloud testing the first iteration step;
+- do not stage, commit, or push unless explicitly authorized.
+
+The maintainer commonly reviews `git diff` in another terminal before allowing
+staging. Respect that pause. When authorized to commit, stage only the reviewed
+files and inspect the staged diff before committing. When authorized to push,
+verify the intended commits and remote branch first.
+
+Use concise commit titles and explanatory body paragraphs consistent with
+recent repository history. For commits co-authored with Codex, preserve the
+established closing clause:
+
+```text
+Co-authored by Yensong Ted Li and Codex
+```
+
+Never push merely because a commit was requested. Push only when the maintainer
+explicitly authorizes it.
+
+## Completion and handoff checklist
+
+Before claiming a task complete:
+
+1. verify the requested behavior, not just syntax;
+2. confirm no unrelated files changed;
+3. reconcile the README backlog with the completed work;
+4. preserve any nested deferred task or durable non-goal before removing a
+   completed TODO;
+5. report tests that ran and important tests that still require a real provider;
+6. distinguish committed, staged, unstaged, and pushed state precisely;
+7. leave the next task governed by the README rather than inventing a parallel
+   plan from historical context.
+
+If a task would require new authority, a broader maintenance promise, or a
+material change to the README's current ordering, stop and ask the maintainer
+instead of inferring permission.
