@@ -92,6 +92,12 @@ Keep provider orchestration explicit in the corresponding setup scripts.
 Share only boring primitives through common utility files. Do not replace the
 provider scripts with a generic multi-cloud framework.
 
+When documenting manual provider-side provisioning, prefer one CLI path as
+canonical when practical because it is searchable, copyable, and reviewable.
+GUI or TUI instructions may be optional convenience guidance, but do not
+maintain two equally authoritative provisioning workflows without a
+demonstrated user need.
+
 Cloud images change. Probe the actual OS, kernel, ROCm path, driver, GPU
 architecture, and relevant package versions. Do not turn an observed image
 version into a permanent cross-provider assumption. Unknown but plausible

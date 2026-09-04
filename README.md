@@ -143,6 +143,14 @@
     - Explain that the repository intentionally leaves the experimental attention implementation disabled by default.
     - Treat enabling it as an optional per-workload experiment.
 
+### Azure Non-Root System Log Access
+
+- [ ] Audit whether the ordinary Azure bootstrap user can inspect system logs needed for routine ROCm and cloud debugging without routinely using sudo:
+    - Test the required `journalctl` access on the current Azure image.
+    - Treat non-root log access as the behavioral requirement rather than assuming a particular group is sufficient.
+    - Inspect the current group and ACL behavior; do not assume membership in `adm` alone solves it.
+    - Keep this as a bounded permissions audit rather than a general Linux authorization framework.
+
 ### hipDF
 
 - [ ] Document why hipDF source builds are excluded from the supported bootstrap:
