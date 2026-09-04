@@ -130,15 +130,19 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
             echo "UFW is in a known fresh state; proceeding to apply a sane UFW baseline state..."
             ;;
         "${UFW_CUSTOM_STATE}")
-            print_ufw_diagnostics "${_ufw_classification}" \
-                "${_collected_ufw_status}" "${_collected_ufw_added}" \
+            printf '%s\n' "--- WARNING: UFW classification is ${_ufw_classification} ---" >&2
+            print_ufw_diagnostics "${_collected_ufw_status}" \
+                "${_collected_ufw_added}" \
                 "${_collected_ufw_defaults}"
+            printf '%s\n' "--- NOT modifying current UFW state! ---" >&2
             return 0
             ;;
         "${UFW_UNK_STATE}")
-            print_ufw_diagnostics "${_ufw_classification}" \
-                "${_collected_ufw_status}" "${_collected_ufw_added}" \
+            printf '%s\n' "--- WARNING: UFW classification is ${_ufw_classification} ---" >&2
+            print_ufw_diagnostics "${_collected_ufw_status}" \
+                "${_collected_ufw_added}" \
                 "${_collected_ufw_defaults}"
+            printf '%s\n' "--- NOT modifying current UFW state! ---" >&2
             return 1
             ;;
         *)
@@ -188,8 +192,9 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
     fi
 
     echo "ERROR: UFW baseline configuration sanity check failed!" >&2
-    print_ufw_diagnostics "${_ufw_classification}" \
-        "${_collected_ufw_status}" "${_collected_ufw_added}" \
+    printf '%s\n' "--- WARNING: UFW classification is ${_ufw_classification} ---" >&2
+    print_ufw_diagnostics "${_collected_ufw_status}" \
+        "${_collected_ufw_added}" \
         "${_collected_ufw_defaults}"
     return 1
 

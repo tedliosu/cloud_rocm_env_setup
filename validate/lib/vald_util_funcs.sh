@@ -8,6 +8,97 @@
 #    '../bin' relative to this script!
 . "../../lib/comm_util_funcs.sh"
 
+_FALSE_NUM_VAL=0
+
+# Validate environment UFW configuration status
+# Usage: validate_ufw_config <strict_mode_flag>
+# Returns: with strict checking, 0 only for the known UFW baseline; with relaxed
+#     checking, 0 after reporting any UFW classification
+validate_ufw_config() (
+
+    # Keep command output used for exact UFW comparisons stable without changing
+    #     the locale of unrelated validation stages.
+    LC_ALL=C
+    export LC_ALL
+
+    if ! _collected_ufw_status=$(sudo --set-home ufw status 2>/dev/null) ||
+        ! _collected_ufw_added=$(sudo --set-home ufw show added 2>/dev/null) ||
+        ! _collected_ufw_defaults=$(sudo --set-home \
+            grep --extended-regexp \
+                '^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)=' \
+                /etc/default/ufw 2>/dev/null); then
+        if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+            echo "ERROR: UFW classification is ${UFW_UNK_STATE}; unable to collect current UFW state!" >&2
+        else
+            echo "WARN: UFW classification is ${UFW_UNK_STATE}; relaxed checking is enabled!" >&2
+        fi
+        echo "   Please check output of each of following commands manually:" >&2
+        echo "     1. sudo -H ufw status" >&2
+        echo "     2. sudo -H ufw show added" >&2
+        echo "     3. sudo -H grep -E '^(IPV6|DEFAULT_.*_POLICY)=' /etc/default/ufw" >&2
+        if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+            return 1
+        fi
+        return 0
+    fi
+    _ufw_classification=$(classify_ufw_state "${_collected_ufw_status}" \
+        "${_collected_ufw_added}" "${_collected_ufw_defaults}")
+
+    case ${_ufw_classification} in
+        "${UFW_KNOWN_BASELINE}")
+            echo "PASSED: UFW classification is ${_ufw_classification}!"
+            return 0
+            ;;
+        "${UFW_INSTALLED_FRESH}")
+            if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+                echo "ERROR: UFW classification is ${_ufw_classification}; strict checking requires ${UFW_KNOWN_BASELINE}!" >&2
+            else
+                echo "WARN: UFW classification is ${_ufw_classification}; relaxed checking is enabled!" >&2
+            fi
+            print_ufw_diagnostics "${_collected_ufw_status}" \
+                "${_collected_ufw_added}" \
+                "${_collected_ufw_defaults}"
+            if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+                return 1
+            fi
+            return 0
+            ;;
+        "${UFW_CUSTOM_STATE}")
+            if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+                echo "ERROR: UFW classification is ${_ufw_classification}; strict checking requires ${UFW_KNOWN_BASELINE}!" >&2
+            else
+                echo "WARN: UFW classification is ${_ufw_classification}; relaxed checking is enabled!" >&2
+            fi
+            print_ufw_diagnostics "${_collected_ufw_status}" \
+                "${_collected_ufw_added}" \
+                "${_collected_ufw_defaults}"
+            if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+                return 1
+            fi
+            return 0
+            ;;
+        "${UFW_UNK_STATE}")
+            if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+                echo "ERROR: UFW classification is ${_ufw_classification}; strict checking requires ${UFW_KNOWN_BASELINE}!" >&2
+            else
+                echo "WARN: UFW classification is ${_ufw_classification}; relaxed checking is enabled!" >&2
+            fi
+            print_ufw_diagnostics "${_collected_ufw_status}" \
+                "${_collected_ufw_added}" \
+                "${_collected_ufw_defaults}"
+            if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
+                return 1
+            fi
+            return 0
+            ;;
+        *)
+            echo "ERROR: internal UFW classification failure!" >&2
+            return 1
+            ;;
+    esac
+
+)
+
 # Validate Triton JIT works and resulting kernel runs using upstream Triton fp16 GEMM
 #     tutorial code
 # Usage: validate_basic_triton <cloned_triton_repo_dirpath> <cloned_triton_repo_branch_id> \

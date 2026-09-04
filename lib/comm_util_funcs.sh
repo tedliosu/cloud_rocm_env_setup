@@ -83,23 +83,20 @@ classify_ufw_state() {
 
 # Print the collected UFW observations without attempting to interpret arbitrary
 #     custom rules.
-# Usage: print_ufw_diagnostics <classification> <ufw_status> <ufw_show_added> \
-#                              <ufw_defaults>
+# Usage: print_ufw_diagnostics <ufw_status> <ufw_show_added> <ufw_defaults>
 # Returns: 0 after printing the collected UFW diagnostics
 print_ufw_diagnostics() {
 
-    printf '%s\n' "--- WARNING: UFW classification is ${1} ---" >&2
     printf '%s\n' "--- collected 'ufw status' output is ---" >&2
-    printf '%s\n' "${2}" >&2
+    printf '%s\n' "${1}" >&2
     printf '%s\n' "--- collected 'ufw show added' output is ---" >&2
-    printf '%s\n' "${3}" >&2
+    printf '%s\n' "${2}" >&2
     printf '%s\n' "--- collected /etc/default/ufw values are ---" >&2
-    printf '%s\n' "${4}" >&2
+    printf '%s\n' "${3}" >&2
     printf '%s\n' "--- EXPECTED UFW baseline is ---" >&2
     printf '%s\n' "${_UFW_BASELINE_STATUS_CONTENTS}" >&2
     printf '%s\n' "${_UFW_BASELINE_ADDED_CONTENTS}" >&2
     printf '%s\n' "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" >&2
-    printf '%s\n' "--- NOT modifying current UFW state! ---" >&2
 
     dpkg-query --show \
         --showformat='--- INFO: UFW detected dpkg version: ${Version} ---\n' \

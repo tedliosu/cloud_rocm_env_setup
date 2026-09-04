@@ -4,14 +4,17 @@ set -euo pipefail
 
 CHECK_CUPY_FLAG="--fail-on-no-cupy"
 CHECK_COMFYUI_FLAG="--fail-on-no-comfyui"
-CHECK_UFW_FLAG="--fail-on-no-ufw"
+SKIP_UFW_CHECKS_FLAG="--skip-ufw-checks"
+RELAX_UFW_CHECKS_FLAG="--relax-ufw-checks"
 DO_CUPY_CHECK=0
 DO_COMFYUI_CHECK=0
-DO_UFW_CHECK=0
+DO_UFW_CHECK=1
+STRICT_UFW_CHECK=1
 
 usage() {
-    echo "Usage: $0 [$CHECK_CUPY_FLAG] [$CHECK_COMFYUI_FLAG] [$CHECK_UFW_FLAG] [-h|--help]"
-    exit 0
+    echo -n "Usage: $0 [$CHECK_CUPY_FLAG] [$CHECK_COMFYUI_FLAG] "
+    echo "[$SKIP_UFW_CHECKS_FLAG|$RELAX_UFW_CHECKS_FLAG] [-h|--help]"
+    echo "NOTE: $SKIP_UFW_CHECKS_FLAG and $RELAX_UFW_CHECKS_FLAG are mutually exclusive"
 }
 
 # Parse args
@@ -19,11 +22,18 @@ while [[ "$#" -gt 0 ]]; do
   case "$1" in
     "$CHECK_CUPY_FLAG") DO_CUPY_CHECK=1; shift;;
     "$CHECK_COMFYUI_FLAG") DO_COMFYUI_CHECK=1; shift;;
-    "$CHECK_UFW_FLAG") DO_UFW_CHECK=1; shift;;
-    -h|--help) usage;;
-    *) usage;;
+    "$SKIP_UFW_CHECKS_FLAG") DO_UFW_CHECK=0; shift;;
+    "$RELAX_UFW_CHECKS_FLAG") STRICT_UFW_CHECK=0; shift;;
+    -h|--help) usage; exit 0;;
+    *) usage; exit 1;;
   esac
 done
+
+if (( ! DO_UFW_CHECK && ! STRICT_UFW_CHECK )); then
+    echo "ERROR: $SKIP_UFW_CHECKS_FLAG and $RELAX_UFW_CHECKS_FLAG are mutually exclusive" >&2
+    usage
+    exit 1
+fi
 
 # Enforce CWD is the directory that this script resides in
 OLD_CWDIR="$(pwd -P)" || {
@@ -50,6 +60,10 @@ COMFYUI_WORKFLOW_PATH="$(realpath "${FLUX_1_DEV_WORKFLOW_RELPATH}")"
 
 
 # BEGIN "MAIN"
+if (( DO_UFW_CHECK )); then
+    echo "Please enter sudo password when prompted!"
+    validate_ufw_config "${STRICT_UFW_CHECK}"
+fi
 _ACTIV_SRC_SCRIPT_RELPATH="bin/activate"
 _HIPCC_INIT_SMOKE_EXE="hipcc_smoke"
 _CHECKPOINTS_DIR_RELPATH="models/checkpoints"
@@ -139,35 +153,6 @@ elif (( DO_COMFYUI_CHECK )); then
 else
     echo "local ComfyUI cloned repostiory and" \
         "${CHECK_COMFYUI_FLAG} flag both not detected,"
-    echo "skipping associated validations..."
-fi
-if which ufw >/dev/null; then
-    echo "Please enter sudo password when prompted!"
-    UFW_STATUS_OUTPUT="$(sudo --set-home ufw status)" || {
-        echo "FAILURE: 'ufw status' command returned non-zero exit code!" >&2
-        exit 1
-    }
-    if echo "$UFW_STATUS_OUTPUT" | \
-        grep --ignore-case --extended-regexp \
-                --quiet "status:[[:space:]]+active"; then
-        echo "$UFW_STATUS_OUTPUT"
-        echo "PASS active 'ufw' check!"
-    else
-        echo "WARNING: 'ufw' installed but no active 'ufw' detected! instead got:"
-        echo "$UFW_STATUS_OUTPUT"
-        echo "if this was unintended, please run the following commands in the"
-        echo "    following order if applicable (without the single quotes):"
-        echo "    1. 'sudo -H ufw default deny incoming'"
-        echo "    2. 'sudo -H ufw default allow outgoing'"
-        echo "    3. 'sudo -H ufw allow ssh'"
-        echo "    4. 'sudo -H ufw enable'"
-    fi
-elif (( DO_UFW_CHECK )); then
-    echo "FAILED to detect a working ufw installation," >&2
-    echo "(${CHECK_UFW_FLAG} flag detected)!" >&2
-    exit 1
-else
-    echo "'ufw' binary and ${CHECK_UFW_FLAG} flag both not detected,"
     echo "skipping associated validations..."
 fi
 
