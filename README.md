@@ -58,6 +58,7 @@
 - [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
     - Keep AMD DevCloud instance provisioning manual.
     - Automate the demonstrated in-VM bare-OS ROCm and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path.
+    - Use an ordinary Python virtual environment with pip and packaged `amd-cupy`; do not source-build ordinary CuPy or introduce Conda merely for consistency with another environment.
     - Target one known MI300X environment and a fixed or constrained package recipe rather than arbitrary ROCm and package combinations.
     - Probe and record the actual OS, ROCm, Python, `amd-cupy`, and `amd-hipcim` versions in a version-stamped environment record.
     - Add a small packaged hipCIM correctness smoke relevant to the supported Canny workload.
@@ -152,7 +153,7 @@
 
 ## CuPy Build and Architecture Behavior
 
-- [ ] Document why CuPy is built from source:
+- [ ] Document why the supported Hot Aisle and Azure paths build CuPy from source:
     - Current ROCm versions and less commonly validated targets such as Azure Pro V710 `gfx1101` may not be adequately supported by prebuilt wheels.
     - The source build uses the native detected HIP architecture by default.
 

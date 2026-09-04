@@ -108,6 +108,10 @@ Preserve these boundaries:
 
 - AMD DevCloud instance provisioning remains manual.
 - Automate only the demonstrated in-VM bare-OS ROCm and packaged environment.
+- Use an ordinary Python virtual environment with pip for the demonstrated
+  packaged recipe. Do not introduce Conda without a concrete compatibility
+  requirement.
+- Use packaged `amd-cupy`; do not source-build ordinary CuPy merely for symmetry.
 - Target one known MI300X environment and a fixed or constrained recipe.
 - Probe and record the actual environment and package versions.
 - Fail clearly when the known assumptions stop holding.
@@ -198,11 +202,15 @@ different questions; one must not be used as a substitute for the other.
 Do not copy the full Canny application into this repository. Application work
 belongs in its own project.
 
-CuPy is intentionally built from source for the current environments. Preserve
-the pinned source-build behavior and architecture handling. When implementing
-the README build-logging task, retain the underlying build exit status, keep a
-full explicit log, provide useful bounded failure context, and avoid hiding all
-progress from the terminal.
+CuPy installation is environment-dependent. The supported Hot Aisle and Azure
+paths intentionally build pinned upstream CuPy from source and preserve their
+existing architecture handling. The experimental AMD DevCloud packaged
+environment instead uses packaged `amd-cupy`. Do not force either installation
+model onto the other environments merely for structural consistency.
+
+When implementing the README build-logging task for the source-build paths,
+retain the underlying build exit status, keep a full explicit log, provide
+useful bounded failure context, and avoid hiding all progress from the terminal.
 
 ## hipCollections and hipDF boundaries
 
