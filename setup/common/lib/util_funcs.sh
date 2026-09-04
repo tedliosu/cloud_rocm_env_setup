@@ -83,6 +83,7 @@ _current_ssh_connection_uses_port_22() {
 check_n_apply_ufw_base_or_warn_dont_wrap() (
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would refresh APT metadata and install UFW if missing."
         echo "[PLAN ONLY] Would inspect current UFW state and apply the project"
         echo "[PLAN ONLY]     firewall baseline only from a known fresh state."
         return 0
@@ -94,8 +95,11 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
     export LC_ALL
 
     if ! command -v ufw >/dev/null 2>&1; then
-        echo "UFW installation NOT detected; proceeding to install 'ufw'..."
-        if ! sudo --set-home apt-get install --assume-yes ufw; then
+        echo "UFW installation NOT detected; refreshing APT metadata before installation..."
+        if ! sudo --set-home apt-get update; then
+            echo "ERROR: unable to refresh APT metadata before installing 'ufw'!" >&2
+            return 1
+        elif ! sudo --set-home apt-get install --assume-yes ufw; then
             echo "ERROR: unable to install 'ufw'!" >&2
             return 1
         fi
