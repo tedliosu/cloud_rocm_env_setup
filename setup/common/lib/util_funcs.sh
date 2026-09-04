@@ -122,20 +122,20 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
         ufw 2>/dev/null || :
 
     case ${_ufw_classification} in
-        "${_UFW_KNOWN_BASELINE}")
+        "${UFW_KNOWN_BASELINE}")
             echo "UFW baseline state already in effect; not modifying current UFW state..."
             return 0
             ;;
-        "${_UFW_INSTALLED_FRESH}")
+        "${UFW_INSTALLED_FRESH}")
             echo "UFW is in a known fresh state; proceeding to apply a sane UFW baseline state..."
             ;;
-        "${_UFW_CUSTOM_STATE}")
+        "${UFW_CUSTOM_STATE}")
             print_ufw_diagnostics "${_ufw_classification}" \
                 "${_collected_ufw_status}" "${_collected_ufw_added}" \
                 "${_collected_ufw_defaults}"
             return 0
             ;;
-        "${_UFW_UNK_STATE}")
+        "${UFW_UNK_STATE}")
             print_ufw_diagnostics "${_ufw_classification}" \
                 "${_collected_ufw_status}" "${_collected_ufw_added}" \
                 "${_collected_ufw_defaults}"
@@ -182,7 +182,7 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
     _ufw_classification=$(classify_ufw_state "${_collected_ufw_status}" \
         "${_collected_ufw_added}" "${_collected_ufw_defaults}")
 
-    if [ "${_ufw_classification}" = "${_UFW_KNOWN_BASELINE}" ]; then
+    if [ "${_ufw_classification}" = "${UFW_KNOWN_BASELINE}" ]; then
         echo "UFW baseline configuration sanity check passed!"
         return 0
     fi

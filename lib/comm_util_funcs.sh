@@ -1,9 +1,9 @@
 
 # Any reference of "BASELINE" below means REPO-SPECIFIC DEFINED BASELINE!
-readonly _UFW_INSTALLED_FRESH="UFW_FRESH"
-readonly _UFW_KNOWN_BASELINE="UFW_BASELINE"
-readonly _UFW_CUSTOM_STATE="UFW_CUSTOM_STAT"
-readonly _UFW_UNK_STATE="UFW_UNKNOWN_STAT"
+readonly UFW_INSTALLED_FRESH="UFW_FRESH"
+readonly UFW_KNOWN_BASELINE="UFW_BASELINE"
+readonly UFW_CUSTOM_STATE="UFW_CUSTOM_STAT"
+readonly UFW_UNK_STATE="UFW_UNKNOWN_STAT"
 # Trailing whitespace in this is INTENTIONAL for fingerprinting!
 readonly _UFW_BASELINE_STATUS_CONTENTS="Status: active
 
@@ -57,25 +57,25 @@ classify_ufw_state() {
     if [ "${1}" = "${_UFW_BASELINE_STATUS_CONTENTS}" ] &&
         [ "${2}" = "${_UFW_BASELINE_ADDED_CONTENTS}" ] &&
         [ "${3}" = "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" ]; then
-        printf "%s\n" "${_UFW_KNOWN_BASELINE}"
+        printf "%s\n" "${UFW_KNOWN_BASELINE}"
         return 0
     elif [ "${1}" = "${_UFW_FRESH_STATUS_CONTENTS}" ] &&
         [ "${2}" = "${_UFW_FRESH_ADDED_CONTENTS}" ] &&
         [ "${3}" = "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" ]; then
-        printf "%s\n" "${_UFW_INSTALLED_FRESH}"
+        printf "%s\n" "${UFW_INSTALLED_FRESH}"
         return 0
     fi
 
     case $(printf "%s\n" "${1}" | sed -n '1p') in
         "Status: active"|"Status: inactive")
             if _ufw_defaults_are_interpretable "${3}"; then
-                printf "%s\n" "${_UFW_CUSTOM_STATE}"
+                printf "%s\n" "${UFW_CUSTOM_STATE}"
             else
-                printf "%s\n" "${_UFW_UNK_STATE}"
+                printf "%s\n" "${UFW_UNK_STATE}"
             fi
             ;;
         *)
-            printf "%s\n" "${_UFW_UNK_STATE}"
+            printf "%s\n" "${UFW_UNK_STATE}"
             ;;
     esac
 
