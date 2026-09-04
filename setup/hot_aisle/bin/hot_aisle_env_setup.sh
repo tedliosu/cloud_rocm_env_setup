@@ -58,6 +58,7 @@ MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
 LOGS_DIR="$(realpath "${LOGS_DIR_RELPATH}")"
 mkdir --parents "$MILESTONES_DIR"
 mkdir --parents "$LOGS_DIR"
+CUPY_BUILD_LOG_PATH="$(realpath "${CUPY_BUILD_LOG_RELPATH}")"
 # Resolve real path of packages-list files
 APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
 TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
@@ -91,7 +92,8 @@ run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}
 
 if (( DO_CUPY_ENV )); then
     run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
-        "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}" "${CUPY_PIN_VER_TAG}"
+        "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}" "${CUPY_PIN_VER_TAG}" \
+        "${CUPY_BUILD_LOG_PATH}"
 fi
 
 if (( DO_COMFYUI_ADDONS )); then

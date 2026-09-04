@@ -7,6 +7,7 @@
 
 readonly _NEWLINE='
 '
+readonly _CUPY_BUILD_LOG_TAIL_LINES=80
 
 # Helper function to run a stage
 # Usage: run_stage <milestones_directory_path> <function_to_run> [function_arguments]...
@@ -502,7 +503,7 @@ ensure_base_dl_virtualenv() {
 
 # Install GPGPU python arrays projects' required packages into a virtualenv
 # Usage: ensure_gpu_arr_virtualenv <gpu_arr_virtenv_dirpath> <cloned_cupy_dirpath> \
-#            <non_cupy_requirements_txt_path> <cupy_version_tag>
+#            <non_cupy_requirements_txt_path> <cupy_version_tag> <cupy_build_log_path>
 ensure_gpu_arr_virtualenv() {
 
     _gfx11_fallback_arch="gfx1100"
@@ -555,7 +556,22 @@ ensure_gpu_arr_virtualenv() {
     export HCC_AMDGPU_TARGET
     export CUPY_NUM_BUILD_JOBS
     export CUPY_INSTALL_USE_HIP=1
-    pip wheel --wheel-dir "$2/dist" "$2"
+    if ! : > "$5"; then
+        echo "FAILED to initialize CuPy build log at '$5'!" >&2
+        return 1
+    fi
+    echo "Building CuPy wheel; verbose build log: '$5'"
+    if pip --log "$5" wheel --wheel-dir "$2/dist" "$2"; then
+        echo "CuPy wheel build completed; verbose build log: '$5'"
+    else
+        _cupy_wheel_status="$?"
+        echo "FAILED to build CuPy wheel; verbose build log: '$5'" >&2
+        echo "--- Last ${_CUPY_BUILD_LOG_TAIL_LINES} lines of CuPy build log ---" >&2
+        if ! tail --lines="${_CUPY_BUILD_LOG_TAIL_LINES}" "$5" >&2; then
+            echo "WARNING: unable to print CuPy build log tail!" >&2
+        fi
+        return "${_cupy_wheel_status}"
+    fi
     pip install "$2/dist"/cupy*.whl
     _last_pip_status="$?"
     if [ "${_last_pip_status}" -eq 0 ]; then
