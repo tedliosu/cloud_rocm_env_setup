@@ -60,6 +60,14 @@ COMFYUI_WORKFLOW_PATH="$(realpath "${FLUX_1_DEV_WORKFLOW_RELPATH}")"
 
 
 # BEGIN "MAIN"
+if [[ -n "${HSA_OVERRIDE_GFX_VERSION:-}" ]]; then
+    echo "ERROR: HSA_OVERRIDE_GFX_VERSION='${HSA_OVERRIDE_GFX_VERSION}' is set!" >&2
+    echo "    The main validator supports only native baseline validation." >&2
+    echo "    Unset the override before rerunning this script." >&2
+    echo "    Run 'cupy_numpy_smoke.py' directly for a user-controlled" >&2
+    echo "    override-assisted CuPy experiment." >&2
+    exit 1
+fi
 if (( DO_UFW_CHECK )); then
     echo "Please enter sudo password when prompted!"
     validate_ufw_config "${STRICT_UFW_CHECK}"

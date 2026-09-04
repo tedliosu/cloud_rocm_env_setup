@@ -168,7 +168,8 @@
     - Do not promise that the override improves every workload.
 
 - [ ] Document the automated validation boundary:
-    - Default validation does not run CuPy with `HSA_OVERRIDE_GFX_VERSION=11.0.0`.
+    - Default validation does not set `HSA_OVERRIDE_GFX_VERSION=11.0.0` automatically.
+    - The main validator refuses to run when it inherits a non-empty `HSA_OVERRIDE_GFX_VERSION`, so its results remain native baseline validation.
     - Validation of the dual-target build is left to the user because there is currently no known documented and reliable way to independently determine, from the resulting CuPy build itself, which HIP architectures were compiled into it.
     - Document how users can manually run `cupy_numpy_smoke.py` with the override as a runtime sanity check.
     - Make clear that this manual check confirms only whether the tested workload runs successfully. It does not independently enumerate or verify every architecture compiled into CuPy.
