@@ -5,28 +5,6 @@
 #    '../../*/bin' relative to this script!
 . "../../../lib/comm_util_funcs.sh"
 
-# Any reference of "BASELINE" below means REPO-SPECIFIC DEFINED BASELINE!
-readonly _UFW_INSTALLED_FRESH="UFW_FRESH"
-readonly _UFW_KNOWN_BASELINE="UFW_BASELINE"
-readonly _UFW_CUSTOM_STATE="UFW_CUSTOM_STAT"
-readonly _UFW_UNK_STATE="UFW_UNKNOWN_STAT"
-# Trailing whitespace in this is INTENTIONAL for fingerprinting!
-readonly _UFW_BASELINE_STATUS_CONTENTS="Status: active
-
-To                         Action      From
---                         ------      ----
-22/tcp                     ALLOW       Anywhere                  
-22/tcp (v6)                ALLOW       Anywhere (v6)             "
-readonly _UFW_FRESH_STATUS_CONTENTS="Status: inactive"
-readonly _UFW_BASELINE_ADDED_CONTENTS="Added user rules (see 'ufw status' for running firewall):
-ufw allow 22/tcp"
-readonly _UFW_FRESH_ADDED_CONTENTS="Added user rules (see 'ufw status' for running firewall):
-(None)"
-readonly _UFW_EXPECTED_DEFAULTS_CONTENTS="IPV6=yes
-DEFAULT_INPUT_POLICY=\"DROP\"
-DEFAULT_OUTPUT_POLICY=\"ACCEPT\"
-DEFAULT_FORWARD_POLICY=\"DROP\"
-DEFAULT_APPLICATION_POLICY=\"SKIP\""
 readonly _NEWLINE='
 '
 
@@ -62,91 +40,6 @@ run_stage() {
     else
         echo "${_skip_stage_msg}"
     fi
-
-}
-
-# Check that the collected /etc/default/ufw values contain each expected key
-#     exactly once.
-# Usage: _ufw_defaults_are_interpretable <collected_default_values>
-# Returns: 0 if the collected values are interpretable; 1 otherwise
-_ufw_defaults_are_interpretable() {
-
-    [ "$(printf "%s\n" "${1}" | wc -l)" -eq 5 ] || return 1
-
-    [ "$(printf "%s\n" "${1}" |
-        grep --extended-regexp --count '^IPV6=(yes|no)$')" -eq 1 ] || return 1
-
-    for _ufw_default_key in DEFAULT_INPUT_POLICY DEFAULT_OUTPUT_POLICY \
-        DEFAULT_FORWARD_POLICY; do
-        [ "$(printf "%s\n" "${1}" |
-            grep --extended-regexp --count \
-                "^${_ufw_default_key}=\"(ACCEPT|DROP|REJECT)\"$")" -eq 1 ] ||
-            return 1
-    done
-
-    [ "$(printf "%s\n" "${1}" |
-        grep --extended-regexp --count \
-            '^DEFAULT_APPLICATION_POLICY="(ACCEPT|DROP|REJECT|SKIP)"$')" -eq 1 ] ||
-        return 1
-
-}
-
-# Classify separately collected UFW observations. The classification is printed
-#     to stdout; this function does not return it by mutating caller state.
-# Usage: _classify_ufw_state <ufw_status> <ufw_show_added> <ufw_defaults>
-# Returns: 0 after printing the UFW classification
-_classify_ufw_state() {
-
-    if [ "${1}" = "${_UFW_BASELINE_STATUS_CONTENTS}" ] &&
-        [ "${2}" = "${_UFW_BASELINE_ADDED_CONTENTS}" ] &&
-        [ "${3}" = "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" ]; then
-        printf "%s\n" "${_UFW_KNOWN_BASELINE}"
-        return 0
-    elif [ "${1}" = "${_UFW_FRESH_STATUS_CONTENTS}" ] &&
-        [ "${2}" = "${_UFW_FRESH_ADDED_CONTENTS}" ] &&
-        [ "${3}" = "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" ]; then
-        printf "%s\n" "${_UFW_INSTALLED_FRESH}"
-        return 0
-    fi
-
-    case $(printf "%s\n" "${1}" | sed -n '1p') in
-        "Status: active"|"Status: inactive")
-            if _ufw_defaults_are_interpretable "${3}"; then
-                printf "%s\n" "${_UFW_CUSTOM_STATE}"
-            else
-                printf "%s\n" "${_UFW_UNK_STATE}"
-            fi
-            ;;
-        *)
-            printf "%s\n" "${_UFW_UNK_STATE}"
-            ;;
-    esac
-
-}
-
-# Print the collected UFW observations without attempting to interpret arbitrary
-#     custom rules.
-# Usage: _print_ufw_diagnostics <classification> <ufw_status> <ufw_show_added> \
-#                                  <ufw_defaults>
-# Returns: 0 after printing the collected UFW diagnostics
-_print_ufw_diagnostics() {
-
-    printf '%s\n' "--- WARNING: UFW classification is ${1} ---" >&2
-    printf '%s\n' "--- collected 'ufw status' output is ---" >&2
-    printf '%s\n' "${2}" >&2
-    printf '%s\n' "--- collected 'ufw show added' output is ---" >&2
-    printf '%s\n' "${3}" >&2
-    printf '%s\n' "--- collected /etc/default/ufw values are ---" >&2
-    printf '%s\n' "${4}" >&2
-    printf '%s\n' "--- EXPECTED UFW baseline is ---" >&2
-    printf '%s\n' "${_UFW_BASELINE_STATUS_CONTENTS}" >&2
-    printf '%s\n' "${_UFW_BASELINE_ADDED_CONTENTS}" >&2
-    printf '%s\n' "${_UFW_EXPECTED_DEFAULTS_CONTENTS}" >&2
-    printf '%s\n' "--- NOT modifying current UFW state! ---" >&2
-
-    dpkg-query --show \
-        --showformat='--- INFO: UFW detected dpkg version: ${Version} ---\n' \
-        ufw 2>/dev/null || :
 
 }
 
@@ -221,7 +114,7 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
         echo "     3. sudo -H grep -E '^(IPV6|DEFAULT_.*_POLICY)=' /etc/default/ufw" >&2
         return 1
     fi
-    _ufw_classification=$(_classify_ufw_state "${_collected_ufw_status}" \
+    _ufw_classification=$(classify_ufw_state "${_collected_ufw_status}" \
         "${_collected_ufw_added}" "${_collected_ufw_defaults}")
 
     dpkg-query --show \
@@ -237,13 +130,13 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
             echo "UFW is in a known fresh state; proceeding to apply a sane UFW baseline state..."
             ;;
         "${_UFW_CUSTOM_STATE}")
-            _print_ufw_diagnostics "${_ufw_classification}" \
+            print_ufw_diagnostics "${_ufw_classification}" \
                 "${_collected_ufw_status}" "${_collected_ufw_added}" \
                 "${_collected_ufw_defaults}"
             return 0
             ;;
         "${_UFW_UNK_STATE}")
-            _print_ufw_diagnostics "${_ufw_classification}" \
+            print_ufw_diagnostics "${_ufw_classification}" \
                 "${_collected_ufw_status}" "${_collected_ufw_added}" \
                 "${_collected_ufw_defaults}"
             return 1
@@ -286,7 +179,7 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
         echo "ERROR: unable to collect UFW state after baseline configuration!" >&2
         return 1
     fi
-    _ufw_classification=$(_classify_ufw_state "${_collected_ufw_status}" \
+    _ufw_classification=$(classify_ufw_state "${_collected_ufw_status}" \
         "${_collected_ufw_added}" "${_collected_ufw_defaults}")
 
     if [ "${_ufw_classification}" = "${_UFW_KNOWN_BASELINE}" ]; then
@@ -295,7 +188,7 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
     fi
 
     echo "ERROR: UFW baseline configuration sanity check failed!" >&2
-    _print_ufw_diagnostics "${_ufw_classification}" \
+    print_ufw_diagnostics "${_ufw_classification}" \
         "${_collected_ufw_status}" "${_collected_ufw_added}" \
         "${_collected_ufw_defaults}"
     return 1
