@@ -80,6 +80,7 @@ if (( DISABLE_FASTF_PPA )); then
     ppa_disable_dont_wrap "${FASTFETCH_PPA_FULLPATH}"
 fi
 run_stage "$MILESTONES_DIR" apt_get_sys_update
+run_stage "$MILESTONES_DIR" ensure_tmux
 reboot_once_dont_wrap "$MILESTONES_DIR"
 run_stage "$MILESTONES_DIR" ensure_pinned_cmake \
     "${EXPECTED_DIST_CODENAME}" "${CMAKE_APT_PIN_VER}"

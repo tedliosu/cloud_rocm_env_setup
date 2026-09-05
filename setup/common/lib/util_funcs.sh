@@ -370,6 +370,13 @@ apt_get_sys_update() {
         NEEDRESTART_MODE="a" apt-get upgrade --assume-yes
 }
 
+# Install tmux for persistent remote setup sessions after the one-time reboot
+# Usage: no arguments required
+# Returns: status of the tmux apt-get installation
+ensure_tmux() {
+    sudo --set-home apt-get install --assume-yes tmux
+}
+
 # Reboot once helper (for after a system update)
 # Usage: reboot_once_dont_wrap <milestones_directory>
 reboot_once_dont_wrap() {

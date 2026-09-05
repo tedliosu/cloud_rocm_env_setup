@@ -76,6 +76,7 @@ AFTER_COMFYUI_LOG_PATH="$(realpath "${POST_COMFYUI_PIP_FREEZE_RECS}")"
 # BEGIN "MAIN"
 check_n_apply_ufw_base_or_warn_dont_wrap
 run_stage "$MILESTONES_DIR" apt_get_sys_update
+run_stage "$MILESTONES_DIR" ensure_tmux
 reboot_once_dont_wrap "$MILESTONES_DIR"
 run_stage "$MILESTONES_DIR" ensure_pinned_cmake \
     "${EXPECTED_DIST_CODENAME}" "${CMAKE_APT_PIN_VER}"
