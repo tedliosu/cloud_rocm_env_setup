@@ -352,7 +352,8 @@ ppa_disable_dont_wrap() {
 # Usage: no arguments required
 apt_get_sys_update() {
     sudo --set-home apt-get update
-    sudo --set-home env NEEDRESTART_MODE="a" apt-get upgrade --assume-yes
+    sudo --set-home env DEBIAN_FRONTEND="noninteractive" \
+        NEEDRESTART_MODE="a" apt-get upgrade --assume-yes
 }
 
 # Reboot once helper (for after a system update)
