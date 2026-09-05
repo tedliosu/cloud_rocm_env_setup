@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 
 # Source global helpers used in this script;
 #    note that this sourcing assumes that the
@@ -11,8 +12,12 @@ readonly _CUPY_BUILD_LOG_TAIL_LINES=80
 
 # Helper function to run a stage
 # Usage: run_stage <milestones_directory_path> <function_to_run> [function_arguments]...
+# Invoke directly, for example: run_stage "${MILESTONES_DIR}" stage_function [arguments]...
+# Do not invoke from 'if', with '!', or as part of an '&&'/'||' list because
+#     those conditional contexts disable 'errexit' throughout the stage function.
 run_stage() {
 
+    local _stage_status
     _milestones_dir="$1"
     shift
     _func_to_run="$1"
@@ -31,13 +36,22 @@ run_stage() {
 
     if [ ! -f "${_done_marker_file}" ]; then
         echo "--- starting stage: ${_func_to_run} ---"
-        # ANY failure in the `&&` chain should trigger the bailout
-        # shellcheck disable=SC2015
-        "${_func_to_run}" "$@" && touch "${_done_marker_file}" && \
-        echo "--- completed stage: ${_func_to_run} ---" || {
+
+        # A function invoked in a conditional context ignores 'errexit' throughout
+        #     its body, so run the stage as a plain command in an isolated shell.
+        set +e
+        (
+            set -e
+            "${_func_to_run}" "$@"
+        )
+        _stage_status="$?"
+        set -e
+
+        if [ "${_stage_status}" -ne 0 ] || ! touch "${_done_marker_file}"; then
             echo "--- FAILED stage: ${_func_to_run} ---" >&2
             exit 1
-        }
+        fi
+        echo "--- completed stage: ${_func_to_run} ---"
     else
         echo "${_skip_stage_msg}"
     fi
