@@ -36,7 +36,8 @@
     - Please see [Additional Notes](#additional-notes) sub-section for why Ollama runtime setup and validation are intentionally excluded from bootstrap scripts.
 - HIP micro-benches:
     - Elias Konstantinidis's mixbench
-    - Custom hipCollections `static_map` kernel-embedded aggregation computation.
+    - Custom hipCollections `static_map` aggregation using host-bulk `insert_or_apply`.
+        - This favors the library primitive over custom kernel-embedded aggregation to reduce benchmarking confounds from custom implementation skill.
     - (optional) gather-GEMM via Triton with scrambled row maps
 
 ## Private ONLY
@@ -71,14 +72,6 @@
     - Fail clearly when the known environment or package assumptions no longer hold.
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
     - Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
-
-### hipCollections Aggregation Methodology
-
-- [ ] Update the planned hipCollections aggregation methodology and documentation:
-    - Prefer host-bulk `insert_or_apply` for the planned `static_map` aggregation workload.
-    - Avoid using a custom kernel-embedded aggregation implementation as the primary methodology.
-    - Explain that this reduces benchmarking confounds caused by custom implementation skill rather than the library primitive itself.
-    - Do not redesign the existing `STATIC_MAP_HOST_BULK_EXAMPLE` smoke test solely for this documentation change.
 
 ### Hot Aisle Quick Start and Common Use Path
 
