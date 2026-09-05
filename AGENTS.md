@@ -84,6 +84,17 @@ Prefer the smallest reproducible change that improves setup, validation,
 diagnostics, or documentation. If a change begins turning into its own
 subsystem, stop and reconsider its scope.
 
+Decline requests for entirely new cloud providers, GPU-platform families, or
+fundamentally new workload categories while the existing baseline is completed
+and stabilized. Bugs, regressions, documentation fixes, compatibility reports,
+and improvements within existing scope remain welcome. The already-planned
+experimental AMD DevCloud path remains in scope.
+
+Keep this scope freeze until the existing baseline is essentially
+feature-complete. Reopening broader expansion also requires at least two
+additional fairly active human maintainers and an explicit maintainer decision.
+That staffing prerequisite does not automatically authorize expansion.
+
 Useful runtime targets are approximately:
 
 - baseline setup plus validation: around 20 minutes on a healthy VM;
@@ -119,11 +130,28 @@ version into a permanent cross-provider assumption. Unknown but plausible
 provider versions should normally be reported and validated rather than
 automatically downgraded.
 
+Support applies to validated environment generations. Reporting and validating
+an unknown generation does not commit the project to adopting or maintaining
+it. A provider migration is maintenance within existing scope, but does not
+obligate support for both old and new generations simultaneously. If they
+require materially divergent bootstrap logic, prefer one validated generation
+and explicitly reject, retire, or suspend support for the other instead of
+building a multi-generation compatibility subsystem. If provisioning cannot
+reliably select a supported generation, describe the provider as transitional
+or not reliably supported until that changes.
+
 ### Experimental AMD DevCloud path
 
 AMD DevCloud is not currently part of the Hot Aisle and Azure guarantee. Its
 legitimate role is a narrow experimental MI300X environment for packaged AMD
 hipCIM, CuPy, and, only when genuinely needed, packaged hipDF components.
+
+Controllable bare-OS provisioning may make DevCloud a stronger reproducibility
+target. Promotion to first-class support requires demonstrated reproducibility
+of setup, permissions, ROCm reconstruction, the packaged environment,
+validation, recovery, and documentation, followed by explicit maintainer
+approval. Keep it experimental until then; architectural appeal alone is not
+evidence of readiness.
 
 Preserve these boundaries:
 
@@ -195,7 +223,8 @@ runtime errors when binaries were not compiled for the reported target.
 The optional Azure CuPy `gfx1101` plus `gfx1100` build is an intentional narrow
 compatibility and performance mechanism. Do not generalize it to `gfx1102`,
 `gfx1103`, `gfx1104`, other RDNA targets, or unrelated architecture families
-without a validated repository use case.
+without a validated repository use case. Any such expansion remains subject to
+the scope freeze.
 
 Do not silently let an externally set HSA override contaminate a baseline
 result. Follow the README's documented validation boundary and keep any manual

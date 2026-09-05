@@ -5,6 +5,7 @@
     - (optional) Azure `Standard_NV24ads_V710_v5` instances
         - Assumed base image: **NVV5 V710 ROCm Linux Image**, **Gen2** variant as of mid-2026; independently verified to be built on Ubuntu 24.04 ([product page on Microsoft Marketplace](https://marketplace.microsoft.com/en-us/product/amdinc1746636494855.nvv5_v710_linux_rocm_image))
     - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally recorded by probe logic in scripts rather than hard-coded here.
+    - Provider support applies to validated environment generations, not every image or software version a provider serves. Supporting a replacement generation does not imply continued support for the previous one. If provisioning cannot reliably select a supported generation, provider support may temporarily be marked transitional or suspended.
 - Reproducible, *minimal* environment setup with *selectively* pinned Python dependencies, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
 - Safe, resumable bootstrap scripts with reboot handling
 - Minimal validation to detect obviously broken environments (e.g., ROCm availability, basic workload execution)
@@ -16,6 +17,7 @@
 - Redistribution of proprietary drivers, runtimes, binaries, and source code
 - Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
 - General-purpose firewall reconciliation, source-IP allowlisting, dynamic DNS, or VPN infrastructure
+- Expansion to entirely new cloud providers, GPU-platform families, or workload categories is currently frozen while the existing baseline is completed and stabilized. The already-planned experimental AMD DevCloud path remains in scope.
 
 # Target Workloads
 
@@ -180,7 +182,7 @@
     - There are no equivalent fallback environment variables for those targets or for other architecture families.
     - Broader support for these architectures in newer ROCm releases does not imply support by this repository's CuPy build logic.
     - This repository currently limits the fallback behavior to the validated Azure Pro V710 `gfx1101` use case.
-    - Supporting additional targets should require a validated repository use case rather than being added solely for architecture-family symmetry.
+    - Supporting additional targets remains subject to the scope freeze and requires a validated repository use case rather than being added solely for architecture-family symmetry.
 
 ## Expected Warnings and Optional Utilities
 
@@ -202,7 +204,8 @@
 - [ ] Add a note that links to custom public projects will be added when those projects are ready to be showcased with this repository.
 
 - [ ] Add a contributing section:
-    - Issues are welcome.
+    - Bugs, regressions, documentation fixes, compatibility reports, and improvement suggestions within existing scope are welcome.
+    - Requests for entirely new providers, GPU-platform families, or workload categories are currently declined.
     - Pull requests are not currently accepted because of limited review bandwidth.
     - This policy may change in the future.
 
