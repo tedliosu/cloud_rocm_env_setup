@@ -44,8 +44,8 @@ source "../../common/lib/shared_vars.sh"
 source "../../common/lib/util_funcs.sh"
 
 # Environment assumptions check
-ensure_basic_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}" \
-                              "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
+ensure_basic_os_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}"
+ensure_rocm_env_sanity_dont_wrap "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
     echo "[PLAN ONLY] No sudo commands will be executed."

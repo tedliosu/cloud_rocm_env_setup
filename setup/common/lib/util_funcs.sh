@@ -266,15 +266,13 @@ ensure_groups_maybe_reboot_dont_wrap() {
 
 }
 
-# Assert basic environment stats helper, assuming Ubuntu-like distro
-# Usage: ensure_basic_env_sanity_dont_wrap <expected_distro_name> <expected_distro_ver> \
-#                                          <expected_rocm_ver> <expected_rocm_ver_regex>
-ensure_basic_env_sanity_dont_wrap() {
+# Assert basic OS environment stats helper, assuming Ubuntu-like distro
+# Usage: ensure_basic_os_env_sanity_dont_wrap <expected_distro_name> <expected_distro_ver>
+# Returns: 0 for plan-only or the expected OS; exits 1 for an unexpected OS
+ensure_basic_os_env_sanity_dont_wrap() {
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Would ensure that current environment is $1 $2 distro,"
-        echo "[PLAN ONLY]     ensure that amdgpu dkms is loaded according to 'rocminfo',"
-        echo "[PLAN ONLY]     and ensure that 'hipconfig' reports ROCm version ~$3."
+        echo "[PLAN ONLY] Would ensure that current environment is $1 $2 distro."
         return 0
     fi
 
@@ -287,19 +285,33 @@ ensure_basic_env_sanity_dont_wrap() {
         echo  "    This IS NOT $1 $2; bailing!" >&2
         exit 1
     fi
+
+}
+
+# Assert ROCm driver and userland environment stats helper
+# Usage: ensure_rocm_env_sanity_dont_wrap <expected_rocm_ver> <expected_rocm_ver_regex>
+# Returns: 0 for plan-only or the expected ROCm environment; exits 1 otherwise
+ensure_rocm_env_sanity_dont_wrap() {
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would ensure that amdgpu dkms is loaded according to 'rocminfo',"
+        echo "[PLAN ONLY]     and ensure that 'hipconfig' reports ROCm version ~$1."
+        return 0
+    fi
+
     if rocminfo | grep --ignore-case --quiet "NOT loaded"; then
         echo "amdgpu dkms not detected; bailing!" >&2
         exit 1
     fi
     ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut --delimiter="-" --fields=2)"
     if echo "$ROCM_DETECTED_VER" | \
-       grep --extended-regexp --invert-match --quiet "$4"; then
+       grep --extended-regexp --invert-match --quiet "$2"; then
         echo "'hipconfig' reports ROCm userland version $ROCM_DETECTED_VER!" >&2
         echo >&2
         echo "    Please update all environment setup logic and configs" >&2
         echo >&2
         echo "    before rerunning this script, as assumed version is" >&2
-        echo " ~$3!" >&2
+        echo " ~$1!" >&2
         exit 1
     fi
 

@@ -53,8 +53,8 @@ fi
 # Ensure user access to GPU
 ensure_groups_maybe_reboot_dont_wrap
 # Environment assumptions check
-ensure_basic_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}" \
-                              "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
+ensure_basic_os_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}"
+ensure_rocm_env_sanity_dont_wrap "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
 
 
 # Create/resolve directories containing idempotent milestone markers, logs, temp files, etc.
