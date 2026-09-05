@@ -50,6 +50,9 @@
     - There has also been documented partial coupling between Ollama runtime versions and model versions hosted on the default registry.
     - On ROCm systems, fragile driver/runtime/hardware/etc. combinations may also cause GPU hangs or other inference-time failures.  Therefore, this repository also does not treat Ollama inference as an automated bootstrap validation step.
 2. High-capacity solid state storage (100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
+3. Version-stamped CuPy custom-kernel acceptance evidence:
+    - On 2026-09-05, the tiny semantic and million-attempt scale `atomicCAS`/template cases passed for `int32`, `int64`, and high-range `uint64` on a Hot Aisle MI300X VF with ROCm 7.2.4, source-built CuPy 14.1.1, and NumPy 2.5.2.
+    - Both the direct CuPy smoke and the complete main validator passed. This result records the tested environment rather than promising compatibility with every future image or package generation.
 
 # TODOs
 
@@ -69,16 +72,6 @@
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
     - Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
-### Canny-Critical CuPy Custom-Kernel ROCm Acceptance
-
-- [ ] Validate the implemented CuPy custom-kernel smoke on Hot Aisle MI300X with the supported ROCm 7.2 and source-built CuPy path:
-    - Confirm that HIPRTC compiles the intentional version-sensitive `__hip_internal` trait path.
-    - Run the tiny semantic and million-attempt scale `atomicCAS` cases for `int32`, `int64`, and high-range `uint64` values against their deterministic NumPy references.
-    - Treat the completed local CUDA/NVRTC run as implementation evidence rather than a substitute for ROCm acceptance.
-    - Treat a failure as a potential CuPy, ROCm, compiler, or runtime compatibility defect rather than assuming it is specific to this repository.
-    - Do not expand the smoke into CCL, root chasing, hysteresis, or performance benchmarking.
-    - Do not make the pending ROCm acceptance a prerequisite for publishing the Hot Aisle Quick Start.
-
 ### hipCollections Aggregation Methodology
 
 - [ ] Update the planned hipCollections aggregation methodology and documentation:
@@ -93,6 +86,7 @@
     - Document the Hot Aisle setup command.
     - Explain `--show-plan-only` and the optional setup flags.
     - Explain expected reboot and rerun behavior.
+    - Explain that setup installs tmux before the intentional reboot, then document starting or resuming a named tmux session after reconnecting for long post-reboot stages.
     - Document the standard validation command and optional validation flags.
     - Document the manual Ollama setup and validation path.
     - Document the final manual ComfyUI setup and validation steps.
