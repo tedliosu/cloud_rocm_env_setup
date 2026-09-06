@@ -78,8 +78,9 @@
 - [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
     - Keep AMD DevCloud instance provisioning manual.
     - Add a narrowly classified root bootstrap for the sensitive initial user, authorized-key, required-group, and sudo-policy handoff. Require a separate SSH login test before ending the root session; do not turn this into a general account-reconciliation framework.
-    - Permit the reviewed root-owned repository clone to remain as an audit and recovery artifact. Do not replace it with execution of a mutable raw script from the network.
-    - Add a read-only ordinary-user handoff preflight before regular setup. Check the user, home, repository access, effective required groups, and agreed noninteractive-sudo contract without claiming that ROCm or GPU access is already valid.
+    - Decide explicitly whether the password-disabled ordinary user requires full `NOPASSWD` sudo or a narrower policy, then encode and validate only the selected contract rather than assuming one implicitly.
+    - Permit a credential-free root-owned repository clone at a reviewed immutable commit or tag to remain as an audit and recovery artifact. Do not replace it with execution of a mutable raw script from the network.
+    - Add a read-only ordinary-user handoff preflight before regular setup. Check the user, home, repository access, effective required groups, and explicitly selected noninteractive-sudo contract without claiming that ROCm or GPU access is already valid.
     - Automate one constrained, observed in-VM bare-OS ROCm/DKMS and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path. Reuse suitable common setup primitives while keeping DevCloud orchestration explicit.
     - Perform ROCm, GPU-device, and permissions checks after the required install and reboot rather than as part of the pre-install handoff check.
     - Use an ordinary Python virtual environment with pip and packaged `amd-cupy`; do not source-build ordinary CuPy or introduce Conda merely for consistency with another environment.

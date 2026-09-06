@@ -158,18 +158,27 @@ Preserve these boundaries:
 - AMD DevCloud instance provisioning remains manual.
 - Automate only the demonstrated root-to-user handoff and in-VM bare-OS ROCm
   and packaged environment.
-- Keep the root bootstrap narrow and conservative. It may create or recognize
-  one explicitly named password-disabled ordinary user, install explicitly
-  supplied authorized keys, establish only the required groups and reviewed
-  sudo policy, and validate the resulting static state. Preserve valid custom
-  or unknown account state rather than becoming a general account
+- Require the root bootstrap to run as root and receive the target username and
+  authorized-key material explicitly. It may create or recognize one
+  password-disabled ordinary user, establish only the required groups and
+  reviewed sudo policy, and validate the resulting static state. Preserve valid
+  custom or unknown account state rather than becoming a general account
   reconciliation engine.
+- Install the project-owned authorized-key state with the intended user and
+  group ownership, mode `0700` for `.ssh`, and mode `0600` for
+  `authorized_keys`. Do not modify `sshd_config`, disable root SSH, or broaden
+  the task into general SSH-server management.
+- Select the password-disabled user's sudo contract explicitly before encoding
+  it; do not assume full `NOPASSWD` sudo without that decision. Install only a
+  project-owned sudoers fragment, write it atomically with root ownership and
+  mode `0440`, and validate the complete sudoers policy with `visudo --check`.
 - Require a separate SSH login test before ending the root session. Static
   server-side checks do not prove that the intended client authentication and
   network path work.
-- A reviewed, root-owned clone under `/root` may remain as an audit and recovery
-  artifact. Do not replace it with piping a mutable network response into a
-  root shell.
+- A root-owned clone under `/root` may remain as an audit and recovery artifact
+  when it contains no retained credentials and is checked out at a reviewed
+  immutable commit or tag. Do not replace it with piping a mutable network
+  response into a root shell.
 - Begin ordinary-user setup with a small read-only handoff preflight. Verify
   the current non-root identity, home, repository access, effective required
   groups, and the explicitly adopted sudo contract without claiming ROCm or
