@@ -183,6 +183,12 @@ Preserve these boundaries:
   the current non-root identity, home, repository access, effective required
   groups, and the explicitly adopted sudo contract without claiming ROCm or
   GPU readiness before those components are installed.
+- Do not call the Azure-oriented `ensure_groups_maybe_reboot_dont_wrap` from
+  the DevCloud root bootstrap. It discovers a user through `logname` and owns
+  an immediate reboot, while DevCloud has an explicit target user and a
+  separate SSH handoff. If demonstrated duplication later justifies a shared
+  primitive, make it accept an explicit username and keep group mutation
+  separate from provider-specific reboot or handoff policy.
 - Use an ordinary Python virtual environment with pip for the demonstrated
   packaged recipe. Do not introduce Conda without a concrete compatibility
   requirement.
@@ -458,9 +464,27 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
   and commands that may legitimately return nonzero.
 - Preserve the underlying command's exit status when adding logging pipelines.
 
+Keep `set -euo pipefail` as a coarse fail-fast safety net, but do not rely on
+`errexit` as the implementation of a helper function's error contract. Handle
+failures explicitly when nonzero is expected or meaningful, partial system
+mutation matters, cleanup or recovery is required, a useful diagnostic should
+identify the failed operation, pipeline or command-substitution status is
+nontrivial, or a helper must remain correct from a conditional context where
+Bash changes `errexit` behavior. Do not mechanically wrap every straightforward
+command in `|| return` or manual status handling when no special semantics are
+needed.
+
 Use Bash where the existing runner requires Bash. POSIX-compatible helper code
 is welcome when it remains natural, but do not refactor working Bash merely to
 claim POSIX compliance.
+
+Do not split `setup/common/lib/util_funcs.sh` merely because it is large. It
+currently groups stage and reboot orchestration, environment and safety checks,
+UFW initialization, network and package setup, and Python-environment setup.
+Add DevCloud-specific account, SSH, sudo, and handoff orchestration at the
+DevCloud provider boundary. Extract a common helper only after a concrete
+shared responsibility appears and the split improves conceptual ownership
+without creating ravioli-style fragmentation.
 
 ## System safety and package handling
 
@@ -502,6 +526,23 @@ assume -> abstract -> generalize -> discover drift later
 Keep baseline validation fast, deterministic, and native. Optional or
 experimental checks must be clearly separated and must not contaminate baseline
 claims.
+
+Cross-platform validation can provide an independent correctness and
+portability check because different compiler, runtime, and hardware
+implementations expose different hidden assumptions. Preserve narrowly useful
+CUDA execution in a representative smoke when it improves development
+confidence, but do not turn this repository into a CUDA validation project or
+mistake a CUDA pass for ROCm acceptance. Exact private-workload regression
+coverage belongs in the corresponding application repository.
+
+Use both positive and negative tests when they exercise this repository's own
+contract. Positive tests ask whether a supported capability works. Negative
+tests should verify meaningful rejection, missing runtime or environment
+detection, known-incompatible configuration handling, strict required-
+environment absence, failure propagation, and conservative malformed or
+unknown-state handling. Prefer representative tests whose value survives
+forgetting the historical bug that motivated them; do not accumulate upstream
+or application bug reenactments or build an exhaustive conformance suite.
 
 Keep the main validator provider-neutral and capability-oriented across Hot
 Aisle, Azure, and potentially AMD DevCloud. Provider or environment

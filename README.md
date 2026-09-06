@@ -59,6 +59,9 @@
 3. Version-stamped CuPy custom-kernel acceptance evidence:
     - On 2026-09-05, the tiny semantic and million-attempt scale `atomicCAS`/template cases passed for `int32`, `int64`, and high-range `uint64` on a Hot Aisle MI300X VF with ROCm 7.2.4, source-built CuPy 14.1.1, and NumPy 2.5.2.
     - Both the direct CuPy smoke and the complete main validator passed. This result records the tested environment rather than promising compatibility with every future image or package generation.
+4. Cross-platform execution of a representative smoke can provide an independent portability and correctness check because different compiler, runtime, and hardware implementations may expose different hidden assumptions.
+    - A CUDA-side development check does not make CUDA a supported bootstrap environment and does not substitute for ROCm acceptance.
+    - Keep bootstrap coverage at the level of durable platform capabilities rather than bundling private workload regressions or reenacting historical upstream bugs.
 
 # TODOs
 
@@ -72,12 +75,14 @@
     - Continue skipping the entire gate when its environment is absent and not explicitly required; the strict-presence flag must fail when that environment is absent.
     - Keep fail-fast execution valid: a constituent check failure fails the gate even if later checks are not reached.
     - After the Numba parallel workload runs, verify that Numba actually selected the `tbb` threading layer. Numba behavior is relevant to Canny, while the explicit TBB selection is retained because measurements for the private MLP workload favored TBB over OpenMP for its parallel CPU activations. Do not imply that TBB was also compared with workqueue.
+    - Add bounded checks that the optional-absence, strict-presence, TBB-selection, and constituent-failure paths produce the intended gate result; do not build a general validation-framework test suite merely for this gate.
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
 - [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
     - Keep AMD DevCloud instance provisioning manual.
     - Add a narrowly classified root bootstrap for the sensitive initial user, authorized-key, required-group, and sudo-policy handoff. Require a separate SSH login test before ending the root session; do not turn this into a general account-reconciliation framework.
+    - Cover representative invalid root-handoff states locally where practical, including non-root invocation, malformed or conflicting account state, and sudoers validation failure. Preserve or reject unsafe state rather than testing destructive recovery against a live cloud instance.
     - Decide explicitly whether the password-disabled ordinary user requires full `NOPASSWD` sudo or a narrower policy, then encode and validate only the selected contract rather than assuming one implicitly.
     - Permit a credential-free root-owned repository clone at a reviewed immutable commit or tag to remain as an audit and recovery artifact. Do not replace it with execution of a mutable raw script from the network.
     - Add a read-only ordinary-user handoff preflight before regular setup. Check the user, home, repository access, effective required groups, and explicitly selected noninteractive-sudo contract without claiming that ROCm or GPU access is already valid.
@@ -90,6 +95,7 @@
     - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, the selected TBB backend coverage justified by the shared private MLP workload, and a small packaged hipCIM correctness smoke without bundling either application project itself.
     - Keep individual validation scripts separate where useful; the environment gate and CLI behavior, rather than Python file layout, define the validation contract.
     - Allow optional absence to skip the entire packaged environment gate, while any future strict-presence flag must fail when the environment is absent.
+    - Add bounded checks for the packaged gate's optional-absence, strict-presence, and required-constituent failure behavior alongside its implementation.
     - Fail clearly when the known environment or package assumptions no longer hold.
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
     - If packaged hipDF is deliberately adopted later, it may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
@@ -114,6 +120,17 @@
     - Delete only the relevant `.done` marker to force that stage to rerun.
     - Rerun the setup script so completed stages remain skipped.
     - Document the exact marker and artifact locations instead of recommending broad directory deletion.
+
+- [ ] Harden the finite set of existing helpers whose local error contracts materially depend on ambient `errexit`:
+    - Make `guarded_rm_rf` refuse deletion explicitly when path resolution fails.
+    - Make the intended failure/status branches in the Triton validator and CuPy wheel-install path reachable without depending on ambient `set -e` behavior.
+    - Handle reboot-command failure without leaving a stale reboot marker or silently losing a required post-group-change reboot.
+    - Distinguish failure to execute `rocminfo` from a successful probe that reports an unloaded driver.
+    - Make unknown setup-script options fail rather than printing usage and exiting successfully.
+    - Add only bounded negative checks for these contracts, including that a failed stage does not create its `.done` marker; do not mechanically wrap every shell command with status boilerplate.
+
+- [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code to reduce setup/validation drift.
+    - Preserve the complete FRESH and BASELINE output fingerprints as separate auditable literals, and do not introduce a general UFW state-collection abstraction.
 
 - [ ] Document approximate setup and validation times:
     - Minimal setup and validation on Hot Aisle MI300X.
