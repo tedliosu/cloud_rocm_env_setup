@@ -18,6 +18,11 @@
 - Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
 - General-purpose firewall reconciliation, source-IP allowlisting, dynamic DNS, or VPN infrastructure
 - Expansion to entirely new cloud providers, GPU-platform families, or workload categories is currently frozen while the existing baseline is completed and stabilized. The already-planned experimental AMD DevCloud path remains in scope.
+- Acting as a general unofficial ROCm platform-enablement layer:
+    - Narrow unsupported-platform experiments may be used for concrete diagnostics, upstream bug reproduction, or explicitly approved compatibility investigations.
+    - An isolated successful build, JIT kernel, example, or smoke test does not create a baseline support promise, maintenance obligation, or precedent for additional unsupported platform combinations.
+    - The existing Azure `gfx1101` hipCollections diagnostic patch and optional CuPy `gfx1100` fallback with a manual HSA override are narrow exceptions, not precedents for broader unsupported-platform support.
+    - Azure Pro V710 support does not currently include hipCIM, hipDF, or general RAPIDS-on-RDNA support. Such support would require sufficiently explicit and mature upstream targeting followed by deliberate adoption within this repository's scope and maintenance budget.
 
 # Target Workloads
 
@@ -59,19 +64,34 @@
 
 ## Current Focus
 
+### Source-Built CuPy Environment Gate
+
+- [ ] Clarify and tighten the existing source-built CuPy setup and validation gate:
+    - Rename `--cupy-env-setup` and `--fail-on-no-cupy` so their names and help text explicitly identify the source-built CuPy environment, without adding compatibility aliases solely for the private repository's old names.
+    - Treat this as a complete shared workload-environment gate: when the environment is present, run both the CuPy custom-kernel smoke and the Numba smoke rather than allowing a partial gate result.
+    - Continue skipping the entire gate when its environment is absent and not explicitly required; the strict-presence flag must fail when that environment is absent.
+    - Keep fail-fast execution valid: a constituent check failure fails the gate even if later checks are not reached.
+    - After the Numba parallel workload runs, verify that Numba actually selected the `tbb` threading layer. Numba behavior is relevant to Canny, while the explicit TBB selection is retained because measurements for the private MLP workload favored TBB over OpenMP for its parallel CPU activations. Do not imply that TBB was also compared with workqueue.
+
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
 - [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
     - Keep AMD DevCloud instance provisioning manual.
-    - Automate the demonstrated in-VM bare-OS ROCm and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path.
+    - Add a narrowly classified root bootstrap for the sensitive initial user, authorized-key, required-group, and sudo-policy handoff. Require a separate SSH login test before ending the root session; do not turn this into a general account-reconciliation framework.
+    - Permit the reviewed root-owned repository clone to remain as an audit and recovery artifact. Do not replace it with execution of a mutable raw script from the network.
+    - Add a read-only ordinary-user handoff preflight before regular setup. Check the user, home, repository access, effective required groups, and agreed noninteractive-sudo contract without claiming that ROCm or GPU access is already valid.
+    - Automate one constrained, observed in-VM bare-OS ROCm/DKMS and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path. Reuse suitable common setup primitives while keeping DevCloud orchestration explicit.
+    - Perform ROCm, GPU-device, and permissions checks after the required install and reboot rather than as part of the pre-install handoff check.
     - Use an ordinary Python virtual environment with pip and packaged `amd-cupy`; do not source-build ordinary CuPy or introduce Conda merely for consistency with another environment.
     - Target one known MI300X environment and a fixed or constrained package recipe rather than arbitrary ROCm and package combinations.
-    - Probe and record the actual OS, ROCm, Python, `amd-cupy`, and `amd-hipcim` versions in a version-stamped environment record.
-    - Add a small packaged hipCIM correctness smoke relevant to the supported Canny workload.
-    - Run the implemented Canny-critical CuPy custom-kernel smoke without bundling the application project itself.
+    - Probe and record the actual OS, kernel, GPU, ROCm, Python, `amd-cupy`, and `amd-hipcim` versions in a simple version-stamped environment record.
+    - Add one coherent packaged RAPIDS shared workload-environment gate to the common provider-neutral validator. When active, it must run every check defined as required by that environment rather than silently accepting a partial result.
+    - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, the selected TBB backend coverage justified by the shared private MLP workload, and a small packaged hipCIM correctness smoke without bundling either application project itself.
+    - Keep individual validation scripts separate where useful; the environment gate and CLI behavior, rather than Python file layout, define the validation contract.
+    - Allow optional absence to skip the entire packaged environment gate, while any future strict-presence flag must fail when the environment is absent.
     - Fail clearly when the known environment or package assumptions no longer hold.
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
-    - Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
+    - If packaged hipDF is deliberately adopted later, it may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
 ### Hot Aisle Quick Start and Common Use Path
 
@@ -193,6 +213,7 @@
 - [ ] Add a contributing section:
     - Bugs, regressions, documentation fixes, compatibility reports, and improvement suggestions within existing scope are welcome.
     - Requests for entirely new providers, GPU-platform families, or workload categories are currently declined.
+    - Narrow unsupported-platform diagnostic reports may be considered, but requests for ongoing unofficial platform enablement are not accepted as support obligations.
     - Pull requests are not currently accepted because of limited review bandwidth.
     - This policy may change in the future.
 

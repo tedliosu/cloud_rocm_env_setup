@@ -156,7 +156,24 @@ evidence of readiness.
 Preserve these boundaries:
 
 - AMD DevCloud instance provisioning remains manual.
-- Automate only the demonstrated in-VM bare-OS ROCm and packaged environment.
+- Automate only the demonstrated root-to-user handoff and in-VM bare-OS ROCm
+  and packaged environment.
+- Keep the root bootstrap narrow and conservative. It may create or recognize
+  one explicitly named password-disabled ordinary user, install explicitly
+  supplied authorized keys, establish only the required groups and reviewed
+  sudo policy, and validate the resulting static state. Preserve valid custom
+  or unknown account state rather than becoming a general account
+  reconciliation engine.
+- Require a separate SSH login test before ending the root session. Static
+  server-side checks do not prove that the intended client authentication and
+  network path work.
+- A reviewed, root-owned clone under `/root` may remain as an audit and recovery
+  artifact. Do not replace it with piping a mutable network response into a
+  root shell.
+- Begin ordinary-user setup with a small read-only handoff preflight. Verify
+  the current non-root identity, home, repository access, effective required
+  groups, and the explicitly adopted sudo contract without claiming ROCm or
+  GPU readiness before those components are installed.
 - Use an ordinary Python virtual environment with pip for the demonstrated
   packaged recipe. Do not introduce Conda without a concrete compatibility
   requirement.
@@ -233,6 +250,32 @@ override-assisted smoke explicitly experimental.
 Treat `ROCBLAS_USE_HIPBLASLT` as a version- and architecture-sensitive
 performance option, not a correctness requirement or universal speedup.
 
+Do not make this repository a general unofficial platform-enablement layer.
+Apply the following distinction:
+
+1. For an official or explicitly supported upstream platform, normal repository
+   support may be considered within project scope and maintenance budget.
+2. For an explicitly experimental upstream platform, repository support may be
+   considered deliberately, but upstream experimentation does not automatically
+   create a repository support obligation.
+3. For an unsupported platform, a narrow experiment may be used for a concrete
+   diagnostic, upstream bug reproduction, or explicitly approved compatibility
+   investigation. It must not create a baseline support promise, continuing
+   maintenance obligation, or precedent for other unsupported matrix cells.
+
+Source-level portability, successful CuPy JIT execution, and isolated passing
+examples or smoke tests are evidence about the tested combination, not proof of
+upstream platform support. Do not add general repository workarounds merely to
+make unsupported libraries run on unsupported GPU families or providers.
+
+The existing hipCollections `gfx1101` validation patch and optional CuPy
+`gfx1100` fallback with manual `HSA_OVERRIDE_GFX_VERSION` use are grandfathered
+narrow diagnostic or compatibility exceptions. Preserve their explicit scope;
+do not remove them under this policy or treat them as precedents. Azure V710
+support does not currently include hipCIM, hipDF, or general RAPIDS-on-RDNA
+support. Emerging upstream RDNA work may justify a future deliberate review,
+but does not itself expand this repository's support contract.
+
 ## Canny and CuPy validation
 
 The custom CuPy Canny workload critically depends on custom and JIT-compiled
@@ -265,6 +308,22 @@ existing architecture handling. The experimental AMD DevCloud packaged
 environment instead uses packaged `amd-cupy`. Do not force either installation
 model onto the other environments merely for structural consistency.
 
+Setup and validation CLI terminology must distinguish the source-built CuPy
+environment from the packaged AMD DevCloud RAPIDS environment. The
+source-built environment is shared by multiple workloads, so its validation
+gate includes both the CuPy custom-kernel smoke and the Numba smoke. Canny
+depends on CuPy and Numba-relevant behavior. The explicit oneTBB selection,
+however, is retained for the private MLP workload's Numba `parallel=True` and
+`prange` CPU activation functions, not because Canny requires TBB and not
+because Numba or oneTBB are CuPy dependencies.
+
+The MLP backend comparison measured its ReLU-heavy network at approximately
+14.5 minutes with default TBB versus approximately 19 minutes with OpenMP.
+Reducing the thread count provided relatively little ReLU benefit, while
+sigmoid-heavy networks slowed substantially with fewer threads, so the
+all-thread default and TBB were intentionally retained. Do not claim a TBB
+advantage over workqueue; that comparison was not performed.
+
 For the source-build paths, retain the underlying CuPy build exit status, keep
 a full explicit log, provide useful bounded failure context, and avoid hiding
 all progress from the terminal.
@@ -272,13 +331,14 @@ all progress from the terminal.
 ## hipCollections and hipDF boundaries
 
 The current hipCollections validation smoke uses the
-`STATIC_MAP_HOST_BULK_EXAMPLE`. Do not redesign that smoke merely to satisfy
-the separate aggregation-methodology documentation task.
+`STATIC_MAP_HOST_BULK_EXAMPLE`. Keep that smoke separate from the documented
+aggregation methodology; do not redesign it merely to mirror the workload
+methodology.
 
-For planned aggregation methodology, prefer host-bulk `insert_or_apply` over a
-custom kernel-embedded aggregation implementation. This reduces benchmarking
-confounds caused by custom implementation skill rather than the library
-primitive itself.
+For the documented aggregation methodology, prefer host-bulk
+`insert_or_apply` over a custom kernel-embedded aggregation implementation.
+This reduces benchmarking confounds caused by custom implementation skill
+rather than the library primitive itself.
 
 Preserve immutable hipCollections and ROCmDS-CMake dependency pins and the
 purpose of narrow compatibility patches. Do not remove an ugly workaround only
@@ -439,6 +499,23 @@ Aisle, Azure, and potentially AMD DevCloud. Provider or environment
 fingerprints should mainly determine whether checks are applicable rather than
 create separate provider-specific validation implementations. Add provider
 specialization only when a concrete environmental difference requires it.
+
+Treat each validation CLI gate as a meaningful environment or capability
+bundle. If an optional environment is absent and not explicitly required,
+skipping that entire gate is acceptable. If its strict-presence flag is used,
+absence must fail. Once a gate is active, schedule every check defined as part
+of it; do not report a broad gate as passing after silently skipping a required
+constituent. Ordinary fail-fast behavior is still valid because a failed
+constituent fails the gate rather than partially passing it.
+
+The future packaged AMD DevCloud RAPIDS gate should cover the shared workload
+environment: complete Canny capability through packaged `amd-cupy` and Numba,
+the selected TBB backend coverage justified by the private MLP, and the
+required packaged hipCIM correctness check. hipCIM may remain in a separate
+Python script, and packaged hipDF may be folded into the broader gate only if
+it is deliberately adopted. Small orchestration duplication between this gate
+and the source-built CuPy gate is preferable to introducing a fine-grained
+capability framework.
 
 Receipts should record observed reality rather than force historical versions.
 The general structured receipt and validation-summary design is deferred until
