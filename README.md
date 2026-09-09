@@ -58,24 +58,19 @@
 2. High-capacity solid state storage (100GB+) recommended for Flux-class and LLM model weights when configuring cloud environment(s).
 3. Version-stamped CuPy custom-kernel acceptance evidence:
     - On 2026-09-05, the tiny semantic and million-attempt scale `atomicCAS`/template cases passed for `int32`, `int64`, and high-range `uint64` on a Hot Aisle MI300X VF with ROCm 7.2.4, source-built CuPy 14.1.1, and NumPy 2.5.2.
-    - Both the direct CuPy smoke and the complete main validator passed. This result records the tested environment rather than promising compatibility with every future image or package generation.
-4. Cross-platform execution of a representative smoke can provide an independent portability and correctness check because different compiler, runtime, and hardware implementations may expose different hidden assumptions.
+    - On 2026-09-09, the same cases passed on an Azure Radeon Pro V710 MxGPU with ROCm 7.2.0, source-built CuPy 14.1.1, and NumPy 2.5.3. The direct Numba 0.67.0 smoke also confirmed that Numba selected the intended TBB threading layer.
+    - The direct CuPy and Numba smokes and the complete strict main validator passed on Azure. The complete validator took approximately 2 minutes 35 seconds. These results record the tested environments rather than promising compatibility with every future image or package generation.
+4. The optional source-built CuPy environment is requested during setup with `--source-built-cupy-env-setup`.
+    - When present, validation runs both the CuPy custom-kernel smoke and the Numba smoke as one complete environment check.
+    - If the environment is absent, validation skips that entire check unless `--fail-on-no-source-built-cupy-env` requires it to be present.
+    - The Numba smoke requires the selected threading layer to be TBB. Canny requires CuPy and Numba-relevant behavior, while the explicit TBB selection is retained for the private MLP workload's parallel CPU activation functions.
+5. Cross-platform execution of a representative smoke can provide an independent portability and correctness check because different compiler, runtime, and hardware implementations may expose different hidden assumptions.
     - A CUDA-side development check does not make CUDA a supported bootstrap environment and does not substitute for ROCm acceptance.
     - Keep bootstrap coverage at the level of durable platform capabilities rather than bundling private workload regressions or reenacting historical upstream bugs.
 
 # TODOs
 
 ## Current Focus
-
-### Source-Built CuPy Environment Gate
-
-- [ ] Clarify and tighten the existing source-built CuPy setup and validation gate:
-    - Rename `--cupy-env-setup` and `--fail-on-no-cupy` so their names and help text explicitly identify the source-built CuPy environment, without adding compatibility aliases solely for the private repository's old names.
-    - Treat this as a complete shared workload-environment gate: when the environment is present, run both the CuPy custom-kernel smoke and the Numba smoke rather than allowing a partial gate result.
-    - Continue skipping the entire gate when its environment is absent and not explicitly required; the strict-presence flag must fail when that environment is absent.
-    - Keep fail-fast execution valid: failure of a required check fails the gate even if later checks are not reached.
-    - After the Numba parallel workload runs, verify that Numba actually selected the `tbb` threading layer. Numba behavior is relevant to Canny, while the explicit TBB selection is retained because measurements for the private MLP workload favored TBB over OpenMP for its parallel CPU activations. Do not imply that TBB was also compared with workqueue.
-    - Add bounded checks that the optional-absence, strict-presence, TBB-selection, and required-check failure paths produce the intended gate result; do not build a general validation-framework test suite merely for this gate.
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
