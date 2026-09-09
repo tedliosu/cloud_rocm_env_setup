@@ -73,9 +73,9 @@
     - Rename `--cupy-env-setup` and `--fail-on-no-cupy` so their names and help text explicitly identify the source-built CuPy environment, without adding compatibility aliases solely for the private repository's old names.
     - Treat this as a complete shared workload-environment gate: when the environment is present, run both the CuPy custom-kernel smoke and the Numba smoke rather than allowing a partial gate result.
     - Continue skipping the entire gate when its environment is absent and not explicitly required; the strict-presence flag must fail when that environment is absent.
-    - Keep fail-fast execution valid: a constituent check failure fails the gate even if later checks are not reached.
+    - Keep fail-fast execution valid: failure of a required check fails the gate even if later checks are not reached.
     - After the Numba parallel workload runs, verify that Numba actually selected the `tbb` threading layer. Numba behavior is relevant to Canny, while the explicit TBB selection is retained because measurements for the private MLP workload favored TBB over OpenMP for its parallel CPU activations. Do not imply that TBB was also compared with workqueue.
-    - Add bounded checks that the optional-absence, strict-presence, TBB-selection, and constituent-failure paths produce the intended gate result; do not build a general validation-framework test suite merely for this gate.
+    - Add bounded checks that the optional-absence, strict-presence, TBB-selection, and required-check failure paths produce the intended gate result; do not build a general validation-framework test suite merely for this gate.
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
@@ -95,7 +95,7 @@
     - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, the selected TBB backend coverage justified by the shared private MLP workload, and a small packaged hipCIM correctness smoke without bundling either application project itself.
     - Keep individual validation scripts separate where useful; the environment gate and CLI behavior, rather than Python file layout, define the validation contract.
     - Allow optional absence to skip the entire packaged environment gate, while any future strict-presence flag must fail when the environment is absent.
-    - Add bounded checks for the packaged gate's optional-absence, strict-presence, and required-constituent failure behavior alongside its implementation.
+    - Add bounded checks for the packaged gate's optional-absence, strict-presence, and required-check failure behavior alongside its implementation.
     - Fail clearly when the known environment or package assumptions no longer hold.
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
     - If packaged hipDF is deliberately adopted later, it may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.

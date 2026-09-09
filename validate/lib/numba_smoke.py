@@ -74,4 +74,10 @@ if __name__ == "__main__":
     print("PASSED ELU forward pass with matrix on CPU test! " + \
             f"(rtol={RTOL_ELU_FORWARD:.3e}, atol={ATOL_ELU_FORWARD:.3e})")
 
+    selected_threading_layer = numba.threading_layer()
+    if selected_threading_layer != "tbb":
+        raise RuntimeError("Expected Numba threading layer 'tbb', " +
+                           f"got '{selected_threading_layer}' instead")
+    print("PASSED Numba TBB threading-layer selection test!")
+
     print("========= PASSED ALL NUMPY/NUMBA SMOKE TESTS =========")

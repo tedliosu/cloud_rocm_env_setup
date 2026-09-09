@@ -2,23 +2,23 @@
 
 set -euo pipefail
 
-CUPY_ENV_FLAG="--cupy-env-setup"
+SOURCE_BUILT_CUPY_ENV_FLAG="--source-built-cupy-env-setup"
 COMFYUI_FLAG="--comfyui-addons-setup"
 FASTF_PPA_DISABLE_FLAG="--disable-fastfetch-ppa"
 SHOW_PLAN_ONLY_FLAG="--show-plan-only"
-DO_CUPY_ENV=0
+DO_SOURCE_BUILT_CUPY_ENV=0
 DO_COMFYUI_ADDONS=0
 DISABLE_FASTF_PPA=0
 
 usage() {
-    echo "Usage: $0 [$CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_PPA_DISABLE_FLAG] [$SHOW_PLAN_ONLY_FLAG] [-h|--help]"
+    echo "Usage: $0 [$SOURCE_BUILT_CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_PPA_DISABLE_FLAG] [$SHOW_PLAN_ONLY_FLAG] [-h|--help]"
     exit 0
 }
 
 # Parse args
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
-    "$CUPY_ENV_FLAG") DO_CUPY_ENV=1; shift;;
+    "$SOURCE_BUILT_CUPY_ENV_FLAG") DO_SOURCE_BUILT_CUPY_ENV=1; shift;;
     "$COMFYUI_FLAG") DO_COMFYUI_ADDONS=1; shift;;
     "$FASTF_PPA_DISABLE_FLAG") DISABLE_FASTF_PPA=1; shift;;
     "$SHOW_PLAN_ONLY_FLAG") export SHOW_PLAN_ONLY=1; shift;;
@@ -91,7 +91,7 @@ run_stage "$MILESTONES_DIR" ensure_base_dl_virtualenv "${DEEP_LEARN_VIRTENV_DIR}
     "${EXPECTED_ROCM_VER}" "${TORCH_PYPKGS_LISTS_PATH}" \
     "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${TORCHCODEC_PIN_VER}"
 
-if (( DO_CUPY_ENV )); then
+if (( DO_SOURCE_BUILT_CUPY_ENV )); then
     run_stage "$MILESTONES_DIR" ensure_gpu_arr_virtualenv "${GPU_ARR_VIRTENV_DIR}" \
         "${CUPY_REPO_LOCAL_DIR}" "${GPU_ARR_PYPKGS_LISTS_PATH}" "${CUPY_PIN_VER_TAG}" \
         "${CUPY_BUILD_LOG_PATH}"

@@ -99,6 +99,53 @@ validate_ufw_config() (
 
 )
 
+# Validate the complete source-built CuPy shared workload environment gate.
+# Usage: validate_source_built_cupy_env <virtualenv_dirpath> \
+#            <activation_script_relpath> <validation_lib_dirpath> \
+#            <oneapi_tbb_library_paths> <strict_presence_flag> \
+#            <strict_presence_cli_flag>
+# Returns: 0 after all required checks pass or optional absence is reported;
+#     1 for required absence or failure of either required validation
+validate_source_built_cupy_env() (
+
+    _source_built_cupy_env_dirpath="${1}"
+    _activation_script_relpath="${2}"
+    _validation_lib_dirpath="${3}"
+    _oneapi_tbb_library_paths="${4}"
+    _strict_presence_flag="${5}"
+    _strict_presence_cli_flag="${6}"
+
+    if [ ! -f "${_source_built_cupy_env_dirpath}/${_activation_script_relpath}" ]; then
+        if [ "${_strict_presence_flag}" -ne "${_FALSE_NUM_VAL}" ]; then
+            echo "FAILED to detect source-built CuPy environment," >&2
+            echo "(${_strict_presence_cli_flag} flag detected)!" >&2
+            return 1
+        fi
+        echo "Source-built CuPy environment and ${_strict_presence_cli_flag}" \
+            "flag both not detected,"
+        echo "skipping associated validations..."
+        return 0
+    fi
+
+    # Intentional variable path sourcing; the subshell keeps activation local
+    #     to this complete environment gate.
+    # shellcheck disable=SC1090,SC1091
+    source "${_source_built_cupy_env_dirpath}/${_activation_script_relpath}"
+    if ! env CUPY_ACCELERATORS="cub" python3 \
+        "${_validation_lib_dirpath}/cupy_numpy_smoke.py"; then
+        echo "FAILED source-built CuPy custom-kernel validation!" >&2
+        return 1
+    fi
+    if ! env LD_LIBRARY_PATH="${_oneapi_tbb_library_paths}" python3 \
+        "${_validation_lib_dirpath}/numba_smoke.py"; then
+        echo "FAILED source-built environment Numba/TBB validation!" >&2
+        return 1
+    fi
+    echo "NOTE: Numba test used LD_LIBRARY_PATH='${_oneapi_tbb_library_paths}'"
+    echo "PASSED complete source-built CuPy environment validation gate!"
+
+)
+
 # Validate Triton JIT works and resulting kernel runs using upstream Triton fp16 GEMM
 #     tutorial code
 # Usage: validate_basic_triton <cloned_triton_repo_dirpath> <cloned_triton_repo_branch_id> \

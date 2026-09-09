@@ -582,8 +582,8 @@ bundle. If an optional environment is absent and not explicitly required,
 skipping that entire gate is acceptable. If its strict-presence flag is used,
 absence must fail. Once a gate is active, schedule every check defined as part
 of it; do not report a broad gate as passing after silently skipping a required
-constituent. Ordinary fail-fast behavior is still valid because a failed
-constituent fails the gate rather than partially passing it.
+check. Ordinary fail-fast behavior is still valid because a failed
+required check fails the gate rather than partially passing it.
 
 The future packaged AMD DevCloud RAPIDS gate should cover the shared workload
 environment: complete Canny capability through packaged `amd-cupy` and Numba,
@@ -624,6 +624,9 @@ when they would not improve clarity.
 During editing:
 
 - Use the smallest coherent diff.
+- Prefer plain language in public documentation, help text, diagnostics, test
+  failures, and comments when it remains precise. Avoid specialized internal
+  terminology when a direct description is clearer.
 - Preserve unrelated user changes in a dirty worktree.
 - Do not modify files outside the repository unless explicitly authorized.
 - Do not create multiple backup, context, or TODO files inside the repository

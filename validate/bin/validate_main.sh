@@ -2,17 +2,17 @@
 
 set -euo pipefail
 
-CHECK_CUPY_FLAG="--fail-on-no-cupy"
+REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG="--fail-on-no-source-built-cupy-env"
 CHECK_COMFYUI_FLAG="--fail-on-no-comfyui"
 SKIP_UFW_CHECKS_FLAG="--skip-ufw-checks"
 RELAX_UFW_CHECKS_FLAG="--relax-ufw-checks"
-DO_CUPY_CHECK=0
+REQUIRE_SOURCE_BUILT_CUPY_ENV=0
 DO_COMFYUI_CHECK=0
 DO_UFW_CHECK=1
 STRICT_UFW_CHECK=1
 
 usage() {
-    echo -n "Usage: $0 [$CHECK_CUPY_FLAG] [$CHECK_COMFYUI_FLAG] "
+    echo -n "Usage: $0 [$REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG] [$CHECK_COMFYUI_FLAG] "
     echo "[$SKIP_UFW_CHECKS_FLAG|$RELAX_UFW_CHECKS_FLAG] [-h|--help]"
     echo "NOTE: $SKIP_UFW_CHECKS_FLAG and $RELAX_UFW_CHECKS_FLAG are mutually exclusive"
 }
@@ -20,7 +20,7 @@ usage() {
 # Parse args
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
-    "$CHECK_CUPY_FLAG") DO_CUPY_CHECK=1; shift;;
+    "$REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG") REQUIRE_SOURCE_BUILT_CUPY_ENV=1; shift;;
     "$CHECK_COMFYUI_FLAG") DO_COMFYUI_CHECK=1; shift;;
     "$SKIP_UFW_CHECKS_FLAG") DO_UFW_CHECK=0; shift;;
     "$RELAX_UFW_CHECKS_FLAG") STRICT_UFW_CHECK=0; shift;;
@@ -102,23 +102,12 @@ python3 "${LIB_DIR_ABS_PATH}/torchvision_vit_resnet_abi_smoke.py"
 validate_basic_triton "${CURR_HOME_DIR}/${TRITON_REPO_LOCAL_DIRNAME}" \
     "${TRITON_REPO_UPSTREAM_TAG}" "${TRITON_EXAMP_PATCH_PATH}"
 deactivate
-if [[ -f "${GPU_ARR_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}" ]]; then
-    _ONEAPI_TBB_LIBPATHS="/opt/intel/oneapi/tbb/${ONEAPI_TBB_PIN_VER}/lib"
-    _ONEAPI_TBB_LIBPATHS="${_ONEAPI_TBB_LIBPATHS}:/opt/intel/oneapi/tcm/${ONEAPI_TCM_PIN_VER}/lib"
-    # shellcheck disable=SC1091,SC1090
-    source "${GPU_ARR_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}"
-    env CUPY_ACCELERATORS="cub" python3 "${LIB_DIR_ABS_PATH}/cupy_numpy_smoke.py"
-    env LD_LIBRARY_PATH="${_ONEAPI_TBB_LIBPATHS}" python3 "${LIB_DIR_ABS_PATH}/numba_smoke.py"
-    echo "NOTE: Numba test used LD_LIBRARY_PATH='${_ONEAPI_TBB_LIBPATHS}'"
-    deactivate
-elif (( DO_CUPY_CHECK )); then
-    echo "FAILED to detect CuPy virtualenv," >&2
-    echo "(${CHECK_CUPY_FLAG} flag detected)!" >&2
-    exit 1
-else
-    echo "CuPy virtualenv and ${CHECK_CUPY_FLAG} flag both not detected,"
-    echo "skipping associated validations..."
-fi
+_ONEAPI_TBB_LIBPATHS="/opt/intel/oneapi/tbb/${ONEAPI_TBB_PIN_VER}/lib"
+_ONEAPI_TBB_LIBPATHS="${_ONEAPI_TBB_LIBPATHS}:/opt/intel/oneapi/tcm/${ONEAPI_TCM_PIN_VER}/lib"
+validate_source_built_cupy_env "${GPU_ARR_VIRTENV_DIR}" \
+    "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" \
+    "${_ONEAPI_TBB_LIBPATHS}" "${REQUIRE_SOURCE_BUILT_CUPY_ENV}" \
+    "${REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG}"
 if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
     _MODEL_FILENAME="$(jq --raw-output "${COMFYUI_WORKFLOW_MODLNAME_FILTER}" \
                                                        "${COMFYUI_WORKFLOW_PATH}")" || {
