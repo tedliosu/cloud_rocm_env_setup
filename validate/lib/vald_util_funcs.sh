@@ -130,7 +130,7 @@ validate_source_built_cupy_env() (
     # Intentional variable path sourcing; the subshell keeps activation local
     #     to this complete environment gate.
     # shellcheck disable=SC1090,SC1091
-    source "${_source_built_cupy_env_dirpath}/${_activation_script_relpath}"
+    . "${_source_built_cupy_env_dirpath}/${_activation_script_relpath}"
     if ! env CUPY_ACCELERATORS="cub" python3 \
         "${_validation_lib_dirpath}/cupy_numpy_smoke.py"; then
         echo "FAILED source-built CuPy custom-kernel validation!" >&2
