@@ -246,3 +246,5 @@
 # LLM Assistance Usage Disclaimer
 
 - All code and documentation in this repository were drafted with assistance from ChatGPT and Gemini models publicly available circa 2026, but all final code review, integration, validation, testing, etc. were done by me, a human.
+- This disclosure provides transparency about the development process; it is not by itself proof of originality, complete provenance, or license compliance.
+- Reports of suspected similarity to third-party material or licensing concerns are welcome so that affected code or documentation can be reviewed and, when appropriate, replaced.

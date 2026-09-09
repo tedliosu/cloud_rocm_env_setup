@@ -61,6 +61,33 @@ conversation dumps, parallel backlogs, or speculative TODOs merely to preserve
 chat context. Do not rewrite information that Git or existing documentation
 already records adequately.
 
+## Software provenance and generative-AI assistance
+
+Treat software provenance according to concrete risk rather than assuming that
+generative-AI output is either automatically clean-room or automatically
+contaminated. Do not initiate a broad forensic audit of historical assisted
+commits without a specific reason. Trivial boilerplate, ordinary shell
+plumbing, standard API use, and obvious implementations normally warrant less
+scrutiny than large or distinctive blocks accepted substantially verbatim,
+unusual algorithms, suspiciously specific comments or identifiers, license
+headers, or output that appears closely tied to a particular third-party
+tutorial, repository, or implementation.
+
+If proposed code cites or appears derived from a specific external
+implementation, flag that before integration. Prefer implementation from
+reviewed requirements, primary API or platform documentation, and independently
+understood behavior instead of cosmetically rewriting possibly copied code. Do
+not add third-party license headers or copied comments unless the actual source
+and licensing situation requires them.
+
+Preserve Git chronology, validation receipts, benchmarks, design decisions, and
+other evidence of human review and engineering. Note substantial agent
+assistance prospectively in commits or lightweight development documentation
+when useful, using the repository's established co-author practice where
+applicable. Such disclosure improves transparency but is not proof of
+originality, complete provenance, or license compliance. Do not catastrophize
+all agent-touched code as contaminated.
+
 ## Project contract
 
 This repository bootstraps and smoke-validates practical ROCm cloud VMs for
