@@ -649,8 +649,11 @@ During editing:
   as an alternative to Git.
 - Do not use stashes unless they materially simplify a real conflict, and do
   not create a pile of stashes.
-- Keep setup, validation, documentation, and provider-policy changes in focused
-  commits when their behavior and rollback boundaries differ.
+- Commit a completed and reviewed unit as its own focused change when it has a
+  coherent behavior and rollback boundary. Do not hold it merely to batch it
+  with later unrelated work. Combine setup, validation, documentation, or
+  provider-policy changes only when they describe or implement the same
+  reviewed behavior; otherwise keep them in separate commits.
 
 After editing:
 
