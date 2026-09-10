@@ -24,6 +24,66 @@ DEFAULT_OUTPUT_POLICY=\"ACCEPT\"
 DEFAULT_FORWARD_POLICY=\"DROP\"
 DEFAULT_APPLICATION_POLICY=\"SKIP\""
 
+# Detect one GPU's native architecture through AMD SMI's static JSON output.
+# Usage: detect_amd_smi_gpu_arch <gpu_index>
+# Returns: 0 after printing one architecture such as gfx942; 1 otherwise
+detect_amd_smi_gpu_arch() {
+
+    [ "$#" -eq 1 ] || {
+        echo "ERROR: detect_amd_smi_gpu_arch expects one GPU index!" >&2
+        return 1
+    }
+
+    local _gpu_index="$1"
+    local _amd_smi_json
+    local _detected_arch
+
+    case ${_gpu_index} in
+        ''|*[!0-9]*)
+            echo "ERROR: AMD SMI GPU index must be a nonnegative integer!" >&2
+            return 1
+            ;;
+    esac
+
+    if ! command -v amd-smi >/dev/null 2>&1; then
+        echo "ERROR: required 'amd-smi' command is unavailable!" >&2
+        return 1
+    fi
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "ERROR: required 'jq' command is unavailable!" >&2
+        return 1
+    fi
+
+    if ! _amd_smi_json=$(amd-smi static --gpu "${_gpu_index}" --asic --json); then
+        echo "ERROR: AMD SMI failed to report ASIC information for GPU ${_gpu_index}!" >&2
+        return 1
+    fi
+
+    if ! _detected_arch=$(printf "%s\n" "${_amd_smi_json}" |
+        jq --raw-output --exit-status --argjson gpu_index "${_gpu_index}" \
+            '.gpu_data
+             | select(type == "array")
+             | .[]
+             | select(.gpu == $gpu_index)
+             | .asic.target_graphics_version
+             | select(type == "string")'); then
+        echo "ERROR: AMD SMI output did not contain an architecture for" >&2
+        echo "    exactly selected GPU ${_gpu_index}!" >&2
+        return 1
+    fi
+
+    if [ "$(printf "%s\n" "${_detected_arch}" | wc --lines)" -ne 1 ] ||
+        ! printf "%s\n" "${_detected_arch}" |
+        grep --extended-regexp --line-regexp --quiet 'gfx[[:xdigit:]]+'; then
+        echo "ERROR: AMD SMI reported an invalid or ambiguous architecture" >&2
+        echo "    for GPU ${_gpu_index}!" >&2
+        return 1
+    fi
+
+    printf "%s\n" "${_detected_arch}"
+
+}
+
 # Check an os-release file for exactly one expected ID and VERSION_ID.
 # Usage: os_release_matches_expected <os_release_file> <expected_id> <expected_version>
 # Returns: 0 for the exact expected OS identity; 1 otherwise

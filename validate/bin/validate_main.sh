@@ -77,8 +77,7 @@ _HIPCC_INIT_SMOKE_EXE="hipcc_smoke"
 _CHECKPOINTS_DIR_RELPATH="models/checkpoints"
 _WORKFLOWS_DIR_RELPATH="user/default/workflows"
 _CHECKPOINTS_INDIC_FILE="${_CHECKPOINTS_DIR_RELPATH}/put_checkpoints_here"
-HCC_AMDGPU0_ARCH="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
-                         jq --raw-output '.card0."GFX Version"' | tr --delete "\n")" || {
+HCC_AMDGPU0_ARCH="$(detect_amd_smi_gpu_arch 0)" || {
     echo "FAILED to detect GFX Version of ROCm device 0!" >&2
     exit 1
 }

@@ -561,8 +561,7 @@ ensure_gpu_arr_virtualenv() {
         echo "FAILED to detect 'ROCM_HOME'!" >&2
         exit 1
     }
-    HCC_AMDGPU_TARGET="$(rocm-smi --device 0 --showproductname --json 2>/dev/null | \
-                             jq --raw-output '.card0."GFX Version"' | tr --delete "\n")" || {
+    HCC_AMDGPU_TARGET="$(detect_amd_smi_gpu_arch 0)" || {
         echo "FAILED to detect GFX Version of ROCm device 0!" >&2
         exit 1
     }
