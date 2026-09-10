@@ -5,17 +5,11 @@ set -euo pipefail
 readonly TARGET_USER_FLAG="--target-user"
 readonly AUTHORIZED_KEY_FILE_FLAG="--authorized-key-file"
 readonly TARGET_USERNAME_REGEX='^[a-z]([a-z0-9_-]{0,30}[a-z0-9])?$'
-readonly REQUIRED_GROUPS=(adm video render)
-readonly SUDOERS_FILE_PREFIX="cloud_rocm_env_setup-amd-devcloud-"
-# An invalid '*' hash disables Unix-password matching without Linux OpenSSH's
-#     leading-'!' whole-account rejection when PAM is disabled.
-readonly DISABLED_PASSWORD_FIELD='*'
-readonly EXPECTED_DISTRO_ID="ubuntu"
-readonly EXPECTED_DISTRO_NAME="Ubuntu"
-readonly EXPECTED_DISTRO_VERSION="24.04"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly SCRIPT_DIR
 
+# shellcheck source=../lib/amd_devcloud_vars.sh
+. "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
 # shellcheck source=../../../lib/comm_util_funcs.sh
 . "${SCRIPT_DIR}/../../../lib/comm_util_funcs.sh"
 
@@ -26,8 +20,8 @@ usage() {
 
 _print_account_diagnostics() {
     local _target_user="$1"
-    local _target_home="/home/${_target_user}"
-    local _sudoers_file="/etc/sudoers.d/${SUDOERS_FILE_PREFIX}${_target_user}"
+    local _target_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_target_user}"
+    local _sudoers_file="${AMD_DEVCLOUD_SUDOERS_DIR}/${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_target_user}"
 
     echo "--- Existing target-account diagnostics ---" >&2
     getent passwd "${_target_user}" >&2 || :
@@ -44,8 +38,8 @@ _print_account_diagnostics() {
 _account_matches_baseline() (
     local _target_user="$1"
     local _authorized_key_file="$2"
-    local _target_home="/home/${_target_user}"
-    local _sudoers_file="/etc/sudoers.d/${SUDOERS_FILE_PREFIX}${_target_user}"
+    local _target_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_target_user}"
+    local _sudoers_file="${AMD_DEVCLOUD_SUDOERS_DIR}/${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_target_user}"
     local _passwd_entry
     local _passwd_name
     local _passwd_unused
@@ -68,7 +62,7 @@ _account_matches_baseline() (
     [[ "${_passwd_uid}" =~ ^[0-9]+$ ]] || return 1
     [ "${_passwd_uid}" -ge 1000 ] && [ "${_passwd_uid}" -lt 60000 ] || return 1
     [ "${_passwd_home}" = "${_target_home}" ] || return 1
-    [ "${_passwd_shell}" = "/bin/bash" ] || return 1
+    [ "${_passwd_shell}" = "${AMD_DEVCLOUD_TARGET_LOGIN_SHELL}" ] || return 1
     [ "$(id --group --name "${_target_user}")" = "${_target_user}" ] || return 1
 
     [ -d "${_target_home}" ] && [ ! -L "${_target_home}" ] || return 1
@@ -81,9 +75,11 @@ _account_matches_baseline() (
     IFS=: read -r _shadow_name _shadow_password _shadow_remainder \
         <<< "${_shadow_entry}"
     [ "${_shadow_name}" = "${_target_user}" ] &&
-        [ "${_shadow_password}" = "${DISABLED_PASSWORD_FIELD}" ] || return 1
+        [ "${_shadow_password}" = "${AMD_DEVCLOUD_DISABLED_PASSWORD_FIELD}" ] ||
+        return 1
 
-    _expected_groups="$(printf '%s\n' "${_target_user}" "${REQUIRED_GROUPS[@]}" |
+    _expected_groups="$(printf '%s\n' "${_target_user}" \
+        "${AMD_DEVCLOUD_REQUIRED_GROUPS[@]}" |
         LC_ALL=C sort)"
     _actual_groups="$(id --groups --name "${_target_user}" | tr ' ' '\n' |
         LC_ALL=C sort --unique)" || return 1
@@ -102,7 +98,7 @@ _account_matches_baseline() (
     [ "$(stat --format='%a %U:%G' "${_sudoers_file}")" = \
         "440 root:root" ] || return 1
     printf '%s\n' \
-        "${_target_user} ALL=(ALL:ALL) NOPASSWD: ALL" |
+        "${_target_user} ${AMD_DEVCLOUD_SUDOERS_POLICY_SUFFIX}" |
         cmp --silent - "${_sudoers_file}" || return 1
     visudo --check >/dev/null || return 1
 )
@@ -113,8 +109,8 @@ _account_matches_baseline() (
 _create_handoff_baseline() {
     local _target_user="$1"
     local _authorized_key_file="$2"
-    local _target_home="/home/${_target_user}"
-    local _sudoers_file="/etc/sudoers.d/${SUDOERS_FILE_PREFIX}${_target_user}"
+    local _target_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_target_user}"
+    local _sudoers_file="${AMD_DEVCLOUD_SUDOERS_DIR}/${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_target_user}"
     local _sudoers_temp_file
     local _key_temp_file
     local _required_group
@@ -128,11 +124,12 @@ _create_handoff_baseline() {
     fi
 
     _sudoers_temp_file="$(mktemp \
-        "/etc/sudoers.d/.${SUDOERS_FILE_PREFIX}${_target_user}.XXXXXX")" || {
+        "${AMD_DEVCLOUD_SUDOERS_DIR}/.${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_target_user}.XXXXXX")" || {
         echo "ERROR: unable to create temporary sudoers file!" >&2
         return 1
     }
-    if ! printf '%s\n' "${_target_user} ALL=(ALL:ALL) NOPASSWD: ALL" \
+    if ! printf '%s\n' \
+        "${_target_user} ${AMD_DEVCLOUD_SUDOERS_POLICY_SUFFIX}" \
         > "${_sudoers_temp_file}" ||
         ! chown root:root "${_sudoers_temp_file}" ||
         ! chmod 0440 "${_sudoers_temp_file}"; then
@@ -147,7 +144,7 @@ _create_handoff_baseline() {
         return 1
     fi
 
-    for _required_group in "${REQUIRED_GROUPS[@]}"; do
+    for _required_group in "${AMD_DEVCLOUD_REQUIRED_GROUPS[@]}"; do
         if ! getent group "${_required_group}" >/dev/null; then
             echo "Creating missing required system group '${_required_group}'..."
             if ! groupadd --system "${_required_group}"; then
@@ -161,9 +158,11 @@ _create_handoff_baseline() {
     done
 
     echo "Creating password-disabled ordinary user '${_target_user}'..."
-    if ! useradd --create-home --shell /bin/bash --user-group \
-        --password "${DISABLED_PASSWORD_FIELD}" \
-        --groups "$(IFS=,; echo "${REQUIRED_GROUPS[*]}")" "${_target_user}"; then
+    if ! useradd --create-home --shell "${AMD_DEVCLOUD_TARGET_LOGIN_SHELL}" \
+        --user-group \
+        --password "${AMD_DEVCLOUD_DISABLED_PASSWORD_FIELD}" \
+        --groups "$(IFS=,; echo "${AMD_DEVCLOUD_REQUIRED_GROUPS[*]}")" \
+        "${_target_user}"; then
         echo "ERROR: unable to create the password-disabled target account!" >&2
         echo "WARNING: the system may now contain partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
@@ -307,10 +306,12 @@ for _required_command in cat cmp getent grep groupadd id install ln mktemp \
     }
 done
 
-if ! os_release_matches_expected /etc/os-release "${EXPECTED_DISTRO_ID}" \
-    "${EXPECTED_DISTRO_VERSION}"; then
+if ! os_release_matches_expected /etc/os-release \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_ID}" \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"; then
     echo "ERROR: AMD DevCloud root bootstrap requires" \
-        "${EXPECTED_DISTRO_NAME} ${EXPECTED_DISTRO_VERSION}." >&2
+        "${AMD_DEVCLOUD_EXPECTED_DISTRO_NAME}" \
+        "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}." >&2
     echo "--- Collected '/etc/os-release' contents ---" >&2
     if [ -r /etc/os-release ]; then
         cat /etc/os-release >&2

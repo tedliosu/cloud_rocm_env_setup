@@ -468,6 +468,18 @@ Preserve existing code style unless it interferes with correctness, safety, or
 the explicit task. Do not opportunistically normalize surrounding Bash.
 
 - Constants belong near the top of the appropriate file.
+- Provider-specific configuration constants that are used across scripts or
+  expected to change with a provider image, platform generation, or supported
+  recipe belong in `setup/<provider>/lib/<provider>_vars.sh`. Keep script-local
+  CLI tokens and private implementation literals in the script that owns them.
+  Tests may keep self-contained fixture values, but should source the provider
+  variables instead of duplicating a production value when exact agreement is
+  part of the test contract.
+- Source-only variable files may use a file-scoped ShellCheck `SC2034`
+  suppression because standalone analysis cannot see their consumers. Explain
+  that suppression in the file, do not export values solely to silence the
+  warning, and also ShellCheck the consuming scripts with source following
+  enabled so their use of the variables is analyzed.
 - Constants tightly coupled to common classifier functions may remain beside
   those functions; do not create `comm_shared_vars.sh` merely for structural
   symmetry.

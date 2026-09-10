@@ -67,6 +67,9 @@
 5. Cross-platform execution of a representative smoke can provide an independent portability and correctness check because different compiler, runtime, and hardware implementations may expose different hidden assumptions.
     - A CUDA-side development check does not make CUDA a supported bootstrap environment and does not substitute for ROCm acceptance.
     - Keep bootstrap coverage at the level of durable platform capabilities rather than bundling private workload regressions or reenacting historical upstream bugs.
+6. On 2026-09-09, the experimental AMD DevCloud root-to-user handoff was accepted on a disposable Ubuntu 24.04 VM.
+    - Testing covered fresh account creation, the exact `*` password marker, a separate key-only SSH login, full passwordless sudo, idempotent reruns, and conservative refusal and preservation of a conflicting existing account.
+    - This establishes the initial account handoff behavior only; it does not establish ROCm, GPU, or packaged-workload readiness on AMD DevCloud.
 
 # TODOs
 
@@ -76,11 +79,6 @@
 
 - [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
     - Keep AMD DevCloud instance provisioning manual.
-    - Add a narrowly classified root bootstrap for the sensitive initial user, authorized-key, required-group, and sudo-policy handoff. Require a separate SSH login test before ending the root session; do not turn this into a general account-reconciliation framework.
-    - Cover representative invalid root-handoff states locally where practical, including non-root invocation, malformed or conflicting account state, and sudoers validation failure. Preserve or reject unsafe state rather than testing destructive recovery against a live cloud instance.
-    - Decide explicitly whether the password-disabled ordinary user requires full `NOPASSWD` sudo or a narrower policy, then encode and validate only the selected contract rather than assuming one implicitly.
-    - Permit a credential-free root-owned repository clone at a reviewed immutable commit or tag to remain as an audit and recovery artifact. Do not replace it with execution of a mutable raw script from the network.
-    - Add a read-only ordinary-user handoff preflight before regular setup. Check the user, home, repository access, effective required groups, and explicitly selected noninteractive-sudo contract without claiming that ROCm or GPU access is already valid.
     - Automate one constrained, observed in-VM bare-OS ROCm/DKMS and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path. Reuse suitable common setup primitives while keeping DevCloud orchestration explicit.
     - Perform ROCm, GPU-device, and permissions checks after the required install and reboot rather than as part of the pre-install handoff check.
     - Use an ordinary Python virtual environment with pip and packaged `amd-cupy`; do not source-build ordinary CuPy or introduce Conda merely for consistency with another environment.

@@ -8,6 +8,13 @@ ROOT_BOOTSTRAP="$(realpath \
 TEST_TMP_DIR="$(mktemp --directory)"
 TEST_KEY_FILE="${TEST_TMP_DIR}/authorized_keys"
 
+# shellcheck source=../../../lib/comm_util_funcs.sh
+# shellcheck disable=SC1091
+. "${SCRIPT_DIR}/../../../lib/comm_util_funcs.sh"
+# shellcheck source=../lib/amd_devcloud_vars.sh
+# shellcheck disable=SC1091
+. "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
+
 cleanup() {
     rm --recursive --force "${TEST_TMP_DIR}"
 }
@@ -59,6 +66,44 @@ if [ "${EUID}" -ne 0 ]; then
             exit 1
         fi
     done
+elif os_release_matches_expected /etc/os-release \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_ID}" \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"; then
+    _visudo_test_user="dcvisudotest${$}"
+    _visudo_test_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_visudo_test_user}"
+    _visudo_test_sudoers="${AMD_DEVCLOUD_SUDOERS_DIR}/${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_visudo_test_user}"
+    _visudo_test_bin="${TEST_TMP_DIR}/bin"
+    _visudo_test_key="${TEST_TMP_DIR}/id_ed25519"
+
+    if getent passwd "${_visudo_test_user}" >/dev/null ||
+        getent group "${_visudo_test_user}" >/dev/null ||
+        [ -e "${_visudo_test_home}" ] || [ -L "${_visudo_test_home}" ] ||
+        [ -e "${_visudo_test_sudoers}" ] || [ -L "${_visudo_test_sudoers}" ]; then
+        echo "FAILED: visudo test target unexpectedly already exists!" >&2
+        exit 1
+    fi
+
+    ssh-keygen -q -t ed25519 -N '' -f "${_visudo_test_key}"
+    mkdir --parents "${_visudo_test_bin}"
+    printf '%s\n' '#!/bin/bash' 'exit 1' > "${_visudo_test_bin}/visudo"
+    chmod +x "${_visudo_test_bin}/visudo"
+
+    _error_output="$(PATH="${_visudo_test_bin}:${PATH}" "${ROOT_BOOTSTRAP}" \
+        --target-user "${_visudo_test_user}" \
+        --authorized-key-file "${_visudo_test_key}.pub" 2>&1 || :)"
+    if ! grep --fixed-strings --quiet \
+        "existing complete sudoers policy failed validation" \
+        <<< "${_error_output}"; then
+        echo "FAILED: root bootstrap did not reject invalid sudoers state!" >&2
+        exit 1
+    fi
+    if getent passwd "${_visudo_test_user}" >/dev/null ||
+        getent group "${_visudo_test_user}" >/dev/null ||
+        [ -e "${_visudo_test_home}" ] || [ -L "${_visudo_test_home}" ] ||
+        [ -e "${_visudo_test_sudoers}" ] || [ -L "${_visudo_test_sudoers}" ]; then
+        echo "FAILED: sudoers rejection changed account or project-owned state!" >&2
+        exit 1
+    fi
 fi
 
 echo "PASSED AMD DevCloud root-bootstrap CLI tests!"
