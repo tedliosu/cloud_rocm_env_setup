@@ -1,4 +1,6 @@
 
+# shellcheck shell=bash
+
 # Any reference of "BASELINE" below means REPO-SPECIFIC DEFINED BASELINE!
 readonly UFW_INSTALLED_FRESH="UFW_FRESH"
 readonly UFW_KNOWN_BASELINE="UFW_BASELINE"
@@ -21,6 +23,47 @@ DEFAULT_INPUT_POLICY=\"DROP\"
 DEFAULT_OUTPUT_POLICY=\"ACCEPT\"
 DEFAULT_FORWARD_POLICY=\"DROP\"
 DEFAULT_APPLICATION_POLICY=\"SKIP\""
+
+# Check an os-release file for exactly one expected ID and VERSION_ID.
+# Usage: os_release_matches_expected <os_release_file> <expected_id> <expected_version>
+# Returns: 0 for the exact expected OS identity; 1 otherwise
+os_release_matches_expected() (
+    [ "$#" -eq 3 ] || return 1
+
+    local _os_release_file="$1"
+    local _expected_id="$2"
+    local _expected_version="$3"
+    local _os_release_line
+    local _id_count=0
+    local _matching_id_count=0
+    local _version_count=0
+    local _matching_version_count=0
+
+    [ -f "${_os_release_file}" ] && [ -r "${_os_release_file}" ] || return 1
+
+    while IFS= read -r _os_release_line || [ -n "${_os_release_line}" ]; do
+        case ${_os_release_line} in
+            ID=*)
+                _id_count=$((_id_count + 1))
+                [ "${_os_release_line}" = "ID=${_expected_id}" ] &&
+                    _matching_id_count=$((_matching_id_count + 1))
+                ;;
+            VERSION_ID=*)
+                _version_count=$((_version_count + 1))
+                case ${_os_release_line} in
+                    "VERSION_ID=${_expected_version}"|\
+                    "VERSION_ID=\"${_expected_version}\"")
+                        _matching_version_count=$((_matching_version_count + 1))
+                        ;;
+                esac
+                ;;
+        esac
+    done < "${_os_release_file}"
+
+    [ "${_id_count}" -eq 1 ] && [ "${_matching_id_count}" -eq 1 ] &&
+        [ "${_version_count}" -eq 1 ] &&
+        [ "${_matching_version_count}" -eq 1 ]
+)
 
 # Check that the collected /etc/default/ufw values contain each expected key
 #     exactly once.

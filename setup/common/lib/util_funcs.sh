@@ -266,23 +266,28 @@ ensure_groups_maybe_reboot_dont_wrap() {
 
 }
 
-# Assert basic OS environment stats helper, assuming Ubuntu-like distro
+# Assert basic OS environment stats helper, assuming an expected distro ID
 # Usage: ensure_basic_os_env_sanity_dont_wrap <expected_distro_name> <expected_distro_ver>
 # Returns: 0 for plan-only or the expected OS; exits 1 for an unexpected OS
 ensure_basic_os_env_sanity_dont_wrap() {
+    local _expected_distro_id="${1,,}"
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         echo "[PLAN ONLY] Would ensure that current environment is $1 $2 distro."
         return 0
     fi
 
-    if ! grep --quiet "DISTRIB_ID=$1" /etc/lsb-release ||
-       ! grep --quiet "DISTRIB_RELEASE=$2" /etc/lsb-release; then
-        echo "Got unexpected '/etc/lsb-release' with contents:" >&2
+    if ! os_release_matches_expected /etc/os-release \
+        "${_expected_distro_id}" "$2"; then
+        echo "Got unexpected '/etc/os-release' with contents:" >&2
         echo >&2
-        cat /etc/lsb-release >&2
+        if [ -r /etc/os-release ]; then
+            cat /etc/os-release >&2
+        else
+            echo "Unable to read '/etc/os-release'." >&2
+        fi
         echo >&2
-        echo  "    This IS NOT $1 $2; bailing!" >&2
+        echo "    This IS NOT $1 $2; bailing!" >&2
         exit 1
     fi
 

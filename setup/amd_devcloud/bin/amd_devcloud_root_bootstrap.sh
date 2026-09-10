@@ -7,6 +7,14 @@ readonly AUTHORIZED_KEY_FILE_FLAG="--authorized-key-file"
 readonly TARGET_USERNAME_REGEX='^[a-z]([a-z0-9_-]{0,30}[a-z0-9])?$'
 readonly REQUIRED_GROUPS=(adm video render)
 readonly SUDOERS_FILE_PREFIX="cloud_rocm_env_setup-amd-devcloud-"
+readonly EXPECTED_DISTRO_ID="ubuntu"
+readonly EXPECTED_DISTRO_NAME="Ubuntu"
+readonly EXPECTED_DISTRO_VERSION="24.04"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+readonly SCRIPT_DIR
+
+# shellcheck source=../../../lib/comm_util_funcs.sh
+. "${SCRIPT_DIR}/../../../lib/comm_util_funcs.sh"
 
 usage() {
     echo "Usage: $0 ${TARGET_USER_FLAG} USERNAME" \
@@ -288,13 +296,27 @@ if [ "${EUID}" -ne 0 ]; then
     exit 1
 fi
 
-for _required_command in cmp getent grep groupadd id install ln mktemp passwd \
-    ssh-keygen stat useradd visudo; do
+for _required_command in cat cmp getent grep groupadd id install ln mktemp \
+    passwd ssh-keygen stat useradd visudo; do
     command -v "${_required_command}" >/dev/null 2>&1 || {
         echo "ERROR: required command '${_required_command}' is unavailable!" >&2
         exit 1
     }
 done
+
+if ! os_release_matches_expected /etc/os-release "${EXPECTED_DISTRO_ID}" \
+    "${EXPECTED_DISTRO_VERSION}"; then
+    echo "ERROR: AMD DevCloud root bootstrap requires" \
+        "${EXPECTED_DISTRO_NAME} ${EXPECTED_DISTRO_VERSION}." >&2
+    echo "--- Collected '/etc/os-release' contents ---" >&2
+    if [ -r /etc/os-release ]; then
+        cat /etc/os-release >&2
+    else
+        echo "Unable to read '/etc/os-release'." >&2
+    fi
+    echo "--- No account, group, SSH-key, or sudo changes were made. ---" >&2
+    exit 1
+fi
 
 if [ ! -f "${AUTHORIZED_KEY_FILE}" ] || [ ! -r "${AUTHORIZED_KEY_FILE}" ] ||
     [ ! -s "${AUTHORIZED_KEY_FILE}" ]; then
