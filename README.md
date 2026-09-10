@@ -67,9 +67,11 @@
 5. Cross-platform execution of a representative smoke can provide an independent portability and correctness check because different compiler, runtime, and hardware implementations may expose different hidden assumptions.
     - A CUDA-side development check does not make CUDA a supported bootstrap environment and does not substitute for ROCm acceptance.
     - Keep bootstrap coverage at the level of durable platform capabilities rather than bundling private workload regressions or reenacting historical upstream bugs.
-6. On 2026-09-09, the experimental AMD DevCloud root-to-user handoff was accepted on a disposable Ubuntu 24.04 VM.
-    - Testing covered fresh account creation, the exact `*` password marker, a separate key-only SSH login, full passwordless sudo, idempotent reruns, and conservative refusal and preservation of a conflicting existing account.
-    - This establishes the initial account handoff behavior only; it does not establish ROCm, GPU, or packaged-workload readiness on AMD DevCloud.
+6. Version-stamped experimental AMD DevCloud handoff evidence:
+    - On 2026-09-09, the root-to-user handoff was accepted on a disposable Ubuntu 24.04 VM. Testing covered fresh account creation, the exact `*` password marker, a separate key-only SSH login, full passwordless sudo, idempotent reruns, and conservative refusal and preservation of a conflicting existing account.
+    - On 2026-09-10, the root-only sudoers-rejection test passed both locally and on the disposable VM. The real ordinary-user preflight then passed from separate SSH sessions for two independently created valid users, including their home, repository access, effective required groups, and full noninteractive-sudo contract.
+    - The retained root and ordinary-user clones were checked after credential-prompted HTTPS cloning. None had a configured credential helper, a standard Git credential-store file, or credentials embedded in the origin URL.
+    - These results establish the initial account handoff and preflight behavior only; they do not establish ROCm, GPU, or packaged-workload readiness on AMD DevCloud.
 
 # TODOs
 
