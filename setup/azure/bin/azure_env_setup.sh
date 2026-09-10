@@ -80,7 +80,9 @@ run_stage "$MILESTONES_DIR" ensure_tmux
 reboot_once_dont_wrap "$MILESTONES_DIR"
 run_stage "$MILESTONES_DIR" ensure_pinned_cmake \
     "${EXPECTED_DIST_CODENAME}" "${CMAKE_APT_PIN_VER}"
-run_stage "$MILESTONES_DIR" ensure_oneapi_tbb_libs "${ONEAPI_TBB_PIN_VER}"
+if (( DO_SOURCE_BUILT_CUPY_ENV )); then
+    run_stage "$MILESTONES_DIR" ensure_oneapi_tbb_libs "${ONEAPI_TBB_PIN_VER}"
+fi
 run_stage "$MILESTONES_DIR" ensure_apt_with_custom_conf \
     "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
 

@@ -274,6 +274,33 @@ Baseline validation must use the native detected architecture and ordinary
 provider-supported environment. Experimental knobs and performance results
 must be opt-in and labeled non-baseline.
 
+Setup capability gates and main-validator gates must remain symmetric. Every
+capability gate or deliberately bundled set of gates enabled by a provider
+setup script must correspond to the same complete capability gate or bundle in
+the common main validator. A setup option may use different action-oriented
+wording from its validation strict-presence option, but they must describe the
+same environment and required checks. Once an optional environment is present,
+the validator may activate its complete gate automatically; a strict-presence
+option must additionally fail when that environment is absent.
+
+Choose the baseline and optional gates deliberately. Balance what a broad set
+of users needs in a useful minimal environment against the maximal supported
+setup, prerequisite relationships between gates, installation and validation
+time, and maintenance cost. Do not place a dependency in the baseline solely
+because an optional gate needs it. Setup-mechanics controls, validation-policy
+controls, non-workload convenience utilities such as fastfetch, and explicitly
+separate manual experiments do not become capability gates merely because they
+have command-line options.
+
+Provider setup scripts should complete all applicable APT and other system
+package work before beginning pip-backed environment stages. This deliberate
+phase ordering may split an optional gate so that its system prerequisites run
+before an otherwise unrelated baseline Python environment. It does not relax
+the setup-to-validation gate correspondence. Keep a system dependency in that
+early phase only when its gate is requested, unless it is independently part
+of the baseline or moving it would create a demonstrated dependency or safety
+problem.
+
 Never enable `HSA_OVERRIDE_GFX_VERSION` by default. It changes the architecture
 reported to the runtime but does not create missing code objects. An override
 can cause segmentation faults, invalid-device-function failures, or other

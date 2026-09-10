@@ -61,6 +61,7 @@
     - On 2026-09-09, the same cases passed on an Azure Radeon Pro V710 MxGPU with ROCm 7.2.0, source-built CuPy 14.1.1, and NumPy 2.5.3. The direct Numba 0.67.0 smoke also confirmed that Numba selected the intended TBB threading layer.
     - The direct CuPy and Numba smokes and the complete strict main validator passed on Azure. The complete validator took approximately 2 minutes 35 seconds. These results record the tested environments rather than promising compatibility with every future image or package generation.
 4. The optional source-built CuPy environment is requested during setup with `--source-built-cupy-env-setup`.
+    - Requesting this environment also installs the selected oneAPI TBB libraries during the earlier APT phase, before any Python virtual environment is created.
     - When present, validation runs both the CuPy custom-kernel smoke and the Numba smoke as one complete environment check.
     - If the environment is absent, validation skips that entire check unless `--fail-on-no-source-built-cupy-env` requires it to be present.
     - The Numba smoke requires the selected threading layer to be TBB. Canny requires CuPy and Numba-relevant behavior, while the explicit TBB selection is retained for the private MLP workload's parallel CPU activation functions.
