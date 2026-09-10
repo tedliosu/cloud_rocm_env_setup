@@ -7,6 +7,9 @@ readonly AUTHORIZED_KEY_FILE_FLAG="--authorized-key-file"
 readonly TARGET_USERNAME_REGEX='^[a-z]([a-z0-9_-]{0,30}[a-z0-9])?$'
 readonly REQUIRED_GROUPS=(adm video render)
 readonly SUDOERS_FILE_PREFIX="cloud_rocm_env_setup-amd-devcloud-"
+# An invalid '*' hash disables Unix-password matching without Linux OpenSSH's
+#     leading-'!' whole-account rejection when PAM is disabled.
+readonly DISABLED_PASSWORD_FIELD='*'
 readonly EXPECTED_DISTRO_ID="ubuntu"
 readonly EXPECTED_DISTRO_NAME="Ubuntu"
 readonly EXPECTED_DISTRO_VERSION="24.04"
@@ -51,10 +54,10 @@ _account_matches_baseline() (
     local _passwd_gecos
     local _passwd_home
     local _passwd_shell
-    local _passwd_status
-    local _status_user
-    local _status_code
-    local _status_remainder
+    local _shadow_entry
+    local _shadow_name
+    local _shadow_password
+    local _shadow_remainder
     local _expected_groups
     local _actual_groups
 
@@ -74,11 +77,11 @@ _account_matches_baseline() (
         [ ! -L "${_target_home}/.ssh/authorized_keys" ] || return 1
     [ -f "${_sudoers_file}" ] && [ ! -L "${_sudoers_file}" ] || return 1
 
-    # Keep the password-status code stable without changing unrelated callers.
-    _passwd_status="$(LC_ALL=C passwd --status "${_target_user}")" || return 1
-    read -r _status_user _status_code _status_remainder <<< "${_passwd_status}"
-    [ "${_status_user}" = "${_target_user}" ] &&
-        [ "${_status_code}" = "L" ] || return 1
+    _shadow_entry="$(getent shadow "${_target_user}")" || return 1
+    IFS=: read -r _shadow_name _shadow_password _shadow_remainder \
+        <<< "${_shadow_entry}"
+    [ "${_shadow_name}" = "${_target_user}" ] &&
+        [ "${_shadow_password}" = "${DISABLED_PASSWORD_FIELD}" ] || return 1
 
     _expected_groups="$(printf '%s\n' "${_target_user}" "${REQUIRED_GROUPS[@]}" |
         LC_ALL=C sort)"
@@ -159,9 +162,9 @@ _create_handoff_baseline() {
 
     echo "Creating password-disabled ordinary user '${_target_user}'..."
     if ! useradd --create-home --shell /bin/bash --user-group \
-        --groups "$(IFS=,; echo "${REQUIRED_GROUPS[*]}")" "${_target_user}" ||
-        ! passwd --lock "${_target_user}"; then
-        echo "ERROR: unable to create and lock the target account!" >&2
+        --password "${DISABLED_PASSWORD_FIELD}" \
+        --groups "$(IFS=,; echo "${REQUIRED_GROUPS[*]}")" "${_target_user}"; then
+        echo "ERROR: unable to create the password-disabled target account!" >&2
         echo "WARNING: the system may now contain partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
         rm --force "${_sudoers_temp_file}"
