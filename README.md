@@ -73,22 +73,78 @@
     - On 2026-09-10, the root-only sudoers-rejection test passed both locally and on the disposable VM. The real ordinary-user preflight then passed from separate SSH sessions for two independently created valid users, including their home, repository access, effective required groups, and full noninteractive-sudo contract.
     - The retained root and ordinary-user clones were checked after credential-prompted HTTPS cloning. None had a configured credential helper, a standard Git credential-store file, or credentials embedded in the origin URL.
     - These results establish the initial account handoff and preflight behavior only; they do not establish ROCm, GPU, or packaged-workload readiness on AMD DevCloud.
+7. Version-stamped AMD SMI architecture-query evidence:
+    - On 2026-09-10, Azure ROCm 7.2.0 with AMD SMI 26.2.1 reported an AMD Radeon Pro V710 MxGPU, native `gfx1101`, and driver 6.16.13 through `amd-smi static --gpu 0 --asic --driver --json`.
+    - On the same date, Hot Aisle ROCm 7.2.4 with AMD SMI 26.2.2 reported an AMD Instinct MI300X VF, native `gfx942`, and driver 6.16.13 through the same JSON fields.
+    - The common architecture query now uses AMD SMI rather than deprecated ROCm SMI. The matching field shape across those two observations supports one narrow shared parser; it does not make either provider's package names or driver version a cross-provider requirement.
+8. Experimental packaged hipCIM recipe evidence:
+    - As of 2026-09-10, the maintainer reports that hipCIM Canny from the ROCm 7.2.0 AMD Python index passed on the intended ROCm 7.2.3 system-stack combination.
+    - This supports developing one pinned DevCloud recipe. It is not yet repository acceptance of the automated setup, the future packaged RAPIDS gate, other hipCIM functions, hipDF, or a general cross-version package matrix.
 
 # TODOs
 
 ## Current Focus
 
+### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
+
+- [ ] Add bounded failure-propagation coverage for shared stage orchestration:
+    - Verify that a failed stage does not create its `.done` marker and that later stages do not run.
+    - Preserve explicit stage status handling without mechanically wrapping every ordinary command.
+
+- [ ] Replace the current one-marker reboot behavior with phase-specific pending reboot acknowledgement:
+    - Record the current `/proc/sys/kernel/random/boot_id` before requesting a reboot and do not mark the stage complete merely because the reboot command returned successfully.
+    - On the next invocation, complete the stage only after observing a different valid boot ID. Preserve a same-boot pending state and refuse to run later stages until the reboot occurs.
+    - Keep Hot Aisle and Azure's existing single-reboot behavior while allowing DevCloud's post-upgrade and post-DKMS reboots to remain distinct.
+    - Add bounded tests for command failure, same-boot reruns, changed-boot completion, malformed pending state, and the rule that failed or unacknowledged stages do not acquire `.done` markers.
+
+- [ ] Make `guarded_rm_rf` refuse deletion explicitly when path resolution fails, with a bounded negative test.
+
+- [ ] Make the intended Triton-validator failure/status branch reachable without depending on ambient `set -e` behavior.
+
+- [ ] Make the CuPy wheel-install failure/status branch reachable without depending on ambient `set -e` behavior while preserving the underlying build status and bounded log context.
+
+- [ ] Distinguish failure to execute `rocminfo` from a successful probe that reports an unloaded driver.
+
+- [ ] Make unknown options fail in the existing setup scripts rather than printing usage and exiting successfully.
+
+- [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code before adding a third setup consumer:
+    - Preserve the complete FRESH and BASELINE output fingerprints as separate auditable literals.
+    - Do not introduce a general UFW state-collection or reconciliation abstraction.
+
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
-- [ ] Add a narrow AMD DevCloud MI300X setup and validation path for packaged hipCIM and CuPy:
+- [ ] Add the ordinary-user DevCloud setup entry point only after the prerequisite common refactors above:
     - Keep AMD DevCloud instance provisioning manual.
-    - Automate one constrained, observed in-VM bare-OS ROCm/DKMS and packaged hipCIM/CuPy setup needed for the prospective Canny presentation path. Reuse suitable common setup primitives while keeping DevCloud orchestration explicit.
-    - Perform ROCm, GPU-device, and permissions checks after the required install and reboot rather than as part of the pre-install handoff check.
-    - Use an ordinary Python virtual environment with pip and packaged `amd-cupy`; do not source-build ordinary CuPy or introduce Conda merely for consistency with another environment.
-    - Target one known MI300X environment and a fixed or constrained package recipe rather than arbitrary ROCm and package combinations.
-    - Probe and record the actual OS, kernel, GPU, ROCm, Python, `amd-cupy`, and `amd-hipcim` versions in a simple version-stamped environment record.
+    - Target the recently observed Ubuntu 24.04 bare-OS AMD Instinct MI300X VF with native `gfx942`, while probing the live image before accepting it.
+    - Keep orchestration at the DevCloud provider boundary and reuse only suitable shared primitives.
+
+- [ ] Implement DevCloud phase 1, early firewall initialization and existing-system upgrade:
+    - Begin with the accepted read-only ordinary-user handoff preflight.
+    - Classify UFW on every invocation. Initialize the exact shared TCP/22 baseline immediately when state is FRESH, before the general upgrade; preserve and refuse CUSTOM or UNKNOWN state.
+    - Refresh APT metadata, upgrade only the already-installed system packages, record phase-specific pending reboot state, and reboot.
+    - On rerun, require a changed Linux boot ID and revalidate UFW before proceeding.
+
+- [ ] Implement DevCloud phase 2, the pinned AMDGPU driver installation:
+    - Follow the exact ROCm 7.2.3 Ubuntu repository and AMDGPU DKMS installation generation rather than mixing driver and userland releases.
+    - Pin the Noble repository-bootstrap package to `https://repo.radeon.com/amdgpu-install/7.2.3/ubuntu/noble/amdgpu-install_7.2.3.70203-1_all.deb`, with the provider-owned value kept in `amd_devcloud_vars.sh`.
+    - Conservatively reject conflicting single-version or mixed ROCm package state instead of automatically removing or reconciling it.
+    - Install matching `amdgpu-dkms` and AMD SMI, then require a second phase-specific acknowledged reboot.
+    - After reboot, require the observed MI300X VF, native `gfx942`, successful DKMS state, and a nonempty AMD SMI driver version. Use the first controlled DevCloud installation to record the exact expected driver value before pinning that assertion.
+
+- [ ] Implement DevCloud phase 3, full ROCm 7.2.3 and the common minimum baseline:
+    - Install the complete versioned `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage or a guessed minimal subset.
+    - Complete every applicable APT and other system-package prerequisite before starting pip-backed environment work.
+    - Add an idempotent project-owned `.profile` block selecting `/opt/rocm-7.2.3/bin`; do not depend on the mutable `/opt/rocm` alternative.
+    - Print and document the exact versioned `LD_LIBRARY_PATH` needed by the installed stack. Do not modify `ld.so.conf`, persist a global loader-cache policy, or globally export `LD_LIBRARY_PATH`.
+    - Install the smallest set of Python environments that makes the common default `validate_main.sh` pass, including its complete default gates rather than a provider-specific partial substitute.
+    - Probe and record the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions in a simple version-stamped environment record.
+
+- [ ] Develop DevCloud phase 4 setup and its packaged RAPIDS validator gate together:
+    - Use an ordinary Python virtual environment with pip, packaged `amd-cupy` and `amd-hipcim`, and the exact ROCm 7.2.0 AMD Python index, `https://pypi.amd.com/rocm-7.2.0/simple/`, on the pinned ROCm 7.2.3 system stack. Do not introduce Conda or generalize this observed cross-patch recipe into a supported version matrix.
     - Add one coherent packaged RAPIDS shared workload-environment gate to the common provider-neutral validator. When active, it must run every check defined as required by that environment rather than silently accepting a partial result.
-    - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, the selected TBB backend coverage justified by the shared private MLP workload, and a small packaged hipCIM correctness smoke without bundling either application project itself.
+    - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, and the selected TBB backend coverage justified by the shared private MLP workload.
+    - Add a small direct hipCIM/cuCIM-versus-scikit-image Canny comparison using each library's float32 grayscale conversion, `sigma=1.5`, thresholds `15/255` and `35/255`, and `mode="nearest"` on a deterministic repository-owned fixture.
+    - Report pixel disagreement percentage without dilation or other edge post-processing, and set any pass tolerance only after recording a representative preliminary measurement and confirming it on DevCloud. Do not copy the application image or custom Canny implementation, and do not turn the smoke into a benchmark.
     - Keep individual validation scripts separate where useful; the environment gate and CLI behavior, rather than Python file layout, define the validation contract.
     - Allow optional absence to skip the entire packaged environment gate, while any future strict-presence flag must fail when the environment is absent.
     - Add bounded checks for the packaged gate's optional-absence, strict-presence, and required-check failure behavior alongside its implementation.
@@ -113,20 +169,9 @@
     - Inspect and resolve the original error.
     - Identify the virtual environment, repository clone, or other artifacts owned by the failed stage.
     - Delete stage-owned artifacts only when rebuilding them is necessary.
-    - Delete only the relevant `.done` marker to force that stage to rerun.
+    - Delete only the relevant completed or pending marker when the documented recovery procedure specifically requires it.
     - Rerun the setup script so completed stages remain skipped.
     - Document the exact marker and artifact locations instead of recommending broad directory deletion.
-
-- [ ] Harden the finite set of existing helpers whose local error contracts materially depend on ambient `errexit`:
-    - Make `guarded_rm_rf` refuse deletion explicitly when path resolution fails.
-    - Make the intended failure/status branches in the Triton validator and CuPy wheel-install path reachable without depending on ambient `set -e` behavior.
-    - Handle reboot-command failure without leaving a stale reboot marker or silently losing a required post-group-change reboot.
-    - Distinguish failure to execute `rocminfo` from a successful probe that reports an unloaded driver.
-    - Make unknown setup-script options fail rather than printing usage and exiting successfully.
-    - Add only bounded negative checks for these contracts, including that a failed stage does not create its `.done` marker; do not mechanically wrap every shell command with status boilerplate.
-
-- [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code to reduce setup/validation drift.
-    - Preserve the complete FRESH and BASELINE output fingerprints as separate auditable literals, and do not introduce a general UFW state-collection abstraction.
 
 - [ ] Document approximate setup and validation times:
     - Minimal setup and validation on Hot Aisle MI300X.

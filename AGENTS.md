@@ -210,6 +210,19 @@ Preserve these boundaries:
   the current non-root identity, home, repository access, effective required
   groups, and the explicitly adopted sudo contract without claiming ROCm or
   GPU readiness before those components are installed.
+- Treat the currently observed DevCloud target as one Ubuntu 24.04 bare-OS
+  MI300X Virtual Function with native architecture `gfx942`. Confirm that
+  identity after driver installation rather than assuming that the provider
+  image has remained unchanged.
+- Initialize the shared conservative UFW TCP/22 baseline immediately after the
+  ordinary-user preflight and before the general system upgrade when the live
+  image is recognized as FRESH. Keep classification outside milestone-wrapped
+  work so every rerun also preserves and reports CUSTOM or UNKNOWN state.
+- Separate the existing-package upgrade and AMDGPU DKMS installation with a
+  reboot, then require another reboot after DKMS installation. A reboot stage
+  is complete only after a later invocation observes a different Linux boot
+  ID; successful return from a reboot command or an SSH disconnect is not
+  proof that a new kernel instance started.
 - Do not call the Azure-oriented `ensure_groups_maybe_reboot_dont_wrap` from
   the DevCloud root bootstrap. It discovers a user through `logname` and owns
   an immediate reboot, while DevCloud has an explicit target user and a
@@ -219,11 +232,30 @@ Preserve these boundaries:
 - Use an ordinary Python virtual environment with pip for the demonstrated
   packaged recipe. Do not introduce Conda without a concrete compatibility
   requirement.
-- Use packaged `amd-cupy`; do not source-build ordinary CuPy merely for symmetry.
-- Target one known MI300X environment and a fixed or constrained recipe.
+- Use packaged `amd-cupy` and `amd-hipcim`; do not source-build ordinary CuPy
+  merely for symmetry.
+- Follow the exact ROCm 7.2.3 Ubuntu installation generation for both AMDGPU
+  DKMS and ROCm userland, including the pinned Noble repository-bootstrap
+  package `amdgpu-install_7.2.3.70203-1_all.deb`. Install the complete versioned
+  `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage, so later
+  manual side-by-side experiments do not inherit avoidable package stomping.
+  Refuse conflicting single-version or mixed ROCm package state instead of
+  attempting an automatic migration or cleanup.
+- Treat ROCm 7.2.3 system packages with the exact ROCm 7.2.0 AMD Python package
+  index, `https://pypi.amd.com/rocm-7.2.0/simple/`, as one deliberately
+  observed packaged recipe. Do not generalize that cross-patch result into
+  arbitrary ROCm and Python package compatibility.
+- Add an idempotent project-owned `.profile` block selecting
+  `/opt/rocm-7.2.3/bin`; do not make setup or validation depend on the mutable
+  `/opt/rocm` alternative. Keep `LD_LIBRARY_PATH` explicit and scoped to the
+  relevant command, shell, or virtual environment. Print and document the
+  versioned library paths rather than editing `ld.so.conf`, running persistent
+  dynamic-linker-cache configuration, or globally exporting the variable.
 - Probe and record the actual environment and package versions.
 - Fail clearly when the known assumptions stop holding.
-- Do not require feature parity with Hot Aisle or Azure.
+- Make the adopted minimum DevCloud environment pass the common default main
+  validator, but do not require optional feature parity with Hot Aisle or
+  Azure.
 - Do not support arbitrary ROCm and Python package matrices.
 - Do not source-build or forward-port hipDF.
 - Do not create or maintain a downstream GPU-library patch collection for this
@@ -370,6 +402,18 @@ different questions; one must not be used as a substitute for the other.
 
 Do not copy the full Canny application into this repository. Application work
 belongs in its own project.
+
+The packaged DevCloud hipCIM smoke is a deliberate narrow exception to purely
+generic library coverage because Canny is the only adopted hipCIM API. Compare
+`cucim.skimage.feature.canny` directly with `skimage.feature.canny` after each
+library's `img_as_float32` and `rgb2gray` conversion, using `sigma=1.5`, low
+threshold `15/255`, high threshold `35/255`, and `mode="nearest"`. Use a small
+deterministic repository-owned fixture, report the percentage of disagreeing
+pixels, and set any acceptance tolerance only after recording a representative
+measurement. Apply no dilation or other edge post-processing before comparison.
+Do not copy the application image or its custom Canny pipeline, and do not turn
+this correctness check into a benchmark. CUDA-side agreement may guide fixture
+development but does not substitute for DevCloud acceptance.
 
 CuPy installation is environment-dependent. The supported Hot Aisle and Azure
 paths intentionally build pinned upstream CuPy from source and preserve their
@@ -519,6 +563,11 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
   of a `main` function. Do not begin new setup actions before that marker.
 - Idempotent checks that must run on every invocation should normally remain
   outside milestone-wrapped stages.
+- For a reboot that must be acknowledged across invocations, record the
+  current `/proc/sys/kernel/random/boot_id` in phase-specific pending state
+  before requesting the reboot. Do not create the completed marker until a
+  later invocation observes a different valid boot ID. The same boot ID means
+  the reboot is still pending and must not allow later stages to proceed.
 - Non-stage setup helpers follow the existing `_dont_wrap` suffix convention.
 - Keep locale changes scoped with a subshell when exact parsing requires
   `LC_ALL=C`, unless the repository later adopts an explicit global locale
