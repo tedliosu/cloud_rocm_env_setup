@@ -487,6 +487,10 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
 - Avoid implied cross-function global mutation when numbered arguments and
   printed return values remain simple.
 - Avoid magic sentinel strings for unavailable observations.
+- Do not prefer force or unconditional-overwrite options when a practical
+  non-clobbering alternative exists. Reserve force options for narrowly known
+  cases such as removing project-created temporary resources, or for cases
+  where no practical safer alternative exists and the exact target is verified.
 - Account for `set -euo pipefail`, pipeline status, command-substitution status,
   and commands that may legitimately return nonzero.
 - Preserve the underlying command's exit status when adding logging pipelines.
