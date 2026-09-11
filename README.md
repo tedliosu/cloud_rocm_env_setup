@@ -10,6 +10,39 @@ mutation, small real workload checks, and maintenance costs that remain
 realistic for a small project. Optional and experimental paths stay separate
 from baseline guarantees.
 
+# Purpose and Motivation
+
+Installing packages, importing a library, or detecting a GPU does not by
+itself establish that a ROCm environment is usable. Driver, runtime, compiler,
+ABI, package, and provider-image interactions can still break real work. This
+project therefore probes the live environment, runs small representative
+workloads, and records what actually worked instead of treating installation
+success as sufficient evidence.
+
+The project is cloud-first because maintaining edge-case or unsupported local
+ROCm hardware can consume substantial effort for limited practical value. CUDA
+remains the maintainer's local environment for daily development, while
+bounded ROCm cloud environments provide portability validation, comparative
+understanding, and experience with another GPU ecosystem. Different
+implementations can expose hidden assumptions and provide an independent
+correctness and portability check, though agreement across them is not proof
+of correctness.
+
+Cloud images, kernels, drivers, ROCm releases, and package combinations change.
+The repository therefore treats measured versions and validation results as
+version-stamped evidence for particular environment generations, not permanent
+promises about every image a provider has offered or will offer. It validates
+the VM and host GPU stack intentionally: containers may help selected
+workloads, but they do not remove the kernel, driver, device-access,
+permissions, and runtime boundary on which ROCm execution depends.
+
+The goal is to automate recurring setup and debugging pain without becoming
+production infrastructure as code or a universal cloud abstraction. By
+capturing experience from systems and cloud environments that many users may
+not have the hardware access, budget, or time to investigate together, the
+repository offers reusable, empirically validated guidance for similar use
+cases while keeping its support and maintenance surface deliberately bounded.
+
 # Guarantees
 
 - Target cloud environments:
