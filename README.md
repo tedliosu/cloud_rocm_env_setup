@@ -132,10 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Add bounded failure-propagation coverage for shared stage orchestration:
-    - Verify that a failed stage does not create its `.done` marker and that later stages do not run.
-    - Preserve explicit stage status handling without mechanically wrapping every ordinary command.
-
 - [ ] Replace the current one-marker reboot behavior with phase-specific pending reboot acknowledgement:
     - Record the current `/proc/sys/kernel/random/boot_id` before requesting a reboot and do not mark the stage complete merely because the reboot command returned successfully.
     - On the next invocation, complete the stage only after observing a different valid boot ID. Preserve a same-boot pending state and refuse to run later stages until the reboot occurs.
