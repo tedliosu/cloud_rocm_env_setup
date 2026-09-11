@@ -546,6 +546,10 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
   Tests may keep self-contained fixture values, but should source the provider
   variables instead of duplicating a production value when exact agreement is
   part of the test contract.
+- Share a configuration value only when its identity is part of the common
+  contract. Equal observations that may drift independently remain
+  provider-owned; do not deduplicate them merely because their current text or
+  version happens to match.
 - Source-only variable files may use a file-scoped ShellCheck `SC2034`
   suppression because standalone analysis cannot see their consumers. Explain
   that suppression in the file, do not export values solely to silence the
@@ -563,6 +567,10 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
   of a `main` function. Do not begin new setup actions before that marker.
 - Idempotent checks that must run on every invocation should normally remain
   outside milestone-wrapped stages.
+- Add a source guard only after the actual sourcing topology demonstrates that
+  repeated sourcing can redeclare protected state or repeat harmful
+  initialization. Do not add guards mechanically to utility, variable, or
+  virtual-environment activation scripts.
 - For a reboot that must be acknowledged across invocations, record the
   current `/proc/sys/kernel/random/boot_id` in phase-specific pending state
   before requesting the reboot. Do not create the completed marker until a

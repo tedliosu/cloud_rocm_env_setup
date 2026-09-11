@@ -1,3 +1,15 @@
+# Cloud ROCm Environment Setup
+
+This repository bootstraps and smoke-validates practical ROCm cloud VMs for
+ML and GPGPU development. Provider setup scripts keep cloud-specific
+orchestration explicit, shared helpers own only genuinely common primitives,
+and the main validator checks provider-neutral workload capabilities.
+
+The design favors reproducible minimal environments, conservative system
+mutation, small real workload checks, and maintenance costs that remain
+realistic for a small project. Optional and experimental paths stay separate
+from baseline guarantees.
+
 # Guarantees
 
 - Target cloud environments:
@@ -110,6 +122,13 @@
 - [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code before adding a third setup consumer:
     - Preserve the complete FRESH and BASELINE output fingerprints as separate auditable literals.
     - Do not introduce a general UFW state-collection or reconciliation abstraction.
+
+- [ ] Audit shared configuration ownership before adding DevCloud as another setup consumer:
+    - Move the Azure-only `FASTFETCH_PIN_VER` and `FASTFETCH_DEB_FILENAME` out of `setup/common/lib/shared_vars.sh` and into `setup/azure/lib/azure_vars.sh`.
+    - Decide whether the Ubuntu-24.04-specific `CMAKE_APT_PIN_VER` is deliberately one common supported-platform recipe or should become provider-owned when supported OS generations diverge.
+    - Keep distro and ROCm expectations provider-owned even when two providers currently use equal values, because those contracts may drift independently.
+    - Retain genuinely shared capability-recipe pins, including the current CuPy, ComfyUI, TorchCodec, oneTBB, hipCollections, and ROCm-DS-CMake selections, unless provider evidence demonstrates a real divergence.
+    - Keep the result as a small ownership cleanup rather than introducing a generic configuration framework.
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
@@ -281,6 +300,16 @@
 - [ ] After the Hot Aisle common-use path is established, add equivalent Azure Pro V710 setup and validation instructions.
 
 - [ ] Add structured validation receipt output, including the shared UFW classification, after a common summary and reporting design is justified.
+
+- [ ] If the maintainer explicitly decides to permit additional maintainers, document a lightweight maintainer role and selection policy:
+    - Treat demonstrated collaboration, access to enough cloud resources for meaningful validation, and relevant ROCm, GPU, Linux, cloud, or workload experience as candidate considerations rather than current acceptance criteria.
+    - Keep important project knowledge and decisions reconstructible from the repository rather than private conversations or one maintainer's memory.
+    - Do not create governance machinery before the role and actual need are approved.
+
+- [ ] If recurring in-scope remote HIP/C++ development demonstrates a need, evaluate optional provider-aware clangd setup guidance:
+    - Determine how clangd should use the provider or system ROCm installation before deciding whether bootstrap automation is justified.
+    - Treat it as an optional developer convenience rather than a baseline capability or validation gate unless a later supported workflow proves otherwise.
+    - Do not promise it for every provider. The separate MI300X-versus-H200 execution-motif study does not currently create a tooling requirement for this repository.
 
 - [ ] Add a linked table of contents if the README becomes too long to navigate comfortably.
 
