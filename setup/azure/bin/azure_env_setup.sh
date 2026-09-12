@@ -13,7 +13,6 @@ DO_FASTFETCH=0
 usage() {
     echo "Usage: [env CUPY_BUILD_GFX11_FALLBACK=1]" \
          "$0 [$SOURCE_BUILT_CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_SETUP_FLAG] [$SHOW_PLAN_ONLY_FLAG] [-h|--help]"
-    exit 0
 }
 
 # Parse args
@@ -23,8 +22,12 @@ while [[ "$#" -gt 0 ]]; do
     "$COMFYUI_FLAG") DO_COMFYUI_ADDONS=1; shift;;
     "$FASTF_SETUP_FLAG") DO_FASTFETCH=1; shift;;
     "$SHOW_PLAN_ONLY_FLAG") export SHOW_PLAN_ONLY=1; shift;;
-    -h|--help) usage;;
-    *) usage;;
+    -h|--help) usage; exit 0;;
+    *)
+        echo "ERROR: unknown argument '$1'!" >&2
+        usage >&2
+        exit 1
+        ;;
   esac
 done
 

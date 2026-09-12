@@ -132,8 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Make unknown options fail in the existing setup scripts rather than printing usage and exiting successfully.
-
 - [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code before adding a third setup consumer:
     - Preserve the complete FRESH and BASELINE output fingerprints as separate auditable literals.
     - Do not introduce a general UFW state-collection or reconciliation abstraction.
