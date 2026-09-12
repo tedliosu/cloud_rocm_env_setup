@@ -690,7 +690,7 @@ ensure_github_fastfetch() {
     fastfetch --gen-config-full
     jq ".logo.source = \"ubuntu_old\"" "${_fastfetch_config_dir}/config.jsonc" | \
                                         sponge "${_fastfetch_config_dir}/config.jsonc"
-    which fastfetch >/dev/null 2>&1 && rm --recursive "$4"
+    which fastfetch >/dev/null 2>&1 && guarded_rm_rf "$4"
 
 }
 
