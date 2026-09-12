@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -euo pipefail
+
+readonly SHOW_PLAN_ONLY_FLAG="--show-plan-only"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+readonly SCRIPT_DIR
+
+usage() {
+    echo "Usage: $0 [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
+}
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        "${SHOW_PLAN_ONLY_FLAG}")
+            export SHOW_PLAN_ONLY=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: unknown argument '$1'!" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+OLD_CWDIR="$(pwd -P)" || {
+    echo "ERROR: unable to resolve the initial working directory!" >&2
+    exit 1
+}
+readonly OLD_CWDIR
+cd "${SCRIPT_DIR}" || {
+    echo "ERROR: unable to enter the AMD DevCloud script directory!" >&2
+    exit 1
+}
+
+# shellcheck source=../lib/amd_devcloud_vars.sh
+. "../lib/amd_devcloud_vars.sh"
+# shellcheck source=../../common/lib/shared_vars.sh
+. "../../common/lib/shared_vars.sh"
+# shellcheck source=../../common/lib/util_funcs.sh
+. "../../common/lib/util_funcs.sh"
+
+# BEGIN "MAIN"
+"${SCRIPT_DIR}/amd_devcloud_handoff_preflight.sh"
+ensure_basic_os_env_sanity_dont_wrap \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_NAME}" \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"
+
+if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+    echo "[PLAN ONLY] AMD DevCloud ordinary-user setup preflight passed."
+else
+    echo "AMD DevCloud ordinary-user setup preflight passed."
+fi
+echo "No mutating AMD DevCloud setup phases are implemented yet."
+
+cd "${OLD_CWDIR}" || {
+    echo "ERROR: unable to return to the initial working directory!" >&2
+    exit 1
+}

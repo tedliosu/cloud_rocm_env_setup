@@ -139,14 +139,11 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
-- [ ] Add the ordinary-user DevCloud setup entry point:
-    - Keep AMD DevCloud instance provisioning manual.
-    - Target the recently observed Ubuntu 24.04 bare-OS AMD Instinct MI300X VF with native `gfx942`, while probing the live image before accepting it.
-    - After the read-only handoff preflight and OS check, inspect AMDGPU- and ROCm-related package and APT-repository state before any UFW, upgrade, or other mutating work. Accept only the expected bare state or exact state produced by the current or completed setup phases; preserve and refuse unexpected, conflicting, or mixed state rather than cleaning it automatically.
-    - Keep orchestration at the DevCloud provider boundary and reuse only suitable shared primitives.
-
 - [ ] Implement DevCloud phase 1, early firewall initialization and existing-system upgrade:
-    - Begin with the accepted read-only ordinary-user handoff preflight.
+    - Extend `setup/amd_devcloud/bin/amd_devcloud_env_setup.sh`, which currently runs only the accepted read-only ordinary-user handoff preflight and Ubuntu 24.04 identity check.
+    - Keep AMD DevCloud instance provisioning manual, keep orchestration at the DevCloud provider boundary, and reuse only suitable shared primitives.
+    - Keep the intended experimental target explicit: one Ubuntu 24.04 bare-OS AMD Instinct MI300X Virtual Function with native `gfx942`. A plan-only run may describe work without enforcing the OS identity; a real run must validate Ubuntu before mutation and confirm the GPU identity after driver installation.
+    - Before any UFW, upgrade, or other mutation, inspect AMDGPU- and ROCm-related package and APT-repository state. Accept only the expected bare state or exact state produced by the current or completed setup phases; preserve and refuse unexpected, conflicting, or mixed state rather than cleaning it automatically.
     - Classify UFW on every invocation. Initialize the exact shared TCP/22 baseline immediately when state is FRESH, before the general upgrade. Preserve and report CUSTOM or UNKNOWN without modifying either; continue on CUSTOM and stop on UNKNOWN.
     - Refresh APT metadata, upgrade only the already-installed system packages, record phase-specific pending reboot state, and reboot.
     - On rerun, require a changed Linux boot ID and revalidate UFW before proceeding.

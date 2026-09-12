@@ -15,6 +15,7 @@ cleanup() {
 trap cleanup EXIT
 
 for _setup_script in \
+    "${REPO_ROOT}/setup/amd_devcloud/bin/amd_devcloud_env_setup.sh" \
     "${REPO_ROOT}/setup/azure/bin/azure_env_setup.sh" \
     "${REPO_ROOT}/setup/hot_aisle/bin/hot_aisle_env_setup.sh"; do
     _script_name="$(basename "${_setup_script}")"
