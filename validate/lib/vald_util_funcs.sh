@@ -174,9 +174,7 @@ validate_basic_triton() {
     git -C "$1" -c advice.detachedHead=false \
                  sparse-checkout set "${_tutorials_dirpath}"
     git -C "$1" apply "$3"
-    python3 "$1/${_tutorials_dirpath}/03-matrix-multiplication.py"
-    _py_last_status="$?"
-    if [ "${_py_last_status}" -eq 0 ]; then
+    if python3 "$1/${_tutorials_dirpath}/03-matrix-multiplication.py"; then
         guarded_rm_rf "$1"
         echo "PASSED ${_test_common_str_triton}"
     else

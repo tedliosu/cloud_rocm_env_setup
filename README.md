@@ -132,8 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Make the intended Triton-validator failure/status branch reachable without depending on ambient `set -e` behavior.
-
 - [ ] Make the CuPy wheel-install failure/status branch reachable without depending on ambient `set -e` behavior while preserving the underlying build status and bounded log context.
 
 - [ ] Distinguish failure to execute `rocminfo` from a successful probe that reports an unloaded driver.
