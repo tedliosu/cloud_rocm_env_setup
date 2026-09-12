@@ -66,6 +66,7 @@ if [ "${EUID}" -ne 0 ]; then
             exit 1
         fi
     done
+    echo "SKIPPED root-only sudoers rejection scenario: not running as root."
 elif os_release_matches_expected /etc/os-release \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_ID}" \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"; then
@@ -104,6 +105,8 @@ elif os_release_matches_expected /etc/os-release \
         echo "FAILED: sudoers rejection changed account or project-owned state!" >&2
         exit 1
     fi
+else
+    echo "SKIPPED root-only sudoers rejection scenario: unsupported host OS."
 fi
 
 echo "PASSED AMD DevCloud root-bootstrap CLI tests!"

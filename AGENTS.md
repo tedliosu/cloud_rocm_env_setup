@@ -771,6 +771,8 @@ After editing:
 - run `git diff --check`;
 - run syntax checks for changed shell and Python files;
 - run ShellCheck consistently with the repository's sourced-file structure;
+- run `tests/run_local_tests.sh` when repository-local shell behavior is
+  affected, and add new local or mocked shell tests to its explicit list;
 - test important state matrices with mocks when live cloud access is unnecessary;
 - use a supported cloud instance only when local or mocked checks can no longer
   answer the acceptance question;
