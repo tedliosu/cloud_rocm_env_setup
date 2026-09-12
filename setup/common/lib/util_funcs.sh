@@ -124,13 +124,14 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
         ! _collected_ufw_added=$(sudo --set-home ufw show added 2>/dev/null) ||
         ! _collected_ufw_defaults=$(sudo --set-home \
             grep --extended-regexp \
-                '^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)=' \
+                "${UFW_DEFAULTS_SELECTOR_REGEX}" \
                 /etc/default/ufw 2>/dev/null); then
         echo "ERROR: unable to collect current UFW state!" >&2
         echo "   Please check output of each of following commands manually:" >&2
         echo "     1. sudo -H ufw status" >&2
         echo "     2. sudo -H ufw show added" >&2
-        echo "     3. sudo -H grep -E '^(IPV6|DEFAULT_.*_POLICY)=' /etc/default/ufw" >&2
+        printf "     3. sudo -H grep -E '%s' /etc/default/ufw\n" \
+            "${UFW_DEFAULTS_SELECTOR_REGEX}" >&2
         return 1
     fi
     _ufw_classification=$(classify_ufw_state "${_collected_ufw_status}" \
@@ -197,7 +198,7 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
         ! _collected_ufw_added=$(sudo --set-home ufw show added 2>/dev/null) ||
         ! _collected_ufw_defaults=$(sudo --set-home \
             grep --extended-regexp \
-                '^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)=' \
+                "${UFW_DEFAULTS_SELECTOR_REGEX}" \
                 /etc/default/ufw 2>/dev/null); then
         echo "ERROR: unable to collect UFW state after baseline configuration!" >&2
         return 1

@@ -38,7 +38,7 @@ validate_ufw_config() (
         ! _collected_ufw_added=$(sudo --set-home ufw show added 2>/dev/null) ||
         ! _collected_ufw_defaults=$(sudo --set-home \
             grep --extended-regexp \
-                '^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)=' \
+                "${UFW_DEFAULTS_SELECTOR_REGEX}" \
                 /etc/default/ufw 2>/dev/null); then
         if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
             echo "ERROR: UFW classification is ${UFW_UNK_STATE}; unable to collect current UFW state!" >&2
@@ -48,7 +48,8 @@ validate_ufw_config() (
         echo "   Please check output of each of following commands manually:" >&2
         echo "     1. sudo -H ufw status" >&2
         echo "     2. sudo -H ufw show added" >&2
-        echo "     3. sudo -H grep -E '^(IPV6|DEFAULT_.*_POLICY)=' /etc/default/ufw" >&2
+        printf "     3. sudo -H grep -E '%s' /etc/default/ufw\n" \
+            "${UFW_DEFAULTS_SELECTOR_REGEX}" >&2
         if [ "${1}" -ne "${_FALSE_NUM_VAL}" ]; then
             return 1
         fi

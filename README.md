@@ -132,10 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code before adding a third setup consumer:
-    - Preserve the complete FRESH and BASELINE output fingerprints as separate auditable literals.
-    - Do not introduce a general UFW state-collection or reconciliation abstraction.
-
 - [ ] Audit shared configuration ownership before adding DevCloud as another setup consumer:
     - Move the Azure-only `FASTFETCH_PIN_VER` and `FASTFETCH_DEB_FILENAME` out of `setup/common/lib/shared_vars.sh` and into `setup/azure/lib/azure_vars.sh`.
     - Decide whether the Ubuntu-24.04-specific `CMAKE_APT_PIN_VER` is deliberately one common supported-platform recipe or should become provider-owned when supported OS generations diverge.
