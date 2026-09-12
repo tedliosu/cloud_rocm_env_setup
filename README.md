@@ -132,6 +132,10 @@ cases while keeping its support and maintenance surface deliberately bounded.
 8. Experimental packaged hipCIM recipe evidence:
     - As of 2026-09-10, the maintainer reports that hipCIM Canny from the ROCm 7.2.0 AMD Python index passed on the intended ROCm 7.2.3 system-stack combination.
     - This supports developing one pinned DevCloud recipe. It is not yet repository acceptance of the automated setup, the future packaged RAPIDS gate, other hipCIM functions, hipDF, or a general cross-version package matrix.
+9. Version-stamped pristine AMD DevCloud evidence:
+    - On 2026-09-12, an actual single-GPU Bare OS instance reported Ubuntu 24.04.4 under KVM, kernel 6.8.0-124, and AMD PCI device `1002:74b5` before AMDGPU installation.
+    - No AMDGPU/ROCm packages, AMD repositories, matching `/opt` paths, DKMS command, `/dev/kfd`, or ROCm tools were detected. The DigitalOcean Ubuntu mirror and droplet-agent repository were normal provider state rather than AMD stack state.
+    - UFW matched the exact shared FRESH fingerprint and the SSH session used server port 22. These observations define the initial admission fixture without pinning incidental hostname, CPU, storage, kernel patch, Ubuntu point release, mirror URL, or pending-upgrade details.
 
 # TODOs
 
@@ -143,7 +147,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Extend `setup/amd_devcloud/bin/amd_devcloud_env_setup.sh`, which currently runs only the accepted read-only ordinary-user handoff preflight and Ubuntu 24.04 identity check.
     - Keep AMD DevCloud instance provisioning manual, keep orchestration at the DevCloud provider boundary, and reuse only suitable shared primitives.
     - Keep the intended experimental target explicit: one Ubuntu 24.04 bare-OS AMD Instinct MI300X Virtual Function with native `gfx942`. A plan-only run may describe work without enforcing the OS identity; a real run must validate Ubuntu before mutation and confirm the GPU identity after driver installation.
-    - Before any UFW, upgrade, or other mutation, inspect AMDGPU- and ROCm-related package and APT-repository state. Accept only the expected bare state or exact state produced by the current or completed setup phases; preserve and refuse unexpected, conflicting, or mixed state rather than cleaning it automatically.
+    - Design the pre-mutation AMDGPU/ROCm admission check together with the exact phase states it must recognize on reruns. Accept only the observed bare state or an exact state produced by the current or completed setup phases; preserve and refuse unexpected, conflicting, or mixed state rather than cleaning it automatically. Base classification on exact provider-owned recipe artifacts and phase invariants. Do not infer stack ownership from open-ended prefixes or regular expressions over package names, repository contents, installation paths, or other text that may reject unrelated state or drift as AMD packaging changes.
     - Classify UFW on every invocation. Initialize the exact shared TCP/22 baseline immediately when state is FRESH, before the general upgrade. Preserve and report CUSTOM or UNKNOWN without modifying either; continue on CUSTOM and stop on UNKNOWN.
     - Refresh APT metadata, upgrade only the already-installed system packages, record phase-specific pending reboot state, and reboot.
     - On rerun, require a changed Linux boot ID and revalidate UFW before proceeding.
