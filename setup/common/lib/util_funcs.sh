@@ -783,10 +783,13 @@ ensure_gpu_arr_virtualenv() {
         fi
         return "${_cupy_wheel_status}"
     fi
-    pip install "$2/dist"/cupy*.whl
-    _last_pip_status="$?"
-    if [ "${_last_pip_status}" -eq 0 ]; then
+    if pip install "$2/dist"/cupy*.whl; then
         guarded_rm_rf "$2"
+    else
+        _cupy_install_status="$?"
+        echo "FAILED to install the built CuPy wheel!" >&2
+        echo "    Preserving CuPy checkout '$2' and build log '$5'." >&2
+        return "${_cupy_install_status}"
     fi
     deactivate
 
