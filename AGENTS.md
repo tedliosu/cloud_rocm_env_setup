@@ -218,9 +218,20 @@ Preserve these boundaries:
   GPU readiness before those components are installed.
 - Before the first ordinary-user setup mutation, revalidate the expected OS and
   conservatively inspect AMDGPU- and ROCm-related package and APT-repository
-  state. Accept only the expected bare pre-install state or exact state created
-  by the current or completed project phases. Preserve and refuse unexpected,
-  conflicting, or mixed state rather than attempting cleanup or migration.
+  state with a finite provider-owned sentinel list. The initial bare state must
+  have the expected AMD PCI device `1002:74b5`, no loaded `amdgpu` module or
+  `/dev/kfd`, and none of the explicitly enumerated project-recipe package,
+  repository, command, or versioned-path artifacts. Generic `/dev/dri` may be
+  present for the Virtio display, and generic `dkms` presence does not establish
+  AMD-stack ownership. Accept later project-managed state only when exact phase
+  markers and exact phase-owned artifacts agree. Treat failed observations,
+  partial project artifacts, and contradictory phase state as unknown; preserve
+  and refuse it rather than attempting cleanup or migration.
+- Keep DevCloud admission deliberately conservative but non-exhaustive. Do not
+  search open-ended package-name prefixes, repository contents, installation
+  paths, or other text in an attempt to recognize every historical ROCm state.
+  The finite checks detect known relevant conflicts without becoming a general
+  compatibility or package-reconciliation framework.
 - Treat the currently observed DevCloud target as one Ubuntu 24.04 bare-OS
   MI300X Virtual Function with native architecture `gfx942`. Confirm that
   identity after driver installation rather than assuming that the provider
