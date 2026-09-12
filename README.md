@@ -132,12 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Replace the current one-marker reboot behavior with phase-specific pending reboot acknowledgement:
-    - Record the current `/proc/sys/kernel/random/boot_id` before requesting a reboot and do not mark the stage complete merely because the reboot command returned successfully.
-    - On the next invocation, complete the stage only after observing a different valid boot ID. Preserve a same-boot pending state and refuse to run later stages until the reboot occurs.
-    - Keep Hot Aisle and Azure's existing single-reboot behavior while allowing DevCloud's post-upgrade and post-DKMS reboots to remain distinct.
-    - Add bounded tests for command failure, same-boot reruns, changed-boot completion, malformed pending state, and the rule that failed or unacknowledged stages do not acquire `.done` markers.
-
 - [ ] Make `guarded_rm_rf` refuse deletion explicitly when path resolution fails, with a bounded negative test.
 
 - [ ] Make the intended Triton-validator failure/status branch reachable without depending on ambient `set -e` behavior.

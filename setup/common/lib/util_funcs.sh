@@ -394,27 +394,148 @@ ensure_tmux() {
     sudo --set-home apt-get install --assume-yes tmux
 }
 
-# Reboot once helper (for after a system update)
-# Usage: reboot_once_dont_wrap <milestones_directory>
-reboot_once_dont_wrap() {
-    reboot_marker_file="$1/reboot_once_dont_wrap.done"
-    _reboot_skip_msg="--- skipping stage: reboot_once_dont_wrap (already complete) ---"
-   if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        if [ ! -f "${reboot_marker_file}" ]; then
-            echo "[PLAN ONLY] Would record reboot request and reboot system"
-        else
+# Return whether a value has the Linux boot-ID UUID shape.
+# Usage: _is_valid_linux_boot_id <boot_id>
+# Returns: 0 for one valid boot ID; 1 otherwise
+_is_valid_linux_boot_id() {
+
+    [ "$#" -eq 1 ] || return 1
+    case ${1} in
+        *"${_NEWLINE}"*) return 1;;
+    esac
+    (
+        LC_ALL=C
+        export LC_ALL
+        printf "%s\n" "${1}" |
+            grep --extended-regexp --line-regexp --quiet \
+                '[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}'
+    )
+
+}
+
+# Read and validate the current Linux boot ID.
+# Usage: _read_linux_boot_id
+# Returns: 0 after printing one valid boot ID; 1 otherwise
+_read_linux_boot_id() {
+
+    local _boot_id
+
+    if ! _boot_id="$(cat /proc/sys/kernel/random/boot_id)"; then
+        echo "ERROR: failed to read the current Linux boot ID!" >&2
+        return 1
+    fi
+    if ! _is_valid_linux_boot_id "${_boot_id}"; then
+        echo "ERROR: current Linux boot ID is malformed!" >&2
+        return 1
+    fi
+    printf "%s\n" "${_boot_id}"
+
+}
+
+# Request and later acknowledge one reboot for a named setup phase.
+# Usage: reboot_with_ack_dont_wrap <milestones_directory> <reboot_phase_name>
+reboot_with_ack_dont_wrap() {
+
+    local _milestones_dir
+    local _reboot_phase_name
+    local _pending_marker_file
+    local _done_marker_file
+    local _pending_boot_id
+    local _current_boot_id
+    local _reboot_skip_msg
+
+    if [ "$#" -ne 2 ]; then
+        echo "ERROR: reboot_with_ack_dont_wrap expects a milestones" >&2
+        echo "    directory and reboot phase name!" >&2
+        exit 1
+    fi
+    _milestones_dir="$1"
+    _reboot_phase_name="$2"
+    case ${_reboot_phase_name} in
+        ''|*[!A-Za-z0-9_]*)
+            echo "ERROR: invalid reboot phase name '${_reboot_phase_name}'!" >&2
+            exit 1
+            ;;
+    esac
+    if [ ! -d "${_milestones_dir}" ]; then
+        echo "ERROR: milestones directory '${_milestones_dir}' does not exist!" >&2
+        exit 1
+    fi
+
+    _pending_marker_file="${_milestones_dir}/${_reboot_phase_name}.pending"
+    _done_marker_file="${_milestones_dir}/${_reboot_phase_name}.done"
+    _reboot_skip_msg="--- skipping reboot phase: ${_reboot_phase_name} (already complete) ---"
+
+    if [ -e "${_pending_marker_file}" ] && [ -e "${_done_marker_file}" ]; then
+        echo "ERROR: reboot phase '${_reboot_phase_name}' has both pending" >&2
+        echo "    and completed state! Refusing to continue." >&2
+        exit 1
+    fi
+
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        if [ -f "${_done_marker_file}" ]; then
             echo "[PLAN ONLY] ${_reboot_skip_msg}"
+        elif [ -e "${_pending_marker_file}" ]; then
+            echo "[PLAN ONLY] Would verify pending reboot phase ${_reboot_phase_name}"
+        else
+            echo "[PLAN ONLY] Would record reboot phase ${_reboot_phase_name} and reboot system"
         fi
         return 0
     fi
-    if [ ! -f "$reboot_marker_file" ]; then
-        echo "Reboot required, performing ONE reboot..."
-        touch "$reboot_marker_file"
-        sudo --set-home reboot
-        exit 0
-    else
+
+    if [ -f "${_done_marker_file}" ]; then
         echo "${_reboot_skip_msg}"
+        return 0
     fi
+
+    if [ -e "${_pending_marker_file}" ]; then
+        if [ ! -f "${_pending_marker_file}" ] ||
+            ! _pending_boot_id="$(cat "${_pending_marker_file}")" ||
+            ! _is_valid_linux_boot_id "${_pending_boot_id}"; then
+            echo "ERROR: pending state for reboot phase" >&2
+            echo "    '${_reboot_phase_name}' is malformed! Refusing to continue." >&2
+            exit 1
+        fi
+        if ! _current_boot_id="$(_read_linux_boot_id)"; then
+            exit 1
+        fi
+        if [ "${_current_boot_id}" = "${_pending_boot_id}" ]; then
+            echo "ERROR: reboot phase '${_reboot_phase_name}' is still pending!" >&2
+            echo "    Reboot the system before rerunning setup." >&2
+            exit 1
+        fi
+        if ! mv --no-clobber -- "${_pending_marker_file}" "${_done_marker_file}" ||
+            [ -e "${_pending_marker_file}" ] || [ ! -f "${_done_marker_file}" ]; then
+            echo "ERROR: failed to acknowledge reboot phase" >&2
+            echo "    '${_reboot_phase_name}'!" >&2
+            exit 1
+        fi
+        echo "--- completed reboot phase: ${_reboot_phase_name} ---"
+        return 0
+    fi
+
+    if ! _current_boot_id="$(_read_linux_boot_id)"; then
+        exit 1
+    fi
+    if ! printf "%s\n" "${_current_boot_id}" > "${_pending_marker_file}"; then
+        echo "ERROR: failed to record pending reboot phase" >&2
+        echo "    '${_reboot_phase_name}'!" >&2
+        exit 1
+    fi
+    echo "Reboot phase '${_reboot_phase_name}' is required; rebooting..."
+    if ! sudo --set-home reboot; then
+        echo "ERROR: reboot command failed for phase '${_reboot_phase_name}'!" >&2
+        echo "    The pending state was preserved; reboot manually before rerunning." >&2
+        exit 1
+    fi
+    exit 0
+
+}
+
+# Compatibility wrapper retaining the established single-reboot marker name.
+# Usage: reboot_once_dont_wrap <milestones_directory>
+reboot_once_dont_wrap() {
+    reboot_with_ack_dont_wrap "$1" reboot_once_dont_wrap
 }
 
 # up-to-date CMake setup, assuming Ubuntu
