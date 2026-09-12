@@ -219,14 +219,32 @@ check_n_apply_ufw_base_or_warn_dont_wrap() (
 
 )
 
-# Add user echo'ed by 'logname' to 'video' and 'render' groups if the
-#     user is not in those groups already, and then reboot the system
-#     for changes to take effect; rebooting is not strictly required
-#     but we can't always assume login shell
-# Usage: no arguments required
-ensure_groups_maybe_reboot_dont_wrap() {
+# Return whether a whitespace-separated group list contains one exact group.
+# Usage: _group_list_contains <group_list> <group_name>
+# Returns: 0 if the group is present; 1 otherwise
+_group_list_contains() {
 
-    _groups_changed=0
+    [ "$#" -eq 2 ] || return 1
+    case " ${1} " in
+        *" ${2} "*) return 0;;
+        *) return 1;;
+    esac
+
+}
+
+# Ensure that the login user is configured for and currently has GPU groups.
+# Usage: no arguments required
+ensure_groups_maybe_require_relogin_dont_wrap() {
+
+    local _env_username
+    local _effective_username
+    local _configured_groups
+    local _effective_groups
+    local _group_name
+    local _missing_group_csv
+    local -a _missing_groups=()
+    local -a _required_groups=(video render)
+
     _env_username="$(logname)" || {
         echo "FAILED to get 'LOGNAME'!" >&2
         exit 1
@@ -235,34 +253,68 @@ ensure_groups_maybe_reboot_dont_wrap() {
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         echo "[PLAN ONLY] Would ensure that user '${_env_username}' is" \
              "in 'video' and 'render' groups."
-        echo "[PLAN ONLY]     Then, would reboot if group membership(s) changed."
+        echo "[PLAN ONLY]     A new SSH login would be required if memberships changed."
         return 0
+    fi
+
+    if ! _effective_username="$(id --user --name)"; then
+        echo "ERROR: failed to determine the effective user!" >&2
+        exit 1
+    fi
+    if [ "${_effective_username}" != "${_env_username}" ]; then
+        echo "ERROR: effective user '${_effective_username}' does not match" >&2
+        echo "    login user '${_env_username}'! Run setup as the login user." >&2
+        exit 1
+    fi
+    if ! _configured_groups="$(id --name --groups "${_env_username}")"; then
+        echo "ERROR: failed to inspect configured groups for '${_env_username}'!" >&2
+        exit 1
+    fi
+    if ! _effective_groups="$(id --name --groups)"; then
+        echo "ERROR: failed to inspect effective groups for this login session!" >&2
+        exit 1
     fi
 
     echo "Ensuring that user '${_env_username}' is" \
          "in 'video' and 'render' groups..."
 
-    if id --name --groups "${_env_username}" | \
-        grep --quiet --word-regexp --invert-match "video"; then
-        echo "'${_env_username}' NOT in video group, adding..."
-        sudo --set-home usermod --append --groups video "${_env_username}"
-        _groups_changed=1
-    fi
-
-    if id --name --groups "${_env_username}" | \
-        grep --quiet --word-regexp --invert-match "render"; then
-        echo "'${_env_username}' NOT in render group, adding..."
-        sudo --set-home usermod --append --groups render "${_env_username}"
-        _groups_changed=1
-    fi
-
-    if [ "${_groups_changed}" -eq 0 ]; then
-        echo "User already belongs to render and video groups."
-    else
-        echo "User group membership(s) changed, rebooting..."
-        sudo --set-home reboot
+    for _group_name in "${_required_groups[@]}"; do
+        if ! _group_list_contains "${_configured_groups}" "${_group_name}"; then
+            _missing_groups+=("${_group_name}")
+        fi
+    done
+    if [ "${#_missing_groups[@]}" -gt 0 ]; then
+        _missing_group_csv="$(IFS=,; printf "%s" "${_missing_groups[*]}")"
+        echo "Adding '${_env_username}' to missing groups: ${_missing_group_csv}"
+        if ! sudo --set-home usermod --append --groups \
+            "${_missing_group_csv}" "${_env_username}"; then
+            echo "ERROR: failed to update GPU group memberships!" >&2
+            exit 1
+        fi
+        if ! _configured_groups="$(id --name --groups "${_env_username}")"; then
+            echo "ERROR: failed to recheck configured GPU groups!" >&2
+            exit 1
+        fi
+        for _group_name in "${_required_groups[@]}"; do
+            if ! _group_list_contains "${_configured_groups}" "${_group_name}"; then
+                echo "ERROR: '${_group_name}' membership was not configured!" >&2
+                exit 1
+            fi
+        done
+        echo "GPU group memberships changed."
+        echo "Log out of this SSH session completely, reconnect, and rerun setup."
         exit 0
     fi
+
+    for _group_name in "${_required_groups[@]}"; do
+        if ! _group_list_contains "${_effective_groups}" "${_group_name}"; then
+            echo "ERROR: '${_group_name}' is configured but is not effective" >&2
+            echo "    in this login session. Log out completely, reconnect," >&2
+            echo "    and rerun setup." >&2
+            exit 1
+        fi
+    done
+    echo "Required video and render groups are effective in this login session."
 
 }
 

@@ -223,12 +223,13 @@ Preserve these boundaries:
   is complete only after a later invocation observes a different Linux boot
   ID; successful return from a reboot command or an SSH disconnect is not
   proof that a new kernel instance started.
-- Do not call the Azure-oriented `ensure_groups_maybe_reboot_dont_wrap` from
-  the DevCloud root bootstrap. It discovers a user through `logname` and owns
-  an immediate reboot, while DevCloud has an explicit target user and a
-  separate SSH handoff. If demonstrated duplication later justifies a shared
-  primitive, make it accept an explicit username and keep group mutation
-  separate from provider-specific reboot or handoff policy.
+- Do not call the Azure-oriented
+  `ensure_groups_maybe_require_relogin_dont_wrap` from the DevCloud root
+  bootstrap. It discovers a user through `logname` and owns an Azure login
+  refresh boundary, while DevCloud has an explicit target user and a separate
+  SSH handoff. If demonstrated duplication later justifies a shared primitive,
+  make it accept an explicit username and keep group mutation separate from
+  provider-specific login or handoff policy.
 - Use an ordinary Python virtual environment with pip for the demonstrated
   packaged recipe. Do not introduce Conda without a concrete compatibility
   requirement.
@@ -576,6 +577,12 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
   before requesting the reboot. Do not create the completed marker until a
   later invocation observes a different valid boot ID. The same boot ID means
   the reboot is still pending and must not allow later stages to proceed.
+- Supplementary-group changes do not by themselves require a system reboot.
+  When setup needs the new groups in its current execution context, stop after
+  mutation, require the user to end and recreate the login session, and verify
+  effective membership on rerun. Do not use nested `newgrp` or `sg` processes,
+  or attempt to terminate the parent SSH session, merely to avoid that explicit
+  handoff.
 - Non-stage setup helpers follow the existing `_dont_wrap` suffix convention.
 - Keep locale changes scoped with a subshell when exact parsing requires
   `LC_ALL=C`, unless the repository later adopts an explicit global locale

@@ -51,7 +51,7 @@ else
 fi
 
 # Ensure user access to GPU
-ensure_groups_maybe_reboot_dont_wrap
+ensure_groups_maybe_require_relogin_dont_wrap
 # Environment assumptions check
 ensure_basic_os_env_sanity_dont_wrap "${EXPECTED_DISTRO}" "${EXPECTED_DIST_VER}"
 ensure_rocm_env_sanity_dont_wrap "${EXPECTED_ROCM_VER}" "${EXPECTED_ROCMVER_REGEX}"
