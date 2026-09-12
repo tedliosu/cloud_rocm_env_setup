@@ -132,8 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Make `guarded_rm_rf` refuse deletion explicitly when path resolution fails, with a bounded negative test.
-
 - [ ] Make the intended Triton-validator failure/status branch reachable without depending on ambient `set -e` behavior.
 
 - [ ] Make the CuPy wheel-install failure/status branch reachable without depending on ambient `set -e` behavior while preserving the underlying build status and bounded log context.

@@ -228,7 +228,11 @@ guarded_rm_rf() {
         exit 1
     fi
 
-    _str_paths_list="$(realpath --canonicalize-missing "$@")"
+    if ! _str_paths_list="$(realpath --canonicalize-missing "$@")"; then
+        echo "Refusing to forcefully and recursively delete paths because" >&2
+        echo "    one or more target paths could not be resolved!" >&2
+        exit 1
+    fi
     _old_ifs="$IFS"
     # Don't let command substitution swallow trailing newlines
     IFS="$(printf '\n%s' ".")"
