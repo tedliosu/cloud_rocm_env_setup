@@ -10,6 +10,19 @@
 
 _FALSE_NUM_VAL=0
 
+# Check that a value is one ordinary filename rather than a path or list.
+# Usage: is_plain_filename <filename>
+# Returns: 0 for one nonempty filename component; 1 otherwise
+is_plain_filename() {
+
+    [ "$#" -eq 1 ] || return 1
+    case ${1} in
+        ''|.|..|*/*|*$'\n'*) return 1;;
+        *) return 0;;
+    esac
+
+}
+
 # Validate environment UFW configuration status
 # Usage: validate_ufw_config <strict_mode_flag>
 # Returns: with strict checking, 0 only for the known UFW baseline; with relaxed

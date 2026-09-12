@@ -114,6 +114,11 @@ if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
              "for model checkpoint filename!" >&2
         exit 1
     }
+    if ! is_plain_filename "${_MODEL_FILENAME}"; then
+        echo "FAILED: ComfyUI workflow must select exactly one plain" >&2
+        echo "    model checkpoint filename, not a path or list!" >&2
+        exit 1
+    fi
     _WORKFLOW_FILENAME="$(basename "${COMFYUI_WORKFLOW_PATH}")"
     mkdir --parent "${COMFYUI_REPO_LOCAL_DIR}/${_WORKFLOWS_DIR_RELPATH}"
     # the rm's make this script reentrant; redownloading/recopying here is always OK
