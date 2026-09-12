@@ -132,8 +132,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
 
-- [ ] Distinguish failure to execute `rocminfo` from a successful probe that reports an unloaded driver.
-
 - [ ] Make unknown options fail in the existing setup scripts rather than printing usage and exiting successfully.
 
 - [ ] Centralize only the repeated exact `/etc/default/ufw` selector regex in shared UFW code before adding a third setup consumer:

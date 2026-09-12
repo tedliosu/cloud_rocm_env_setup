@@ -350,13 +350,24 @@ ensure_basic_os_env_sanity_dont_wrap() {
 # Returns: 0 for plan-only or the expected ROCm environment; exits 1 otherwise
 ensure_rocm_env_sanity_dont_wrap() {
 
+    local _rocminfo_output
+    local _rocminfo_status
+
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         echo "[PLAN ONLY] Would ensure that amdgpu dkms is loaded according to 'rocminfo',"
         echo "[PLAN ONLY]     and ensure that 'hipconfig' reports ROCm version ~$1."
         return 0
     fi
 
-    if rocminfo | grep --ignore-case --quiet "NOT loaded"; then
+    if _rocminfo_output="$(rocminfo)"; then
+        :
+    else
+        _rocminfo_status="$?"
+        echo "FAILED: 'rocminfo' exited with status ${_rocminfo_status}!" >&2
+        echo "    Unable to inspect the AMDGPU driver." >&2
+        exit 1
+    fi
+    if grep --ignore-case --quiet "NOT loaded" <<<"${_rocminfo_output}"; then
         echo "amdgpu dkms not detected; bailing!" >&2
         exit 1
     fi
