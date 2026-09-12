@@ -5,6 +5,13 @@ ML and GPGPU development. Provider setup scripts keep cloud-specific
 orchestration explicit, shared helpers own only genuinely common primitives,
 and the main validator checks provider-neutral workload capabilities.
 
+Configuration follows the same ownership boundary: provider image assumptions
+remain provider-owned even when their current values match, while shared pins
+represent deliberately common capability recipes. The Ubuntu 24.04 CMake
+package pin is currently the only prominent environment-sensitive value kept
+shared; revisit that decision if provider OS generations or CMake requirements
+diverge.
+
 The design favors reproducible minimal environments, conservative system
 mutation, small real workload checks, and maintenance costs that remain
 realistic for a small project. Optional and experimental paths stay separate
@@ -130,18 +137,9 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ## Current Focus
 
-### Prerequisite Common Refactors Before DevCloud Ordinary-User Setup
-
-- [ ] Audit shared configuration ownership before adding DevCloud as another setup consumer:
-    - Move the Azure-only `FASTFETCH_PIN_VER` and `FASTFETCH_DEB_FILENAME` out of `setup/common/lib/shared_vars.sh` and into `setup/azure/lib/azure_vars.sh`.
-    - Decide whether the Ubuntu-24.04-specific `CMAKE_APT_PIN_VER` is deliberately one common supported-platform recipe or should become provider-owned when supported OS generations diverge.
-    - Keep distro and ROCm expectations provider-owned even when two providers currently use equal values, because those contracts may drift independently.
-    - Retain genuinely shared capability-recipe pins, including the current CuPy, ComfyUI, TorchCodec, oneTBB, hipCollections, and ROCm-DS-CMake selections, unless provider evidence demonstrates a real divergence.
-    - Keep the result as a small ownership cleanup rather than introducing a generic configuration framework.
-
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
-- [ ] Add the ordinary-user DevCloud setup entry point only after the prerequisite common refactors above:
+- [ ] Add the ordinary-user DevCloud setup entry point:
     - Keep AMD DevCloud instance provisioning manual.
     - Target the recently observed Ubuntu 24.04 bare-OS AMD Instinct MI300X VF with native `gfx942`, while probing the live image before accepting it.
     - Keep orchestration at the DevCloud provider boundary and reuse only suitable shared primitives.
@@ -292,6 +290,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Azure users may optionally install fastfetch from an official GitHub release during setup.
     - fastfetch is not required by any supported workload, so the main validation script does not validate it.
     - Users can run `fastfetch` manually to confirm the optional installation.
+    - After the DevCloud phases and Hot Aisle quick-start documentation are complete, decide whether DevCloud should offer the same optional GitHub-release convenience. If adopted, share the identical release pin and package filename rather than duplicating them across provider variables.
 
 ## Project Information
 
