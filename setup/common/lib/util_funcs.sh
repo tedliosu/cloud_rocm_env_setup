@@ -18,6 +18,10 @@ readonly _CUPY_BUILD_LOG_TAIL_LINES=80
 run_stage() {
 
     local _stage_status
+    local _milestones_dir
+    local _func_to_run
+    local _done_marker_file
+    local _skip_stage_msg
     _milestones_dir="$1"
     shift
     _func_to_run="$1"
