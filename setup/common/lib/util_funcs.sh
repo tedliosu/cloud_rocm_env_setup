@@ -443,7 +443,8 @@ ppa_disable_dont_wrap() {
 
 }
 
-# System update (no kernel update by default)
+# Upgrade currently installed system packages without promising that
+#     kernel-related packages remain unchanged.
 # Usage: no arguments required
 apt_get_sys_update() {
     sudo --set-home apt-get update

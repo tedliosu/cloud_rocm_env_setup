@@ -210,6 +210,11 @@ Preserve these boundaries:
   the current non-root identity, home, repository access, effective required
   groups, and the explicitly adopted sudo contract without claiming ROCm or
   GPU readiness before those components are installed.
+- Before the first ordinary-user setup mutation, revalidate the expected OS and
+  conservatively inspect AMDGPU- and ROCm-related package and APT-repository
+  state. Accept only the expected bare pre-install state or exact state created
+  by the current or completed project phases. Preserve and refuse unexpected,
+  conflicting, or mixed state rather than attempting cleanup or migration.
 - Treat the currently observed DevCloud target as one Ubuntu 24.04 bare-OS
   MI300X Virtual Function with native architecture `gfx942`. Confirm that
   identity after driver installation rather than assuming that the provider
@@ -218,6 +223,8 @@ Preserve these boundaries:
   ordinary-user preflight and before the general system upgrade when the live
   image is recognized as FRESH. Keep classification outside milestone-wrapped
   work so every rerun also preserves and reports CUSTOM or UNKNOWN state.
+  Continue without firewall changes for CUSTOM state; stop without firewall
+  changes for UNKNOWN state.
 - Separate the existing-package upgrade and AMDGPU DKMS installation with a
   reboot, then require another reboot after DKMS installation. A reboot stage
   is complete only after a later invocation observes a different Linux boot
