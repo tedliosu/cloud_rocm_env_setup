@@ -5,13 +5,6 @@ ML and GPGPU development. Provider setup scripts keep cloud-specific
 orchestration explicit, shared helpers own only genuinely common primitives,
 and the main validator checks provider-neutral workload capabilities.
 
-Configuration follows the same ownership boundary: provider image assumptions
-remain provider-owned even when their current values match, while shared pins
-represent deliberately common capability recipes. The Ubuntu 24.04 CMake
-package pin is currently the only prominent environment-sensitive value kept
-shared; revisit that decision if provider OS generations or CMake requirements
-diverge.
-
 The design favors reproducible minimal environments, conservative system
 mutation, small real workload checks, and maintenance costs that remain
 realistic for a small project. Optional and experimental paths stay separate
@@ -148,7 +141,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Keep AMD DevCloud instance provisioning manual, keep orchestration at the DevCloud provider boundary, and reuse only suitable shared primitives.
     - Keep the intended experimental target explicit: one Ubuntu 24.04 bare-OS AMD Instinct MI300X Virtual Function with native `gfx942`. A plan-only run may describe work without enforcing the OS identity; a real run must validate Ubuntu before mutation and confirm the GPU identity after driver installation.
     - Design the pre-mutation AMDGPU/ROCm admission check together with the exact phase states it must recognize on reruns. Accept only the observed bare state or an exact state produced by the current or completed setup phases; preserve and refuse unexpected, conflicting, or mixed state rather than cleaning it automatically. Base classification on exact provider-owned recipe artifacts and phase invariants. Do not infer stack ownership from open-ended prefixes or regular expressions over package names, repository contents, installation paths, or other text that may reject unrelated state or drift as AMD packaging changes.
-    - Classify UFW on every invocation. Initialize the exact shared TCP/22 baseline immediately when state is FRESH, before the general upgrade. Preserve and report CUSTOM or UNKNOWN without modifying either; continue on CUSTOM and stop on UNKNOWN.
+    - Classify UFW on every non-plan invocation. Initialize the exact shared TCP/22 baseline immediately when state is FRESH, before the general upgrade. Preserve and report CUSTOM or UNKNOWN without modifying either; continue on CUSTOM and stop on UNKNOWN. In plan-only mode, describe the check and potential action without collecting sudo-backed UFW state.
     - Refresh APT metadata, upgrade only the already-installed system packages, record phase-specific pending reboot state, and reboot.
     - On rerun, require a changed Linux boot ID and revalidate UFW before proceeding.
 

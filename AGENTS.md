@@ -61,6 +61,11 @@ conversation dumps, parallel backlogs, or speculative TODOs merely to preserve
 chat context. Do not rewrite information that Git or existing documentation
 already records adequately.
 
+Repeated malformed commands, invented options, forgotten recent state, or
+unrelated output are session-health warnings. Stop before further mutations,
+staging, commits, or pushes, recheck the repository state and governing
+documentation, and prefer continuing in a fresh session.
+
 ## Software provenance and generative-AI assistance
 
 Treat software provenance according to concrete risk rather than assuming that
@@ -195,10 +200,11 @@ Preserve these boundaries:
   group ownership, mode `0700` for `.ssh`, and mode `0600` for
   `authorized_keys`. Do not modify `sshd_config`, disable root SSH, or broaden
   the task into general SSH-server management.
-- Select the password-disabled user's sudo contract explicitly before encoding
-  it; do not assume full `NOPASSWD` sudo without that decision. Install only a
-  project-owned sudoers fragment, write it atomically with root ownership and
-  mode `0440`, and validate the complete sudoers policy with `visudo --check`.
+- The adopted password-disabled ordinary-user contract is full `NOPASSWD`
+  sudo. Do not change that contract without an explicit maintainer decision.
+  Install only a project-owned sudoers fragment, write it atomically with root
+  ownership and mode `0440`, and validate the complete sudoers policy with
+  `visudo --check`.
 - Require a separate SSH login test before ending the root session. Static
   server-side checks do not prove that the intended client authentication and
   network path work.
@@ -222,9 +228,10 @@ Preserve these boundaries:
 - Initialize the shared conservative UFW TCP/22 baseline immediately after the
   ordinary-user preflight and before the general system upgrade when the live
   image is recognized as FRESH. Keep classification outside milestone-wrapped
-  work so every rerun also preserves and reports CUSTOM or UNKNOWN state.
-  Continue without firewall changes for CUSTOM state; stop without firewall
-  changes for UNKNOWN state.
+  work so every non-plan rerun also preserves and reports CUSTOM or UNKNOWN
+  state. In plan-only mode, describe the check and potential action without
+  collecting sudo-backed UFW state. Continue without firewall changes for
+  CUSTOM state; stop without firewall changes for UNKNOWN state.
 - Separate the existing-package upgrade and AMDGPU DKMS installation with a
   reboot, then require another reboot after DKMS installation. A reboot stage
   is complete only after a later invocation observes a different Linux boot
@@ -269,10 +276,9 @@ Preserve these boundaries:
 - Do not create or maintain a downstream GPU-library patch collection for this
   path.
 
-The README records a prospective Canny presentation use case. Do not assume
-that presentation is confirmed or that the maintainer is continuously
-available before its date. Ask for current scheduling context before turning
-that possibility into a deadline-driven expansion.
+A possible presentation or other external use case does not establish a
+deadline or imply continuous maintainer availability. Ask for current
+scheduling context before turning that possibility into deadline-driven work.
 
 ## Closed decisions that must not be reopened implicitly
 
@@ -734,6 +740,12 @@ it to the decision. This is especially important when a request appears to
 conflict with an approval gate, safety boundary, closed decision, or canonical
 backlog priority. Do not add citations mechanically to every routine action
 when they would not improve clarity.
+
+Local diff review does not replace whole-file and whole-structure review. For
+meaningful changes, inspect the affected files in context and summarize changed
+defaults, environment variables, failure handling, provider behavior,
+baseline-versus-optional or experimental behavior, plan-only behavior, and
+testability when applicable.
 
 During editing:
 
