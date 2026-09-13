@@ -6,8 +6,37 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 readonly SCRIPT_DIR
 SETUP_SCRIPT="$(realpath "${SCRIPT_DIR}/../bin/amd_devcloud_env_setup.sh")"
 readonly SETUP_SCRIPT
-STATE_TRACKER_PATH="$(realpath "${SCRIPT_DIR}/../state_trackers")"
+TEST_TMP_DIR="$(mktemp --directory)"
+readonly TEST_TMP_DIR
+TEST_BIN_DIR="${TEST_TMP_DIR}/bin"
+readonly TEST_BIN_DIR
+STATE_TRACKER_PATH="${TEST_TMP_DIR}/state_trackers"
 readonly STATE_TRACKER_PATH
+TEST_REALPATH_COMMAND="$(command -v realpath)"
+export TEST_REALPATH_COMMAND
+export TEST_STATE_TRACKER_PATH="${STATE_TRACKER_PATH}"
+
+cleanup() {
+    rm --recursive --force "${TEST_TMP_DIR}"
+}
+trap cleanup EXIT
+
+mkdir "${TEST_BIN_DIR}"
+
+# Keep plan assertions independent of ignored milestones in a live checkout.
+# Single quotes preserve these expressions for the generated command double.
+# shellcheck disable=SC2016
+printf '%s\n' \
+    '#!/bin/bash' \
+    'set -euo pipefail' \
+    'if [ "$#" -eq 1 ] && [ "$1" = "../state_trackers" ]; then' \
+    '    printf "%s\n" "${TEST_STATE_TRACKER_PATH}"' \
+    '    exit 0' \
+    'fi' \
+    'exec "${TEST_REALPATH_COMMAND}" "$@"' \
+    > "${TEST_BIN_DIR}/realpath"
+chmod +x "${TEST_BIN_DIR}/realpath"
+export PATH="${TEST_BIN_DIR}:${PATH}"
 
 _state_tracker_existed=0
 if [ -e "${STATE_TRACKER_PATH}" ] || [ -L "${STATE_TRACKER_PATH}" ]; then
