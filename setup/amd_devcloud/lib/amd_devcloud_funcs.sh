@@ -8,6 +8,16 @@ _amd_devcloud_kfd_is_present() {
     [ -e /dev/kfd ] || [ -L /dev/kfd ]
 }
 
+_amd_devcloud_amd_smi_is_executable() {
+    [ -x "${AMD_DEVCLOUD_AMD_SMI_PATH}" ] &&
+        [ ! -d "${AMD_DEVCLOUD_AMD_SMI_PATH}" ]
+}
+
+_amd_devcloud_run_amd_smi_static() {
+    "${AMD_DEVCLOUD_AMD_SMI_PATH}" static \
+        --gpu "${AMD_DEVCLOUD_EXPECTED_GPU_INDEX}" --asic --driver --json
+}
+
 _amd_devcloud_collect_command_artifacts() {
     local _command_name
 
@@ -44,8 +54,8 @@ _amd_devcloud_expected_driver_path_artifacts() {
 # Classify the finite accepted AMD DevCloud setup states and require internally
 #     consistent stage milestones before ordinary-user setup mutation.
 # Usage: check_amd_devcloud_setup_admission_dont_wrap <milestones_directory>
-# Returns: 0 for plan-only, accepted bare state, or the exact project-installed
-#          repository bootstrap; 1 for failed observations or unknown state
+# Returns: 0 for plan-only, accepted bare state, or exact project-managed
+#          repository or driver state; 1 for failed observations or unknown state
 check_amd_devcloud_setup_admission_dont_wrap() {
     local _milestones_dir
     local _milestones_parent
@@ -472,3 +482,142 @@ install_amd_devcloud_driver() (
 
     echo "Pinned AMDGPU DKMS and versioned AMD SMI packages installed."
 )
+
+# Verify the running-kernel DKMS installation and the adopted DevCloud GPU
+#     identity after the driver-specific reboot.
+# Usage: no arguments required
+# Returns: 0 after exact DKMS, device, architecture, and nonempty driver-version
+#          checks; 1 on failed observations or an unexpected environment
+verify_amd_devcloud_post_driver_state_dont_wrap() {
+    local _required_command
+    local _pci_output
+    local _pci_line
+    local _pci_count=0
+    local _kernel_release
+    local _machine_arch
+    local _dkms_output
+    local _expected_dkms_output
+    local _amd_smi_json
+    local _amd_smi_fields
+    local _gpu_market_name
+    local _gpu_arch
+    local _driver_version
+    local _extra_field
+
+    if [ "$#" -ne 0 ]; then
+        echo "ERROR: post-driver verification expects no arguments!" >&2
+        return 1
+    fi
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would verify the running-kernel AMDGPU DKMS state,"
+        echo "[PLAN ONLY]     loaded driver and KFD device, single MI300X VF,"
+        echo "[PLAN ONLY]     native ${AMD_DEVCLOUD_EXPECTED_GPU_ARCH} architecture, and nonempty AMD SMI"
+        echo "[PLAN ONLY]     driver version."
+        return 0
+    fi
+
+    for _required_command in dkms jq lspci uname; do
+        if ! command -v "${_required_command}" >/dev/null 2>&1; then
+            echo "ERROR: post-driver verification requires '${_required_command}'!" >&2
+            return 1
+        fi
+    done
+    if ! _amd_devcloud_amd_smi_is_executable; then
+        echo "ERROR: versioned AMD SMI command is not executable:" >&2
+        echo "    ${AMD_DEVCLOUD_AMD_SMI_PATH}" >&2
+        return 1
+    fi
+    if ! _amd_devcloud_amdgpu_module_is_loaded; then
+        echo "ERROR: the amdgpu module is not loaded after the driver reboot!" >&2
+        return 1
+    fi
+    if ! _amd_devcloud_kfd_is_present; then
+        echo "ERROR: /dev/kfd is unavailable after the driver reboot!" >&2
+        return 1
+    fi
+
+    if ! _pci_output="$(lspci -Dn -d \
+        "${AMD_DEVCLOUD_EXPECTED_BARE_PCI_DEVICE_ID}")"; then
+        echo "ERROR: unable to inspect the expected AMD PCI device!" >&2
+        return 1
+    fi
+    while IFS= read -r _pci_line; do
+        if [ -n "${_pci_line}" ]; then
+            _pci_count=$((_pci_count + 1))
+        fi
+    done <<< "${_pci_output}"
+    if [ "${_pci_count}" -ne 1 ]; then
+        echo "ERROR: expected exactly one AMD DevCloud PCI device" >&2
+        echo "    ${AMD_DEVCLOUD_EXPECTED_BARE_PCI_DEVICE_ID}; observed ${_pci_count}!" >&2
+        return 1
+    fi
+
+    if ! _kernel_release="$(uname --kernel-release)" ||
+        [ -z "${_kernel_release}" ]; then
+        echo "ERROR: unable to determine the running kernel release!" >&2
+        return 1
+    fi
+    if ! _machine_arch="$(uname --machine)" ||
+        [ "${_machine_arch}" != "${AMD_DEVCLOUD_EXPECTED_DKMS_ARCH}" ]; then
+        echo "ERROR: expected DKMS machine architecture" >&2
+        echo "    '${AMD_DEVCLOUD_EXPECTED_DKMS_ARCH}', observed '${_machine_arch}'!" >&2
+        return 1
+    fi
+    _expected_dkms_output="amdgpu/${AMD_DEVCLOUD_AMDGPU_DKMS_MODULE_VERSION}, ${_kernel_release}, ${_machine_arch}: installed"
+    if ! _dkms_output="$(LC_ALL=C dkms status \
+        "amdgpu/${AMD_DEVCLOUD_AMDGPU_DKMS_MODULE_VERSION}" \
+        -k "${_kernel_release}/${_machine_arch}")"; then
+        echo "ERROR: unable to inspect running-kernel AMDGPU DKMS state!" >&2
+        return 1
+    fi
+    if [ "${_dkms_output}" != "${_expected_dkms_output}" ]; then
+        echo "ERROR: running-kernel AMDGPU DKMS state is unexpected:" >&2
+        printf '    %s\n' "${_dkms_output}" >&2
+        return 1
+    fi
+
+    if ! _amd_smi_json="$(_amd_devcloud_run_amd_smi_static)"; then
+        echo "ERROR: versioned AMD SMI failed to report GPU state!" >&2
+        return 1
+    fi
+    if ! _amd_smi_fields="$(printf '%s\n' "${_amd_smi_json}" |
+        jq --raw-output --exit-status \
+            --argjson gpu_index "${AMD_DEVCLOUD_EXPECTED_GPU_INDEX}" '
+                .gpu_data
+                | select(type == "array")
+                | map(select(.gpu == $gpu_index))
+                | select(length == 1)
+                | .[0]
+                | [.asic.market_name,
+                   .asic.target_graphics_version,
+                   .driver.version]
+                | select(all(.[]; type == "string" and length > 0))
+                | @tsv')"; then
+        echo "ERROR: AMD SMI did not report one complete selected-GPU record!" >&2
+        return 1
+    fi
+    case ${_amd_smi_fields} in
+        *$'\n'*)
+            echo "ERROR: AMD SMI reported ambiguous selected-GPU records!" >&2
+            return 1
+            ;;
+    esac
+    IFS=$'\t' read -r _gpu_market_name _gpu_arch _driver_version \
+        _extra_field <<< "${_amd_smi_fields}"
+    if [ -n "${_extra_field}" ] ||
+        [ "${_gpu_market_name}" != "${AMD_DEVCLOUD_EXPECTED_GPU_MARKET_NAME}" ]; then
+        echo "ERROR: unexpected AMD SMI GPU identity '${_gpu_market_name}'!" >&2
+        return 1
+    fi
+    if [ "${_gpu_arch}" != "${AMD_DEVCLOUD_EXPECTED_GPU_ARCH}" ]; then
+        echo "ERROR: expected native architecture" >&2
+        echo "    '${AMD_DEVCLOUD_EXPECTED_GPU_ARCH}', observed '${_gpu_arch}'!" >&2
+        return 1
+    fi
+
+    echo "AMD DevCloud post-driver verification passed."
+    echo "Running kernel: ${_kernel_release} (${_machine_arch})"
+    echo "AMDGPU DKMS: ${AMD_DEVCLOUD_AMDGPU_DKMS_MODULE_VERSION} (installed)"
+    echo "GPU: ${_gpu_market_name} (${_gpu_arch})"
+    echo "AMD SMI driver version: ${_driver_version}"
+}
