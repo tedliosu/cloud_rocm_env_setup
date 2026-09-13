@@ -23,6 +23,7 @@ for _expected_line in \
     "Would require the finite AMD DevCloud bare-stack" \
     "Would inspect current UFW state and apply the project" \
     "would run stage apt_get_sys_update" \
+    "would run stage ensure_tmux" \
     "Would record reboot phase amd_devcloud_system_upgrade_reboot"; do
     if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
         "${_expected_line}" <<< "${_plan_output}")"; then

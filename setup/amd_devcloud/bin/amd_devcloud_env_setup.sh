@@ -65,6 +65,7 @@ if [ "${SHOW_PLAN_ONLY:-0}" -ne 1 ]; then
 fi
 check_n_apply_ufw_base_or_warn_dont_wrap
 run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}"
+run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_TMUX_STAGE_NAME}"
 reboot_with_ack_dont_wrap \
     "${MILESTONES_DIR}" "${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}"
 

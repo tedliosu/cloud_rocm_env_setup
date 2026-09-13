@@ -37,6 +37,7 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
     local _milestones_dir
     local _milestones_parent
     local _upgrade_marker
+    local _tmux_marker
     local _reboot_pending_marker
     local _reboot_done_marker
     local _pci_output
@@ -125,10 +126,11 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
     fi
 
     _upgrade_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done"
+    _tmux_marker="${_milestones_dir}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done"
     _reboot_pending_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.pending"
     _reboot_done_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done"
-    for _stage_marker in "${_upgrade_marker}" "${_reboot_pending_marker}" \
-        "${_reboot_done_marker}"; do
+    for _stage_marker in "${_upgrade_marker}" "${_tmux_marker}" \
+        "${_reboot_pending_marker}" "${_reboot_done_marker}"; do
         if [ -e "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
             if [ ! -f "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
                 echo "ERROR: unexpected DevCloud system-upgrade marker type:" >&2
@@ -138,10 +140,14 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
             _stage_markers+=("${_stage_marker}")
         fi
     done
+    if [ -e "${_tmux_marker}" ] && [ ! -f "${_upgrade_marker}" ]; then
+        echo "ERROR: DevCloud tmux state exists without a completed upgrade!" >&2
+        return 1
+    fi
     if { [ -e "${_reboot_pending_marker}" ] ||
             [ -e "${_reboot_done_marker}" ]; } &&
-        [ ! -f "${_upgrade_marker}" ]; then
-        echo "ERROR: DevCloud reboot state exists without a completed upgrade!" >&2
+        [ ! -f "${_tmux_marker}" ]; then
+        echo "ERROR: DevCloud reboot state exists without completed tmux setup!" >&2
         return 1
     fi
     if [ -e "${_reboot_pending_marker}" ] && [ -e "${_reboot_done_marker}" ]; then
@@ -180,3 +186,81 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
         printf 'Recognized system-upgrade marker: %s\n' "${_stage_markers[@]}"
     fi
 }
+
+# Download, verify, install, and confirm the pinned AMD repository-bootstrap
+#     package for the adopted DevCloud ROCm generation.
+# Usage: no arguments required
+# Returns: 0 after exact package installation; 1 on failed download,
+#          verification, installation, or post-install package-state checks
+install_amd_devcloud_repository_bootstrap() (
+    local _temp_dir
+    local _package_path
+    local _package_version
+    local _installed_state
+    local _required_command
+
+    if [ "$#" -ne 0 ]; then
+        echo "ERROR: AMD repository bootstrap expects no arguments!" >&2
+        return 1
+    fi
+    for _required_command in apt-get dpkg-deb dpkg-query mktemp rmdir rm \
+        sha256sum sudo wget; do
+        if ! command -v "${_required_command}" >/dev/null 2>&1; then
+            echo "ERROR: repository bootstrap requires '${_required_command}'!" >&2
+            return 1
+        fi
+    done
+
+    if ! _temp_dir="$(mktemp --directory \
+        --tmpdir amd-devcloud-repository-bootstrap.XXXXXX)"; then
+        echo "ERROR: unable to create repository-bootstrap temporary directory!" >&2
+        return 1
+    fi
+    _package_path="${_temp_dir}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_FILENAME}"
+    trap 'rm --force -- "${_package_path}"; rmdir -- "${_temp_dir}" || :' EXIT
+
+    echo "Downloading pinned AMD repository-bootstrap package..."
+    if ! wget --tries=3 --timeout=30 --output-document="${_package_path}" \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_URL}"; then
+        echo "ERROR: unable to download the pinned AMD repository bootstrap!" >&2
+        return 1
+    fi
+    if ! printf '%s  %s\n' "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_SHA256}" \
+        "${_package_path}" | sha256sum --check --status; then
+        echo "ERROR: AMD repository-bootstrap SHA-256 verification failed!" >&2
+        return 1
+    fi
+    if ! _package_version="$(dpkg-deb --field "${_package_path}" Version)"; then
+        echo "ERROR: unable to inspect repository-bootstrap package metadata!" >&2
+        return 1
+    fi
+    if [ "${_package_version}" != \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}" ]; then
+        echo "ERROR: unexpected AMD repository-bootstrap package version" >&2
+        echo "    '${_package_version}'!" >&2
+        return 1
+    fi
+
+    if ! sudo --set-home apt-get install --assume-yes "${_package_path}"; then
+        echo "ERROR: unable to install the AMD repository-bootstrap package!" >&2
+        return 1
+    fi
+    if ! sudo --set-home apt-get update; then
+        echo "ERROR: AMD repository bootstrap installed, but refreshing" >&2
+        echo "    metadata from its configured repositories failed!" >&2
+        return 1
+    fi
+    if ! _installed_state="$(dpkg-query --show \
+        --showformat='${db:Status-Status}\t${Version}\n' amdgpu-install)"; then
+        echo "ERROR: unable to inspect installed repository-bootstrap state!" >&2
+        return 1
+    fi
+    if [ "${_installed_state}" != \
+        $'installed\t'"${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}" ]; then
+        echo "ERROR: installed AMD repository-bootstrap state is unexpected:" >&2
+        echo "    ${_installed_state}" >&2
+        return 1
+    fi
+
+    echo "Pinned AMD repository-bootstrap package installed and verified."
+)

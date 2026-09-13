@@ -49,4 +49,10 @@ readonly AMD_DEVCLOUD_ADMISSION_PATH_SENTINELS=(
 )
 
 readonly AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME="apt_get_sys_update"
+readonly AMD_DEVCLOUD_TMUX_STAGE_NAME="ensure_tmux"
 readonly AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME="amd_devcloud_system_upgrade_reboot"
+
+readonly AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_URL="https://repo.radeon.com/amdgpu-install/7.2.3/ubuntu/noble/amdgpu-install_7.2.3.70203-1_all.deb"
+readonly AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_FILENAME="amdgpu-install_7.2.3.70203-1_all.deb"
+readonly AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_SHA256="15606d326bd6d8a0a6c467625cb50c45fa6ecebcf483db04da911efe57b933d9"
+readonly AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION="30.30.3.0.30300300-2327507.24.04"
