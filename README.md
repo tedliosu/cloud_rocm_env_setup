@@ -54,6 +54,10 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - Reproducible, *minimal* environment setup with *selectively* pinned Python dependencies, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
 - Safe, resumable bootstrap scripts with reboot handling
 - Minimal validation to detect obviously broken environments (e.g., ROCm availability, basic workload execution)
+- Project-specific ROCm library and runtime selection remains process-scoped:
+    - Setup does not add project ROCm paths to system dynamic-loader configuration or run `ldconfig` merely to make them globally visible.
+    - Setup does not persist `LD_LIBRARY_PATH`, `ROCM_HOME`, `ROCM_PATH`, `HIP_PATH`, or similar runtime and build-selection variables in shell startup files.
+    - A deliberately dedicated environment with a pinned system stack may add that stack's exact versioned `bin` directory to `PATH`. This narrow executable-selection exception does not permit persistent library or runtime-selection variables or reliance on a mutable `/opt/rocm` alternative.
 
 # Non-Goals
 
@@ -146,8 +150,8 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - [ ] Implement DevCloud ROCm 7.2.3 and the common minimum baseline:
     - Install the complete versioned `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage or a guessed minimal subset.
     - Complete every applicable APT and other system-package prerequisite before starting pip-backed environment work.
-    - Add an idempotent project-owned `.profile` block selecting `/opt/rocm-7.2.3/bin`; do not depend on the mutable `/opt/rocm` alternative.
-    - Print and document the exact versioned `LD_LIBRARY_PATH` needed by the installed stack. Do not modify `ld.so.conf`, persist a global loader-cache policy, or globally export `LD_LIBRARY_PATH`.
+    - Add an idempotent project-owned `.profile` block whose only environment change is selecting `/opt/rocm-7.2.3/bin`. This is the narrow versioned-`PATH` exception for the dedicated pinned DevCloud environment; do not depend on the mutable `/opt/rocm` alternative.
+    - Print and document the exact versioned `LD_LIBRARY_PATH` needed by the installed stack, and supply it only to the relevant command, process, virtual-environment activation, or project-owned wrapper. Do not edit `/etc/ld.so.conf`, add a project path under `/etc/ld.so.conf.d/`, run `ldconfig` merely to expose this stack globally, or persist `LD_LIBRARY_PATH` or other ROCm runtime-selection variables in shell startup files.
     - Install the smallest set of Python environments that makes the common default `validate_main.sh` pass, including its complete default gates rather than a provider-specific partial substitute.
     - Probe and record the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions in a simple version-stamped environment record.
 
@@ -163,6 +167,19 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Fail clearly when the known environment or package assumptions no longer hold.
     - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
     - If packaged hipDF is deliberately adopted later, it may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
+
+### Repository Contract and Test-Structure Review
+
+- [ ] Perform a bounded retrospective audit of the existing implementation, tests, README, and agent agreement after the current DevCloud path is established:
+    - Check whether subsystem behavior, interfaces, invariants, failure semantics, provider gates, and support claims still match the intended project contract rather than relying on passing tests alone.
+    - Review helper and test placement, provider/common boundaries, duplicated or contradictory policy, stale rationale, and details that accumulated in the wrong documentation section.
+    - Inspect stylistic differences such as `grep` versus Bash matching, here-documents versus other text construction, `case` versus `if`/`elif`, and mutable test globals versus explicit data flow only for concrete effects on auditability, testability, portability, failure behavior, maintainability, or control-flow clarity.
+    - Prefer the clearest semantic model, including explicit state machines when the problem is inherently detailed. Do not normalize equally valid styles, refactor merely to reduce branches, or begin broad cleanup without first recording specific problems and why they matter.
+
+- [ ] Evaluate organization of the growing local shell-test surface:
+    - Compare the current `tests/run_local_tests.sh`, possible focused test drivers, and Bats based on readability, failure reporting, maintenance cost, portability, and execution on development and provider environments.
+    - Determine how Bats would be installed reproducibly on arbitrary provider VMs and whether an added bootstrap dependency or vendored framework is justified.
+    - Do not adopt a framework or split drivers until the expected organizational benefit outweighs dependency and maintenance costs.
 
 ### Hot Aisle Quick Start and Common Use Path
 
@@ -309,6 +326,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 # LLM Assistance Usage Disclaimer
 
-- All code and documentation in this repository were drafted with assistance from ChatGPT and Gemini models publicly available circa 2026, but all final code review, integration, validation, testing, etc. were done by me, a human.
+- All code and documentation in this repository were drafted with assistance from ChatGPT and Gemini models publicly available circa 2026. Architecture, support boundaries, semantics, interfaces, invariants, acceptance or rejection decisions, and final integration approval remain human-owned.
+- Human review is contract-first and risk-weighted. It includes deeper inspection of high-risk behavior and selective implementation review supported by tests and behavioral summaries; it does not claim exhaustive line-by-line inspection of every agent-assisted change.
 - This disclosure provides transparency about the development process; it is not by itself proof of originality, complete provenance, or license compliance.
 - Reports of suspected similarity to third-party material or licensing concerns are welcome so that affected code or documentation can be reviewed and, when appropriate, replaced.

@@ -66,6 +66,39 @@ unrelated output are session-health warnings. Stop before further mutations,
 staging, commits, or pushes, recheck the repository state and governing
 documentation, and prefer continuing in a fresh session.
 
+## Implementation and review model
+
+The maintainer owns the architecture, support boundaries, semantics,
+interfaces, invariants, and acceptance or rejection decisions. Agents may
+draft substantial implementation, tests, and documentation within those
+reviewed contracts. This is a contract-first delegated implementation model,
+not authorization for agents to turn local implementation convenience into
+project policy.
+
+Review is risk-weighted. Understand each subsystem well enough to judge its
+purpose, structure, interfaces, and contracts; inspect implementation details
+selectively according to their consequences. Privileged or destructive system
+mutation, failure propagation, support-policy changes, environment selection,
+dynamic-loader behavior, provider gating, and changes that can silently alter
+execution or testability require deeper scrutiny. Lower-risk plumbing may rely
+more heavily on clear interfaces, focused tests, and behavioral summaries.
+Do not optimize the workflow merely for code-generation speed when architecture,
+semantics, policy consistency, or documentation coherence are the real
+bottleneck.
+
+Passing tests are evidence about the contract encoded by those tests, not proof
+that the contract is correct. Treat invariants inferred or proposed by an agent
+as reviewable proposals even when they make operational assumptions explicit
+and improve test coverage. Periodically ask whether the implementation still
+matches the intended meaning of the project and whether the repository still
+tells one coherent story.
+
+These standards apply to existing as well as new work. Do not respond with an
+undirected rewrite of historical code. When a retrospective audit finds a
+concrete policy, safety, auditability, or coherence problem, describe its
+impact and handle it as a bounded reviewed change or preserve it in the README
+backlog.
+
 ## Software provenance and generative-AI assistance
 
 Treat software provenance according to concrete risk rather than assuming that
@@ -563,6 +596,22 @@ beyond the inputs required by the shared classifier.
 Preserve existing code style unless it interferes with correctness, safety, or
 the explicit task. Do not opportunistically normalize surrounding Bash.
 
+Prefer semantic simplicity and human-auditable control flow over syntactic
+compactness or superficially more robust machinery. Do not refactor merely to
+reduce line or branch counts, and do not replace explicit logic with abstraction
+or indirection when that makes behavior harder to inspect. A large explicit
+state detector may be the clearest representation of an inherently detailed
+state machine. For genuinely necessary complexity, use brief plain-language
+comments to explain why it exists; avoid comments that only restate the code.
+
+Audit style differences only when they may reveal inconsistent engineering
+policy. Choices such as `grep` versus Bash matching, here-documents versus other
+text construction, `case` versus `if`/`elif`, or test-global mutation versus
+explicit data flow warrant reconciliation only when they materially affect
+readability, auditability, testability, failure behavior, portability,
+maintainability, or control-flow clarity. Preserve equally valid local styles
+when their context explains the difference.
+
 - Constants belong near the top of the appropriate file.
 - Group semantically related variables together and use one visibility boundary
   for the group. Cross-file public constants belong together in the relevant
@@ -660,6 +709,14 @@ DevCloud provider boundary. Extract a common helper only after a concrete
 shared responsibility appears and the split improves conceptual ownership
 without creating ravioli-style fragmentation.
 
+Periodically inspect the whole repository structure, README, this agreement,
+helper placement, test placement, and provider/common boundaries. Look for
+misplaced details, duplicated or contradictory policy, stale rationale,
+provider orchestration leaking into common helpers, or genuinely common
+low-level primitives duplicated across providers. Identify concrete problems
+and their consequences before proposing cleanup; do not use a coherence review
+as standing authorization for broad refactoring.
+
 ## System safety and package handling
 
 Provider-supported OS, driver, kernel, and APT state should remain conservative.
@@ -679,6 +736,33 @@ Provider-supported OS, driver, kernel, and APT state should remain conservative.
 Ollama installation and model pulls remain manual because mutable registry
 artifacts cannot currently be pinned reliably enough for the bootstrap
 contract. Fastfetch remains optional and outside workload validation.
+
+## ROCm paths and dynamic-loader state
+
+Never modify system dynamic-loader configuration merely to expose a
+project-specific ROCm stack. Do not edit `/etc/ld.so.conf`, add project ROCm
+paths under `/etc/ld.so.conf.d/`, or run `ldconfig` for that purpose.
+
+Do not persist `LD_LIBRARY_PATH`, `ROCM_HOME`, `ROCM_PATH`, `HIP_PATH`, or
+similar runtime, build, or environment-selection variables in `.profile`,
+`.bashrc`, `.zshrc`, other shell startup files, or equivalent system-wide
+configuration. Persistent state can silently select different libraries,
+code objects, compilers, or runtimes across shells and workloads. Keep such
+values explicit and scoped to the relevant command, process, virtual
+environment activation, or project-owned wrapper.
+
+The narrow exception is an exact versioned ROCm `bin` directory added to
+`PATH` on a deliberately dedicated environment whose system stack is pinned to
+that version. The DevCloud `/opt/rocm-7.2.3/bin` `.profile` block follows this
+exception. It does not authorize use of the mutable `/opt/rocm` alternative or
+persistent exports of library and runtime-selection variables. `PATH` affects
+which executable is selected; dynamic-loader and runtime-selection variables
+can change how that executable behaves.
+
+Apply this policy when reviewing existing scripts and documentation as well as
+new work. Treat a concrete conflict as a bug or bounded migration task, but do
+not launch a speculative environment-variable rewrite without identifying the
+affected behavior and obtaining the normal review approval.
 
 ## Validation and evidence rules
 
@@ -723,6 +807,13 @@ Aisle, Azure, and potentially AMD DevCloud. Provider or environment
 fingerprints should mainly determine whether checks are applicable rather than
 create separate provider-specific validation implementations. Add provider
 specialization only when a concrete environmental difference requires it.
+
+The current explicit shell tests and `tests/run_local_tests.sh` remain an
+acceptable dependency-free organization while the repository evaluates its
+growing test surface. Do not assume Bats, multiple drivers, or vendoring a test
+framework is automatically better. Any change should justify its readability,
+maintenance, portability, and failure-reporting benefits against installation
+reliability and bootstrap dependency costs on arbitrary provider VMs.
 
 Treat each validation CLI gate as a meaningful environment or capability
 bundle. If an optional environment is absent and not explicitly required,
@@ -770,9 +861,13 @@ when they would not improve clarity.
 
 Local diff review does not replace whole-file and whole-structure review. For
 meaningful changes, inspect the affected files in context and summarize changed
-defaults, environment variables, failure handling, provider behavior,
-baseline-versus-optional or experimental behavior, plan-only behavior, and
-testability when applicable.
+behavior, interfaces, defaults, environment variables, failure handling,
+provider behavior, baseline-versus-optional or experimental behavior,
+plan-only behavior, and testability when applicable. Also call out new
+dependencies, support assumptions, and persistent or system-wide mutation.
+State explicitly when a category does not change if its absence might otherwise
+be ambiguous. These behavioral summaries are part of risk-based review rather
+than cosmetic release notes.
 
 During editing:
 
