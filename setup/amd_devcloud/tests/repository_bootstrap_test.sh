@@ -65,7 +65,8 @@ printf '%s\n' \
     '        exit "${TEST_INSTALL_STATUS}"' \
     '        ;;' \
     '    "apt-get update")' \
-    '        [ "$#" -eq 3 ]' \
+    '        [ "$#" -eq 4 ]' \
+    '        [ "$4" = "--option=APT::Update::Error-Mode=any" ]' \
     '        printf "%s\n" "$*" >> "${TEST_UPDATE_CALLS}"' \
     '        exit "${TEST_UPDATE_STATUS}"' \
     '        ;;' \
@@ -100,6 +101,18 @@ export TEST_UPDATE_CALLS="${UPDATE_CALLS}"
 # shellcheck disable=SC2016 # Match dpkg-query's literal format expression.
 export TEST_DPKG_QUERY_FORMAT='--showformat=${db:Status-Status}\t${Version}\n'
 
+TEST_COMMAND_ARTIFACTS=""
+TEST_PATH_ARTIFACTS=""
+
+_amd_devcloud_collect_command_artifacts() {
+    [ -z "${TEST_COMMAND_ARTIFACTS}" ] ||
+        printf '%s\n' "${TEST_COMMAND_ARTIFACTS}"
+}
+
+_amd_devcloud_collect_path_artifacts() {
+    [ -z "${TEST_PATH_ARTIFACTS}" ] || printf '%s\n' "${TEST_PATH_ARTIFACTS}"
+}
+
 reset_observations() {
     TEST_WGET_STATUS=0
     TEST_SHA256_STATUS=0
@@ -110,6 +123,8 @@ reset_observations() {
     TEST_DPKG_QUERY_STATUS=0
     TEST_PACKAGE_STATUS="installed"
     TEST_INSTALLED_VERSION="${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}"
+    TEST_COMMAND_ARTIFACTS="$(_amd_devcloud_expected_repository_bootstrap_command_artifacts)"
+    TEST_PATH_ARTIFACTS="$(_amd_devcloud_expected_repository_bootstrap_path_artifacts)"
     export TEST_WGET_STATUS TEST_SHA256_STATUS TEST_DPKG_DEB_STATUS
     export TEST_PACKAGE_METADATA_VERSION TEST_INSTALL_STATUS TEST_UPDATE_STATUS
     export TEST_DPKG_QUERY_STATUS TEST_PACKAGE_STATUS TEST_INSTALLED_VERSION
@@ -157,11 +172,19 @@ TEST_INSTALLED_VERSION="unexpected"
 export TEST_INSTALLED_VERSION
 expect_rejection
 
-if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne 4 ]; then
+reset_observations
+TEST_COMMAND_ARTIFACTS="amdgpu-install"
+expect_rejection
+
+reset_observations
+TEST_PATH_ARTIFACTS+=$'\n/opt/rocm'
+expect_rejection
+
+if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne 6 ]; then
     echo "FAILED: repository bootstrap invoked an unexpected install count!" >&2
     exit 1
 fi
-if [ "$(wc --lines < "${UPDATE_CALLS}")" -ne 3 ]; then
+if [ "$(wc --lines < "${UPDATE_CALLS}")" -ne 5 ]; then
     echo "FAILED: repository bootstrap invoked an unexpected update count!" >&2
     exit 1
 fi

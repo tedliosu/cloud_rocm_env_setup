@@ -28,6 +28,15 @@ _amd_devcloud_collect_path_artifacts() {
     done
 }
 
+_amd_devcloud_expected_repository_bootstrap_command_artifacts() {
+    printf '%s\n' \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_COMMAND_ARTIFACTS[@]}"
+}
+
+_amd_devcloud_expected_repository_bootstrap_path_artifacts() {
+    printf '%s\n' "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}"
+}
+
 # Classify the finite accepted AMD DevCloud setup states and require internally
 #     consistent stage milestones before ordinary-user setup mutation.
 # Usage: check_amd_devcloud_setup_admission_dont_wrap <milestones_directory>
@@ -124,10 +133,8 @@ check_amd_devcloud_setup_admission_dont_wrap() {
 
     _command_artifacts="$(_amd_devcloud_collect_command_artifacts)"
     _path_artifacts="$(_amd_devcloud_collect_path_artifacts)"
-    _expected_command_artifacts="$(printf '%s\n' \
-        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_COMMAND_ARTIFACTS[@]}")"
-    _expected_path_artifacts="$(printf '%s\n' \
-        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}")"
+    _expected_command_artifacts="$(_amd_devcloud_expected_repository_bootstrap_command_artifacts)"
+    _expected_path_artifacts="$(_amd_devcloud_expected_repository_bootstrap_path_artifacts)"
     _expected_package_artifact="amdgpu-install (installed, ${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION})"
     if _amd_devcloud_amdgpu_module_is_loaded; then
         _amdgpu_loaded=1
@@ -228,6 +235,10 @@ install_amd_devcloud_repository_bootstrap() (
     local _package_path
     local _package_version
     local _installed_state
+    local _command_artifacts
+    local _expected_command_artifacts
+    local _path_artifacts
+    local _expected_path_artifacts
     local _required_command
 
     if [ "$#" -ne 0 ]; then
@@ -276,7 +287,8 @@ install_amd_devcloud_repository_bootstrap() (
         echo "ERROR: unable to install the AMD repository-bootstrap package!" >&2
         return 1
     fi
-    if ! sudo --set-home apt-get update; then
+    if ! sudo --set-home apt-get update \
+        --option=APT::Update::Error-Mode=any; then
         echo "ERROR: AMD repository bootstrap installed, but refreshing" >&2
         echo "    metadata from its configured repositories failed!" >&2
         return 1
@@ -290,6 +302,29 @@ install_amd_devcloud_repository_bootstrap() (
         $'installed\t'"${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}" ]; then
         echo "ERROR: installed AMD repository-bootstrap state is unexpected:" >&2
         echo "    ${_installed_state}" >&2
+        return 1
+    fi
+
+    _command_artifacts="$(_amd_devcloud_collect_command_artifacts)"
+    _expected_command_artifacts="$(_amd_devcloud_expected_repository_bootstrap_command_artifacts)"
+    if [ "${_command_artifacts}" != "${_expected_command_artifacts}" ]; then
+        echo "ERROR: repository bootstrap did not install the exact expected" >&2
+        echo "    command artifacts!" >&2
+        if [ -n "${_command_artifacts}" ]; then
+            printf 'Observed command artifacts:\n%s\n' \
+                "${_command_artifacts}" >&2
+        fi
+        return 1
+    fi
+
+    _path_artifacts="$(_amd_devcloud_collect_path_artifacts)"
+    _expected_path_artifacts="$(_amd_devcloud_expected_repository_bootstrap_path_artifacts)"
+    if [ "${_path_artifacts}" != "${_expected_path_artifacts}" ]; then
+        echo "ERROR: repository bootstrap did not install the exact expected" >&2
+        echo "    filesystem artifacts!" >&2
+        if [ -n "${_path_artifacts}" ]; then
+            printf 'Observed path artifacts:\n%s\n' "${_path_artifacts}" >&2
+        fi
         return 1
     fi
 
