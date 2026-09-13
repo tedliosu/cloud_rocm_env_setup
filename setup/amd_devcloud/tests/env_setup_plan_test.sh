@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+readonly SCRIPT_DIR
+SETUP_SCRIPT="$(realpath "${SCRIPT_DIR}/../bin/amd_devcloud_env_setup.sh")"
+readonly SETUP_SCRIPT
+STATE_TRACKER_PATH="$(realpath "${SCRIPT_DIR}/../state_trackers")"
+readonly STATE_TRACKER_PATH
+
+_state_tracker_existed=0
+if [ -e "${STATE_TRACKER_PATH}" ] || [ -L "${STATE_TRACKER_PATH}" ]; then
+    _state_tracker_existed=1
+fi
+
+_plan_output="$("${SETUP_SCRIPT}" --show-plan-only)"
+
+_previous_line_number=0
+for _expected_line in \
+    "Would verify the ordinary-user identity" \
+    "Would ensure that current environment is Ubuntu 24.04" \
+    "Would require the finite AMD DevCloud bare-stack" \
+    "Would inspect current UFW state and apply the project"; do
+    if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
+        "${_expected_line}" <<< "${_plan_output}")"; then
+        echo "FAILED: DevCloud setup plan omitted '${_expected_line}'!" >&2
+        exit 1
+    fi
+    _line_number="${_line_match%%:*}"
+    if [ "${_line_number}" -le "${_previous_line_number}" ]; then
+        echo "FAILED: DevCloud setup plan checks are out of safety order!" >&2
+        exit 1
+    fi
+    _previous_line_number="${_line_number}"
+done
+
+if [ "${_state_tracker_existed}" -eq 0 ] &&
+    { [ -e "${STATE_TRACKER_PATH}" ] || [ -L "${STATE_TRACKER_PATH}" ]; }; then
+    echo "FAILED: DevCloud setup plan created the state-trackers path!" >&2
+    exit 1
+fi
+
+echo "PASSED AMD DevCloud setup plan tests!"

@@ -138,7 +138,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
 - [ ] Implement DevCloud early firewall initialization and existing-system upgrade:
-    - Extend `setup/amd_devcloud/bin/amd_devcloud_env_setup.sh`, which currently runs only the accepted read-only ordinary-user handoff preflight and Ubuntu 24.04 identity check.
+    - Continue extending `setup/amd_devcloud/bin/amd_devcloud_env_setup.sh`, which now runs the accepted read-only ordinary-user handoff preflight, Ubuntu 24.04 identity check, finite AMDGPU/ROCm admission check, and shared conservative UFW initializer before the remaining system-upgrade work.
     - Keep AMD DevCloud instance provisioning manual, keep orchestration at the DevCloud provider boundary, and reuse only suitable shared primitives.
     - Keep the intended experimental target explicit: one Ubuntu 24.04 bare-OS AMD Instinct MI300X Virtual Function with native `gfx942`. A plan-only run may describe work without enforcing the OS identity; a real run must validate Ubuntu before mutation and confirm the GPU identity after driver installation.
     - Implement a finite, provider-owned pre-mutation AMDGPU/ROCm admission check rather than an exhaustive compatibility scanner. For the initial bare state, require the expected PCI device `1002:74b5`, no loaded `amdgpu` module or `/dev/kfd`, and no explicitly enumerated project-recipe package, repository, command, or versioned-path artifacts. Do not treat generic `/dev/dri` or `dkms` presence as AMD-stack ownership. On later reruns, accept project-managed state only when exact stage markers and exact stage-owned artifacts agree. Treat failed observations, partial project artifacts, and contradictory stage state as unknown and stop without cleanup or migration.
@@ -155,6 +155,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Conservatively reject conflicting single-version or mixed ROCm package state instead of automatically removing or reconciling it.
     - Install matching `amdgpu-dkms` and AMD SMI, then require a driver-installation-specific acknowledged reboot.
     - After reboot, require the observed MI300X VF, native `gfx942`, successful DKMS state, and a nonempty AMD SMI driver version. Use the first controlled DevCloud installation to record the exact expected driver value before pinning that assertion.
+    - After the driver installation and acknowledged reboot are implemented, stop before ROCm userland work for a dedicated acceptance checkpoint. First run the complete local suite, including its root-only scenario, and use a disposable Ubuntu Server 24.04 VMware snapshot to exercise the root handoff, separate SSH login, UFW FRESH-to-BASELINE transition and idempotent rerun, and reboot acknowledgement where applicable. Do not treat that VM as GPU admission or AMDGPU evidence. Then validate the complete root handoff, system upgrade and reboot, driver installation and reboot, and post-driver GPU identity on a fresh AMD DevCloud VM before proceeding.
 
 - [ ] Implement DevCloud ROCm 7.2.3 and the common minimum baseline:
     - Install the complete versioned `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage or a guessed minimal subset.

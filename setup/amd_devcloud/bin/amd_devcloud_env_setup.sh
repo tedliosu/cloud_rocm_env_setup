@@ -63,13 +63,14 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap "${MILESTONES_DIR}"
 if [ "${SHOW_PLAN_ONLY:-0}" -ne 1 ]; then
     mkdir --parents "${MILESTONES_DIR}"
 fi
+check_n_apply_ufw_base_or_warn_dont_wrap
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
     echo "[PLAN ONLY] AMD DevCloud ordinary-user setup preflight passed."
 else
     echo "AMD DevCloud ordinary-user setup preflight passed."
 fi
-echo "No mutating AMD DevCloud setup phases are implemented yet."
+echo "The AMD DevCloud system-package upgrade and reboot are not implemented yet."
 
 cd "${OLD_CWDIR}" || {
     echo "ERROR: unable to return to the initial working directory!" >&2
