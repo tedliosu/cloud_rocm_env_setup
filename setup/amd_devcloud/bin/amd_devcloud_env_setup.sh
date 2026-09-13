@@ -70,11 +70,14 @@ reboot_with_ack_dont_wrap \
     "${MILESTONES_DIR}" "${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}"
 run_stage "${MILESTONES_DIR}" \
     "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}"
+run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_DRIVER_STAGE_NAME}"
+reboot_with_ack_dont_wrap \
+    "${MILESTONES_DIR}" "${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}"
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-    echo "[PLAN ONLY] Would stop before the unimplemented AMDGPU DKMS installation."
+    echo "[PLAN ONLY] Would stop before the unimplemented post-driver verification."
 else
-    echo "Stopping before the unimplemented AMDGPU DKMS installation."
+    echo "Stopping before the unimplemented post-driver verification."
 fi
 
 cd "${OLD_CWDIR}" || {

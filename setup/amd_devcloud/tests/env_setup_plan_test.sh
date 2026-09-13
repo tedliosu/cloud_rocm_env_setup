@@ -26,7 +26,9 @@ for _expected_line in \
     "would run stage ensure_tmux" \
     "Would record reboot phase amd_devcloud_system_upgrade_reboot" \
     "would run stage install_amd_devcloud_repository_bootstrap" \
-    "Would stop before the unimplemented AMDGPU DKMS installation"; do
+    "would run stage install_amd_devcloud_driver" \
+    "Would record reboot phase amd_devcloud_driver_reboot" \
+    "Would stop before the unimplemented post-driver verification"; do
     if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
         "${_expected_line}" <<< "${_plan_output}")"; then
         echo "FAILED: DevCloud setup plan omitted '${_expected_line}'!" >&2

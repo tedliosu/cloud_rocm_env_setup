@@ -37,6 +37,10 @@ _amd_devcloud_expected_repository_bootstrap_path_artifacts() {
     printf '%s\n' "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}"
 }
 
+_amd_devcloud_expected_driver_path_artifacts() {
+    printf '%s\n' "${AMD_DEVCLOUD_DRIVER_PATH_ARTIFACTS[@]}"
+}
+
 # Classify the finite accepted AMD DevCloud setup states and require internally
 #     consistent stage milestones before ordinary-user setup mutation.
 # Usage: check_amd_devcloud_setup_admission_dont_wrap <milestones_directory>
@@ -50,6 +54,9 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     local _reboot_pending_marker
     local _reboot_done_marker
     local _repository_bootstrap_marker
+    local _driver_marker
+    local _driver_reboot_pending_marker
+    local _driver_reboot_done_marker
     local _pci_output
     local _pci_count=0
     local _pci_line
@@ -63,11 +70,14 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     local _path_artifacts
     local _expected_path_artifacts
     local _expected_package_artifact
+    local _expected_driver_path_artifacts
+    local _expected_driver_command_artifacts
+    local _expected_driver_path_command_artifacts
     local _admission_state=""
     local _amdgpu_loaded=0
     local _kfd_present=0
     local _stage_marker
-    local -a _package_artifacts=()
+    local -A _package_artifacts=()
     local -a _stage_markers=()
 
     if [ "$#" -ne 1 ]; then
@@ -126,7 +136,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
         for _package_sentinel in \
             "${AMD_DEVCLOUD_ADMISSION_PACKAGE_SENTINELS[@]}"; do
             if [ "${_package_name}" = "${_package_sentinel}" ]; then
-                _package_artifacts+=("${_package_name} (${_package_status}, ${_package_version})")
+                _package_artifacts["${_package_name}"]="${_package_status}"$'\t'"${_package_version}"
             fi
         done
     done <<< "${_package_output}"
@@ -135,7 +145,10 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     _path_artifacts="$(_amd_devcloud_collect_path_artifacts)"
     _expected_command_artifacts="$(_amd_devcloud_expected_repository_bootstrap_command_artifacts)"
     _expected_path_artifacts="$(_amd_devcloud_expected_repository_bootstrap_path_artifacts)"
-    _expected_package_artifact="amdgpu-install (installed, ${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION})"
+    _expected_package_artifact=$'installed\t'"${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}"
+    _expected_driver_path_artifacts="$(_amd_devcloud_expected_driver_path_artifacts)"
+    _expected_driver_command_artifacts="${_expected_command_artifacts}"
+    _expected_driver_path_command_artifacts="${_expected_command_artifacts}"$'\n'"amd-smi"
     if _amd_devcloud_amdgpu_module_is_loaded; then
         _amdgpu_loaded=1
     fi
@@ -148,9 +161,13 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     _reboot_pending_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.pending"
     _reboot_done_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done"
     _repository_bootstrap_marker="${_milestones_dir}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done"
+    _driver_marker="${_milestones_dir}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done"
+    _driver_reboot_pending_marker="${_milestones_dir}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.pending"
+    _driver_reboot_done_marker="${_milestones_dir}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.done"
     for _stage_marker in "${_upgrade_marker}" "${_tmux_marker}" \
         "${_reboot_pending_marker}" "${_reboot_done_marker}" \
-        "${_repository_bootstrap_marker}"; do
+        "${_repository_bootstrap_marker}" "${_driver_marker}" \
+        "${_driver_reboot_pending_marker}" "${_driver_reboot_done_marker}"; do
         if [ -e "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
             if [ ! -f "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
                 echo "ERROR: unexpected DevCloud setup marker type:" >&2
@@ -180,19 +197,61 @@ check_amd_devcloud_setup_admission_dont_wrap() {
         echo "    system-upgrade reboot was acknowledged!" >&2
         return 1
     fi
+    if [ -e "${_driver_marker}" ] &&
+        [ ! -f "${_repository_bootstrap_marker}" ]; then
+        echo "ERROR: DevCloud driver state exists without a completed" >&2
+        echo "    repository bootstrap!" >&2
+        return 1
+    fi
+    if { [ -e "${_driver_reboot_pending_marker}" ] ||
+            [ -e "${_driver_reboot_done_marker}" ]; } &&
+        [ ! -f "${_driver_marker}" ]; then
+        echo "ERROR: DevCloud driver-reboot state exists without a completed" >&2
+        echo "    driver installation!" >&2
+        return 1
+    fi
+    if [ -e "${_driver_reboot_pending_marker}" ] &&
+        [ -e "${_driver_reboot_done_marker}" ]; then
+        echo "ERROR: DevCloud driver reboot is both pending and complete!" >&2
+        return 1
+    fi
 
-    if [ "${_pci_count}" -eq 1 ] && [ "${_amdgpu_loaded}" -eq 0 ] &&
-        [ "${_kfd_present}" -eq 0 ]; then
-        if [ ! -e "${_repository_bootstrap_marker}" ] &&
+    if [ "${_pci_count}" -eq 1 ]; then
+        if [ "${_amdgpu_loaded}" -eq 0 ] && [ "${_kfd_present}" -eq 0 ] &&
+            [ ! -e "${_repository_bootstrap_marker}" ] &&
             [ "${#_package_artifacts[@]}" -eq 0 ] &&
             [ -z "${_command_artifacts}" ] && [ -z "${_path_artifacts}" ]; then
             _admission_state="${AMD_DEVCLOUD_ADMISSION_BARE}"
-        elif [ -f "${_repository_bootstrap_marker}" ] &&
+        elif [ "${_amdgpu_loaded}" -eq 0 ] && [ "${_kfd_present}" -eq 0 ] &&
+            [ -f "${_repository_bootstrap_marker}" ] &&
+            [ ! -e "${_driver_marker}" ] &&
             [ "${#_package_artifacts[@]}" -eq 1 ] &&
-            [ "${_package_artifacts[0]}" = "${_expected_package_artifact}" ] &&
+            [ "${_package_artifacts[amdgpu-install]-}" = \
+                "${_expected_package_artifact}" ] &&
             [ "${_command_artifacts}" = "${_expected_command_artifacts}" ] &&
             [ "${_path_artifacts}" = "${_expected_path_artifacts}" ]; then
             _admission_state="${AMD_DEVCLOUD_ADMISSION_REPOSITORY_BOOTSTRAP}"
+        elif [ -f "${_driver_marker}" ] &&
+            [ "${#_package_artifacts[@]}" -eq 4 ] &&
+            [ "${_package_artifacts[amdgpu-install]-}" = \
+                "${_expected_package_artifact}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_AMD_SMI_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_ROCM_CORE_PACKAGE_VERSION}" ] &&
+            { [ "${_command_artifacts}" = \
+                    "${_expected_driver_command_artifacts}" ] ||
+                [ "${_command_artifacts}" = \
+                    "${_expected_driver_path_command_artifacts}" ]; } &&
+            [ "${_path_artifacts}" = "${_expected_driver_path_artifacts}" ] &&
+            { { [ ! -e "${_driver_reboot_done_marker}" ] &&
+                    [ "${_amdgpu_loaded}" -eq "${_kfd_present}" ]; } ||
+                { [ -f "${_driver_reboot_done_marker}" ] &&
+                    [ "${_amdgpu_loaded}" -eq 1 ] &&
+                    [ "${_kfd_present}" -eq 1 ]; }; }; then
+            _admission_state="${AMD_DEVCLOUD_ADMISSION_DRIVER_INSTALLED}"
         fi
     fi
 
@@ -206,8 +265,10 @@ check_amd_devcloud_setup_admission_dont_wrap() {
             echo "/dev/kfd detected." >&2
         fi
         if [ "${#_package_artifacts[@]}" -ne 0 ]; then
-            printf 'Selected package artifact: %s\n' \
-                "${_package_artifacts[@]}" >&2
+            for _package_name in "${!_package_artifacts[@]}"; do
+                printf 'Selected package artifact: %s (%s)\n' \
+                    "${_package_name}" "${_package_artifacts[${_package_name}]}" >&2
+            done
         fi
         if [ -n "${_command_artifacts}" ]; then
             printf 'Selected command artifacts:\n%s\n' \

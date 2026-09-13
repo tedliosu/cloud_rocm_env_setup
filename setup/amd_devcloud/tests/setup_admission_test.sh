@@ -90,6 +90,15 @@ set_repository_bootstrap_observations() {
         "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}")"
 }
 
+set_driver_observations() {
+    set_repository_bootstrap_observations
+    TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"$'\n'
+    TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMD_SMI_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"$'\n'
+    TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_ROCM_CORE_PACKAGE_VERSION}"$'\n'
+    TEST_PATH_ARTIFACTS="$(printf '%s\n' \
+        "${AMD_DEVCLOUD_DRIVER_PATH_ARTIFACTS[@]}")"
+}
+
 expect_acceptance() {
     local _milestones_dir="$1"
 
@@ -117,12 +126,21 @@ PENDING_DIR="${TEST_TMP_DIR}/pending"
 COMPLETED_DIR="${TEST_TMP_DIR}/completed"
 MANAGED_DIR="${TEST_TMP_DIR}/managed"
 EARLY_BOOTSTRAP_DIR="${TEST_TMP_DIR}/early-bootstrap"
+DRIVER_INSTALLED_DIR="${TEST_TMP_DIR}/driver-installed"
+DRIVER_PENDING_DIR="${TEST_TMP_DIR}/driver-pending"
+DRIVER_COMPLETED_DIR="${TEST_TMP_DIR}/driver-completed"
+EARLY_DRIVER_DIR="${TEST_TMP_DIR}/early-driver"
+EARLY_DRIVER_REBOOT_DIR="${TEST_TMP_DIR}/early-driver-reboot"
+CONTRADICTORY_DRIVER_REBOOT_DIR="${TEST_TMP_DIR}/contradictory-driver-reboot"
 CONTRADICTORY_DIR="${TEST_TMP_DIR}/contradictory"
 BAD_MARKER_DIR="${TEST_TMP_DIR}/bad-marker"
 BAD_MILESTONES_PATH="${TEST_TMP_DIR}/not-a-directory"
 mkdir "${BARE_DIR}" "${UPGRADED_DIR}" "${TMUX_ONLY_DIR}" "${PENDING_DIR}" \
     "${COMPLETED_DIR}" "${CONTRADICTORY_DIR}" "${BAD_MARKER_DIR}"
-mkdir "${MANAGED_DIR}" "${EARLY_BOOTSTRAP_DIR}"
+mkdir "${MANAGED_DIR}" "${EARLY_BOOTSTRAP_DIR}" "${DRIVER_INSTALLED_DIR}" \
+    "${DRIVER_PENDING_DIR}" "${DRIVER_COMPLETED_DIR}" \
+    "${EARLY_DRIVER_DIR}" "${EARLY_DRIVER_REBOOT_DIR}" \
+    "${CONTRADICTORY_DRIVER_REBOOT_DIR}"
 touch "${BAD_MILESTONES_PATH}"
 
 reset_observations
@@ -182,6 +200,69 @@ expect_rejection "${MANAGED_DIR}"
 
 reset_observations
 expect_rejection "${MANAGED_DIR}"
+
+for _driver_dir in "${DRIVER_INSTALLED_DIR}" "${DRIVER_PENDING_DIR}" \
+    "${DRIVER_COMPLETED_DIR}"; do
+    touch "${_driver_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
+        "${_driver_dir}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done" \
+        "${_driver_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done" \
+        "${_driver_dir}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done" \
+        "${_driver_dir}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done"
+done
+touch "${DRIVER_PENDING_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.pending"
+touch "${DRIVER_COMPLETED_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.done"
+
+reset_observations
+set_driver_observations
+expect_acceptance "${DRIVER_INSTALLED_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+expect_acceptance "${DRIVER_PENDING_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+TEST_COMMAND_ARTIFACTS+=$'\namd-smi'
+expect_acceptance "${DRIVER_COMPLETED_DIR}"
+
+reset_observations
+set_driver_observations
+expect_rejection "${DRIVER_COMPLETED_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_AMDGPU_LOADED=1
+expect_rejection "${DRIVER_PENDING_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_PACKAGE_OUTPUT+=$'rocm\tinstalled\t7.2.3\n'
+expect_rejection "${DRIVER_INSTALLED_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_PATH_ARTIFACTS+=$'\n/opt/rocm'
+expect_rejection "${DRIVER_INSTALLED_DIR}"
+
+touch "${EARLY_DRIVER_DIR}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done"
+reset_observations
+set_driver_observations
+expect_rejection "${EARLY_DRIVER_DIR}"
+
+touch "${EARLY_DRIVER_REBOOT_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.pending"
+reset_observations
+set_driver_observations
+expect_rejection "${EARLY_DRIVER_REBOOT_DIR}"
+
+touch \
+    "${CONTRADICTORY_DRIVER_REBOOT_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.pending" \
+    "${CONTRADICTORY_DRIVER_REBOOT_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.done"
+reset_observations
+expect_rejection "${CONTRADICTORY_DRIVER_REBOOT_DIR}"
 
 touch "${EARLY_BOOTSTRAP_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
     "${EARLY_BOOTSTRAP_DIR}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done" \
