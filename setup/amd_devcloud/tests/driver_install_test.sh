@@ -1,0 +1,178 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+readonly SCRIPT_DIR
+TEST_TMP_DIR="$(mktemp --directory)"
+readonly TEST_TMP_DIR
+TEST_BIN_DIR="${TEST_TMP_DIR}/bin"
+readonly TEST_BIN_DIR
+KERNEL_INSTALL_CALLS="${TEST_TMP_DIR}/kernel-install-calls"
+readonly KERNEL_INSTALL_CALLS
+DRIVER_INSTALL_CALLS="${TEST_TMP_DIR}/driver-install-calls"
+readonly DRIVER_INSTALL_CALLS
+
+cleanup() {
+    rm --recursive --force "${TEST_TMP_DIR}"
+}
+trap cleanup EXIT
+
+mkdir "${TEST_BIN_DIR}"
+
+# shellcheck disable=SC2016
+printf '%s\n' \
+    '#!/bin/bash' \
+    'set -euo pipefail' \
+    '[ "$*" = "--kernel-release" ]' \
+    '[ "${TEST_UNAME_STATUS}" -eq 0 ] || exit "${TEST_UNAME_STATUS}"' \
+    'printf "%s\n" "${TEST_KERNEL_RELEASE}"' \
+    > "${TEST_BIN_DIR}/uname"
+
+# shellcheck disable=SC2016
+printf '%s\n' \
+    '#!/bin/bash' \
+    'set -euo pipefail' \
+    '[ "$1" = "--set-home" ]' \
+    '[ "$2" = "env" ]' \
+    '[ "$3" = "DEBIAN_FRONTEND=noninteractive" ]' \
+    '[ "$4" = "NEEDRESTART_MODE=a" ]' \
+    '[ "$5" = "apt-get" ]' \
+    '[ "$6" = "install" ]' \
+    '[ "$7" = "--assume-yes" ]' \
+    'case "${8:-}" in' \
+    '    "linux-headers-${TEST_KERNEL_RELEASE}")' \
+    '        [ "$#" -eq 9 ]' \
+    '        [ "$9" = "linux-modules-extra-${TEST_KERNEL_RELEASE}" ]' \
+    '        printf "%s\n" "$*" >> "${TEST_KERNEL_INSTALL_CALLS}"' \
+    '        exit "${TEST_KERNEL_INSTALL_STATUS}"' \
+    '        ;;' \
+    '    "${TEST_AMDGPU_PACKAGE}=${TEST_AMDGPU_VERSION}")' \
+    '        [ "$#" -eq 9 ]' \
+    '        [ "$9" = "${TEST_AMD_SMI_PACKAGE}=${TEST_AMD_SMI_VERSION}" ]' \
+    '        printf "%s\n" "$*" >> "${TEST_DRIVER_INSTALL_CALLS}"' \
+    '        exit "${TEST_DRIVER_INSTALL_STATUS}"' \
+    '        ;;' \
+    '    *) exit 64 ;;' \
+    'esac' \
+    > "${TEST_BIN_DIR}/sudo"
+
+# shellcheck disable=SC2016
+printf '%s\n' \
+    '#!/bin/bash' \
+    'set -euo pipefail' \
+    '[ "$1" = "--show" ]' \
+    '[ "$2" = "${TEST_DPKG_QUERY_FORMAT}" ]' \
+    'case "$3" in' \
+    '    "linux-headers-${TEST_KERNEL_RELEASE}")' \
+    '        printf "%s\t%s\n" "${TEST_HEADERS_STATUS}" "${TEST_HEADERS_VERSION}"' \
+    '        ;;' \
+    '    "linux-modules-extra-${TEST_KERNEL_RELEASE}")' \
+    '        printf "%s\t%s\n" "${TEST_MODULES_STATUS}" "${TEST_MODULES_VERSION}"' \
+    '        ;;' \
+    '    "${TEST_AMDGPU_PACKAGE}")' \
+    '        printf "%s\t%s\n" "${TEST_AMDGPU_STATUS}" "${TEST_INSTALLED_AMDGPU_VERSION}"' \
+    '        ;;' \
+    '    "${TEST_AMD_SMI_PACKAGE}")' \
+    '        printf "%s\t%s\n" "${TEST_AMD_SMI_STATUS}" "${TEST_INSTALLED_AMD_SMI_VERSION}"' \
+    '        ;;' \
+    '    *) exit 64 ;;' \
+    'esac' \
+    > "${TEST_BIN_DIR}/dpkg-query"
+
+printf '%s\n' '#!/bin/bash' 'exit 64' > "${TEST_BIN_DIR}/apt-get"
+chmod +x "${TEST_BIN_DIR}"/*
+export PATH="${TEST_BIN_DIR}:/usr/bin:/bin"
+
+# shellcheck source=../lib/amd_devcloud_vars.sh
+. "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
+# shellcheck source=../lib/amd_devcloud_funcs.sh
+. "${SCRIPT_DIR}/../lib/amd_devcloud_funcs.sh"
+
+export TEST_AMDGPU_PACKAGE="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}"
+export TEST_AMDGPU_VERSION="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"
+export TEST_AMD_SMI_PACKAGE="${AMD_DEVCLOUD_AMD_SMI_PACKAGE}"
+export TEST_AMD_SMI_VERSION="${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"
+export TEST_KERNEL_INSTALL_CALLS="${KERNEL_INSTALL_CALLS}"
+export TEST_DRIVER_INSTALL_CALLS="${DRIVER_INSTALL_CALLS}"
+# shellcheck disable=SC2016 # Match dpkg-query's literal format expression.
+export TEST_DPKG_QUERY_FORMAT='--showformat=${db:Status-Status}\t${Version}\n'
+
+reset_observations() {
+    TEST_KERNEL_RELEASE="6.8.0-test"
+    TEST_UNAME_STATUS=0
+    TEST_KERNEL_INSTALL_STATUS=0
+    TEST_DRIVER_INSTALL_STATUS=0
+    TEST_HEADERS_STATUS="installed"
+    TEST_HEADERS_VERSION="6.8.0"
+    TEST_MODULES_STATUS="installed"
+    TEST_MODULES_VERSION="6.8.0"
+    TEST_AMDGPU_STATUS="installed"
+    TEST_INSTALLED_AMDGPU_VERSION="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"
+    TEST_AMD_SMI_STATUS="installed"
+    TEST_INSTALLED_AMD_SMI_VERSION="${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"
+    export TEST_KERNEL_RELEASE TEST_UNAME_STATUS TEST_KERNEL_INSTALL_STATUS
+    export TEST_DRIVER_INSTALL_STATUS
+    export TEST_HEADERS_STATUS TEST_HEADERS_VERSION
+    export TEST_MODULES_STATUS TEST_MODULES_VERSION
+    export TEST_AMDGPU_STATUS TEST_INSTALLED_AMDGPU_VERSION
+    export TEST_AMD_SMI_STATUS TEST_INSTALLED_AMD_SMI_VERSION
+}
+
+expect_rejection() {
+    # shellcheck disable=SC2119 # The production function deliberately rejects arguments.
+    if install_amd_devcloud_driver >/dev/null 2>&1; then
+        echo "FAILED: expected AMD DevCloud driver-install rejection!" >&2
+        exit 1
+    fi
+}
+
+reset_observations
+# shellcheck disable=SC2119 # Exercise the documented zero-argument interface.
+install_amd_devcloud_driver >/dev/null
+
+reset_observations
+TEST_UNAME_STATUS=21
+export TEST_UNAME_STATUS
+expect_rejection
+
+reset_observations
+TEST_KERNEL_INSTALL_STATUS=22
+export TEST_KERNEL_INSTALL_STATUS
+expect_rejection
+
+reset_observations
+TEST_DRIVER_INSTALL_STATUS=23
+export TEST_DRIVER_INSTALL_STATUS
+expect_rejection
+
+reset_observations
+TEST_HEADERS_STATUS="config-files"
+export TEST_HEADERS_STATUS
+expect_rejection
+
+reset_observations
+TEST_MODULES_VERSION=""
+export TEST_MODULES_VERSION
+expect_rejection
+
+reset_observations
+TEST_INSTALLED_AMDGPU_VERSION="unexpected"
+export TEST_INSTALLED_AMDGPU_VERSION
+expect_rejection
+
+reset_observations
+TEST_INSTALLED_AMD_SMI_VERSION="unexpected"
+export TEST_INSTALLED_AMD_SMI_VERSION
+expect_rejection
+
+if [ "$(wc --lines < "${KERNEL_INSTALL_CALLS}")" -ne 7 ]; then
+    echo "FAILED: driver helper invoked an unexpected kernel-install count!" >&2
+    exit 1
+fi
+if [ "$(wc --lines < "${DRIVER_INSTALL_CALLS}")" -ne 6 ]; then
+    echo "FAILED: driver helper invoked an unexpected driver-install count!" >&2
+    exit 1
+fi
+
+echo "PASSED AMD DevCloud driver-install tests!"

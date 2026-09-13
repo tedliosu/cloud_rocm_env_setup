@@ -8,6 +8,7 @@ REPO_ROOT="$(realpath "${SCRIPT_DIR}/..")"
 readonly REPO_ROOT
 
 readonly -a LOCAL_TESTS=(
+    setup/amd_devcloud/tests/driver_install_test.sh
     setup/amd_devcloud/tests/env_setup_plan_test.sh
     setup/amd_devcloud/tests/handoff_preflight_test.sh
     setup/amd_devcloud/tests/repository_bootstrap_test.sh

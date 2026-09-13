@@ -330,3 +330,84 @@ install_amd_devcloud_repository_bootstrap() (
 
     echo "Pinned AMD repository-bootstrap package installed and verified."
 )
+
+# Install and confirm the pinned AMDGPU DKMS and versioned AMD SMI packages,
+#     including the packages required to build for the running Ubuntu kernel.
+# Usage: no arguments required
+# Returns: 0 after exact package installation; 1 on failed kernel observation,
+#          installation, or post-install package-state checks
+install_amd_devcloud_driver() (
+    local _kernel_release
+    local _headers_package
+    local _modules_extra_package
+    local _package_state
+    local _kernel_package
+    local _required_command
+
+    if [ "$#" -ne 0 ]; then
+        echo "ERROR: AMD DevCloud driver installation expects no arguments!" >&2
+        return 1
+    fi
+    for _required_command in apt-get dpkg-query sudo uname; do
+        if ! command -v "${_required_command}" >/dev/null 2>&1; then
+            echo "ERROR: driver installation requires '${_required_command}'!" >&2
+            return 1
+        fi
+    done
+
+    if ! _kernel_release="$(uname --kernel-release)" ||
+        [ -z "${_kernel_release}" ]; then
+        echo "ERROR: unable to determine the running kernel release!" >&2
+        return 1
+    fi
+    _headers_package="linux-headers-${_kernel_release}"
+    _modules_extra_package="linux-modules-extra-${_kernel_release}"
+
+    if ! sudo --set-home env DEBIAN_FRONTEND="noninteractive" \
+        NEEDRESTART_MODE="a" apt-get install --assume-yes \
+        "${_headers_package}" "${_modules_extra_package}"; then
+        echo "ERROR: unable to install packages for the running kernel!" >&2
+        return 1
+    fi
+    if ! sudo --set-home env DEBIAN_FRONTEND="noninteractive" \
+        NEEDRESTART_MODE="a" apt-get install --assume-yes \
+        "${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}=${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" \
+        "${AMD_DEVCLOUD_AMD_SMI_PACKAGE}=${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"; then
+        echo "ERROR: unable to install the pinned AMD DevCloud driver stack!" >&2
+        return 1
+    fi
+
+    for _kernel_package in "${_headers_package}" "${_modules_extra_package}"; do
+        if ! _package_state="$(dpkg-query --show \
+            --showformat='${db:Status-Status}\t${Version}\n' \
+            "${_kernel_package}")" ||
+            [ "${_package_state}" = "${_package_state#*$'\t'}" ] ||
+            [ "${_package_state%%$'\t'*}" != "installed" ] ||
+            [ -z "${_package_state#*$'\t'}" ]; then
+            echo "ERROR: required running-kernel package state is unexpected:" >&2
+            echo "    ${_kernel_package}: ${_package_state}" >&2
+            return 1
+        fi
+    done
+
+    if ! _package_state="$(dpkg-query --show \
+        --showformat='${db:Status-Status}\t${Version}\n' \
+        "${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}")" ||
+        [ "${_package_state}" != \
+            $'installed\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" ]; then
+        echo "ERROR: installed AMDGPU DKMS package state is unexpected:" >&2
+        echo "    ${_package_state}" >&2
+        return 1
+    fi
+    if ! _package_state="$(dpkg-query --show \
+        --showformat='${db:Status-Status}\t${Version}\n' \
+        "${AMD_DEVCLOUD_AMD_SMI_PACKAGE}")" ||
+        [ "${_package_state}" != \
+            $'installed\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}" ]; then
+        echo "ERROR: installed versioned AMD SMI package state is unexpected:" >&2
+        echo "    ${_package_state}" >&2
+        return 1
+    fi
+
+    echo "Pinned AMDGPU DKMS and versioned AMD SMI packages installed."
+)

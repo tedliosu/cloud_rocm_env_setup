@@ -44,7 +44,9 @@ readonly AMD_DEVCLOUD_ADMISSION_REPOSITORY_BOOTSTRAP="AMD_DEVCLOUD_REPOSITORY_BO
 readonly AMD_DEVCLOUD_ADMISSION_PACKAGE_SENTINELS=(
     amdgpu-install
     amdgpu-dkms
+    amd-smi-lib7.2.3
     rocm
+    rocm-core7.2.3
     rocm7.2.3
 )
 readonly AMD_DEVCLOUD_ADMISSION_COMMAND_SENTINELS=(
@@ -64,3 +66,8 @@ readonly AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME="apt_get_sys_update"
 readonly AMD_DEVCLOUD_TMUX_STAGE_NAME="ensure_tmux"
 readonly AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME="amd_devcloud_system_upgrade_reboot"
 readonly AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME="install_amd_devcloud_repository_bootstrap"
+
+readonly AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE="amdgpu-dkms"
+readonly AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION="6.16.13.30300300-2327507.24.04"
+readonly AMD_DEVCLOUD_AMD_SMI_PACKAGE="amd-smi-lib7.2.3"
+readonly AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION="26.2.2.70203-90~24.04"
