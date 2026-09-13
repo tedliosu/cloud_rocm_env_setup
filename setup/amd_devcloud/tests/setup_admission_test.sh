@@ -48,6 +48,7 @@ TEST_LSPCI_STATUS=0
 TEST_DPKG_STATUS=0
 TEST_AMDGPU_LOADED=0
 TEST_KFD_PRESENT=0
+TEST_ROCM_ALTERNATIVE_MATCHES=1
 TEST_COMMAND_ARTIFACTS=""
 TEST_PATH_ARTIFACTS=""
 export TEST_PCI_OUTPUT TEST_PACKAGE_OUTPUT TEST_LSPCI_STATUS TEST_DPKG_STATUS
@@ -58,6 +59,10 @@ _amd_devcloud_amdgpu_module_is_loaded() {
 
 _amd_devcloud_kfd_is_present() {
     [ "${TEST_KFD_PRESENT}" -eq 1 ]
+}
+
+_amd_devcloud_rocm_alternative_matches_versioned_root() {
+    [ "${TEST_ROCM_ALTERNATIVE_MATCHES}" -eq 1 ]
 }
 
 _amd_devcloud_collect_command_artifacts() {
@@ -76,6 +81,7 @@ reset_observations() {
     TEST_DPKG_STATUS=0
     TEST_AMDGPU_LOADED=0
     TEST_KFD_PRESENT=0
+    TEST_ROCM_ALTERNATIVE_MATCHES=1
     TEST_COMMAND_ARTIFACTS=""
     TEST_PATH_ARTIFACTS=""
     unset SHOW_PLAN_ONLY
@@ -245,7 +251,7 @@ expect_rejection "${DRIVER_INSTALLED_DIR}"
 
 reset_observations
 set_driver_observations
-TEST_PATH_ARTIFACTS+=$'\n/opt/rocm'
+TEST_ROCM_ALTERNATIVE_MATCHES=0
 expect_rejection "${DRIVER_INSTALLED_DIR}"
 
 touch "${EARLY_DRIVER_DIR}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done"

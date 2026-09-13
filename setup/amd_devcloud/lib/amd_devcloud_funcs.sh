@@ -13,6 +13,17 @@ _amd_devcloud_amd_smi_is_executable() {
         [ ! -d "${AMD_DEVCLOUD_AMD_SMI_PATH}" ]
 }
 
+_amd_devcloud_rocm_alternative_matches_versioned_root() {
+    local _resolved_rocm_alternative
+
+    [ -L "${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}" ] || return 1
+    if ! _resolved_rocm_alternative="$(readlink --canonicalize-existing \
+        "${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}")"; then
+        return 1
+    fi
+    [ "${_resolved_rocm_alternative}" = "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}" ]
+}
+
 _amd_devcloud_run_amd_smi_static() {
     "${AMD_DEVCLOUD_AMD_SMI_PATH}" static \
         --gpu "${AMD_DEVCLOUD_EXPECTED_GPU_INDEX}" --asic --driver --json
@@ -256,6 +267,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
                 [ "${_command_artifacts}" = \
                     "${_expected_driver_path_command_artifacts}" ]; } &&
             [ "${_path_artifacts}" = "${_expected_driver_path_artifacts}" ] &&
+            _amd_devcloud_rocm_alternative_matches_versioned_root &&
             { { [ ! -e "${_driver_reboot_done_marker}" ] &&
                     [ "${_amdgpu_loaded}" -eq "${_kfd_present}" ]; } ||
                 { [ -f "${_driver_reboot_done_marker}" ] &&
@@ -419,7 +431,7 @@ install_amd_devcloud_driver() (
         echo "ERROR: AMD DevCloud driver installation expects no arguments!" >&2
         return 1
     fi
-    for _required_command in apt-get dpkg-query sudo uname; do
+    for _required_command in apt-get dpkg-query readlink sudo uname; do
         if ! command -v "${_required_command}" >/dev/null 2>&1; then
             echo "ERROR: driver installation requires '${_required_command}'!" >&2
             return 1
@@ -479,6 +491,16 @@ install_amd_devcloud_driver() (
         echo "    ${_package_state}" >&2
         return 1
     fi
+    if ! _amd_devcloud_rocm_alternative_matches_versioned_root; then
+        echo "ERROR: the ROCm alternative does not resolve to the expected" >&2
+        echo "    versioned root '${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}'!" >&2
+        return 1
+    fi
+    if ! _amd_devcloud_amd_smi_is_executable; then
+        echo "ERROR: versioned AMD SMI command is not executable:" >&2
+        echo "    ${AMD_DEVCLOUD_AMD_SMI_PATH}" >&2
+        return 1
+    fi
 
     echo "Pinned AMDGPU DKMS and versioned AMD SMI packages installed."
 )
@@ -486,7 +508,7 @@ install_amd_devcloud_driver() (
 # Verify the running-kernel DKMS installation and the adopted DevCloud GPU
 #     identity after the driver-specific reboot.
 # Usage: no arguments required
-# Returns: 0 after exact DKMS, device, architecture, and nonempty driver-version
+# Returns: 0 after exact DKMS, device, architecture, and driver-version
 #          checks; 1 on failed observations or an unexpected environment
 verify_amd_devcloud_post_driver_state_dont_wrap() {
     local _required_command
@@ -511,8 +533,8 @@ verify_amd_devcloud_post_driver_state_dont_wrap() {
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         echo "[PLAN ONLY] Would verify the running-kernel AMDGPU DKMS state,"
         echo "[PLAN ONLY]     loaded driver and KFD device, single MI300X VF,"
-        echo "[PLAN ONLY]     native ${AMD_DEVCLOUD_EXPECTED_GPU_ARCH} architecture, and nonempty AMD SMI"
-        echo "[PLAN ONLY]     driver version."
+        echo "[PLAN ONLY]     native ${AMD_DEVCLOUD_EXPECTED_GPU_ARCH} architecture, and AMD SMI"
+        echo "[PLAN ONLY]     driver version ${AMD_DEVCLOUD_EXPECTED_AMD_SMI_DRIVER_VERSION}."
         return 0
     fi
 
@@ -612,6 +634,12 @@ verify_amd_devcloud_post_driver_state_dont_wrap() {
     if [ "${_gpu_arch}" != "${AMD_DEVCLOUD_EXPECTED_GPU_ARCH}" ]; then
         echo "ERROR: expected native architecture" >&2
         echo "    '${AMD_DEVCLOUD_EXPECTED_GPU_ARCH}', observed '${_gpu_arch}'!" >&2
+        return 1
+    fi
+    if [ "${_driver_version}" != \
+        "${AMD_DEVCLOUD_EXPECTED_AMD_SMI_DRIVER_VERSION}" ]; then
+        echo "ERROR: expected AMD SMI driver version" >&2
+        echo "    '${AMD_DEVCLOUD_EXPECTED_AMD_SMI_DRIVER_VERSION}', observed '${_driver_version}'!" >&2
         return 1
     fi
 

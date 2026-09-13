@@ -84,6 +84,31 @@ printf '%s\n' '#!/bin/bash' 'exit 64' > "${TEST_BIN_DIR}/apt-get"
 chmod +x "${TEST_BIN_DIR}"/*
 export PATH="${TEST_BIN_DIR}:/usr/bin:/bin"
 
+test_rocm_alternative_resolution() (
+    AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH="${TEST_TMP_DIR}/rocm"
+    AMD_DEVCLOUD_ROCM_VERSIONED_ROOT="${TEST_TMP_DIR}/rocm-7.2.3"
+    local _wrong_root="${TEST_TMP_DIR}/rocm-wrong"
+
+    mkdir "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}" "${_wrong_root}"
+    ln --symbolic "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}" \
+        "${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}"
+    # shellcheck source=../lib/amd_devcloud_funcs.sh
+    . "${SCRIPT_DIR}/../lib/amd_devcloud_funcs.sh"
+
+    if ! _amd_devcloud_rocm_alternative_matches_versioned_root; then
+        echo "FAILED: expected the exact ROCm alternative target to pass!" >&2
+        exit 1
+    fi
+    unlink "${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}"
+    ln --symbolic "${_wrong_root}" "${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}"
+    if _amd_devcloud_rocm_alternative_matches_versioned_root; then
+        echo "FAILED: unexpected ROCm alternative target was accepted!" >&2
+        exit 1
+    fi
+)
+
+test_rocm_alternative_resolution
+
 # shellcheck source=../lib/amd_devcloud_vars.sh
 . "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
 # shellcheck source=../lib/amd_devcloud_funcs.sh
@@ -98,6 +123,14 @@ export TEST_DRIVER_INSTALL_CALLS="${DRIVER_INSTALL_CALLS}"
 # shellcheck disable=SC2016 # Match dpkg-query's literal format expression.
 export TEST_DPKG_QUERY_FORMAT='--showformat=${db:Status-Status}\t${Version}\n'
 
+_amd_devcloud_rocm_alternative_matches_versioned_root() {
+    [ "${TEST_ROCM_ALTERNATIVE_MATCHES}" -eq 1 ]
+}
+
+_amd_devcloud_amd_smi_is_executable() {
+    [ "${TEST_AMD_SMI_EXECUTABLE}" -eq 1 ]
+}
+
 reset_observations() {
     TEST_KERNEL_RELEASE="6.8.0-test"
     TEST_UNAME_STATUS=0
@@ -111,12 +144,15 @@ reset_observations() {
     TEST_INSTALLED_AMDGPU_VERSION="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"
     TEST_AMD_SMI_STATUS="installed"
     TEST_INSTALLED_AMD_SMI_VERSION="${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"
+    TEST_ROCM_ALTERNATIVE_MATCHES=1
+    TEST_AMD_SMI_EXECUTABLE=1
     export TEST_KERNEL_RELEASE TEST_UNAME_STATUS TEST_KERNEL_INSTALL_STATUS
     export TEST_DRIVER_INSTALL_STATUS
     export TEST_HEADERS_STATUS TEST_HEADERS_VERSION
     export TEST_MODULES_STATUS TEST_MODULES_VERSION
     export TEST_AMDGPU_STATUS TEST_INSTALLED_AMDGPU_VERSION
     export TEST_AMD_SMI_STATUS TEST_INSTALLED_AMD_SMI_VERSION
+    export TEST_ROCM_ALTERNATIVE_MATCHES TEST_AMD_SMI_EXECUTABLE
 }
 
 expect_rejection() {
@@ -166,11 +202,21 @@ TEST_INSTALLED_AMD_SMI_VERSION="unexpected"
 export TEST_INSTALLED_AMD_SMI_VERSION
 expect_rejection
 
-if [ "$(wc --lines < "${KERNEL_INSTALL_CALLS}")" -ne 7 ]; then
+reset_observations
+TEST_ROCM_ALTERNATIVE_MATCHES=0
+export TEST_ROCM_ALTERNATIVE_MATCHES
+expect_rejection
+
+reset_observations
+TEST_AMD_SMI_EXECUTABLE=0
+export TEST_AMD_SMI_EXECUTABLE
+expect_rejection
+
+if [ "$(wc --lines < "${KERNEL_INSTALL_CALLS}")" -ne 9 ]; then
     echo "FAILED: driver helper invoked an unexpected kernel-install count!" >&2
     exit 1
 fi
-if [ "$(wc --lines < "${DRIVER_INSTALL_CALLS}")" -ne 6 ]; then
+if [ "$(wc --lines < "${DRIVER_INSTALL_CALLS}")" -ne 8 ]; then
     echo "FAILED: driver helper invoked an unexpected driver-install count!" >&2
     exit 1
 fi

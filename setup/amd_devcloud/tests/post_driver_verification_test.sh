@@ -172,6 +172,10 @@ TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI3
 expect_rejection
 
 reset_observations
+TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"unexpected"}}]}'
+expect_rejection
+
+reset_observations
 SHOW_PLAN_ONLY=1
 TEST_LSPCI_STATUS=25
 TEST_UNAME_STATUS=26
