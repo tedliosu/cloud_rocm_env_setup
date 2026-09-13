@@ -35,6 +35,7 @@ _amd_devcloud_collect_path_artifacts() {
 #          selected stack artifacts, or contradictory system-upgrade markers
 check_amd_devcloud_system_upgrade_admission_dont_wrap() {
     local _milestones_dir
+    local _milestones_parent
     local _upgrade_marker
     local _reboot_pending_marker
     local _reboot_done_marker
@@ -65,10 +66,23 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
         return 0
     fi
 
-    if [ ! -d "${_milestones_dir}" ] || [ -L "${_milestones_dir}" ]; then
-        echo "ERROR: DevCloud milestones directory '${_milestones_dir}'" >&2
-        echo "    is unavailable or is not a real directory!" >&2
-        return 1
+    if [ -e "${_milestones_dir}" ] || [ -L "${_milestones_dir}" ]; then
+        if [ ! -d "${_milestones_dir}" ] || [ -L "${_milestones_dir}" ]; then
+            echo "ERROR: DevCloud milestones path '${_milestones_dir}'" >&2
+            echo "    exists but is not a real directory!" >&2
+            return 1
+        fi
+    else
+        _milestones_parent="${_milestones_dir%/*}"
+        if [ "${_milestones_parent}" = "${_milestones_dir}" ]; then
+            _milestones_parent="."
+        fi
+        if [ ! -d "${_milestones_parent}" ] ||
+            [ ! -x "${_milestones_parent}" ]; then
+            echo "ERROR: DevCloud milestones parent '${_milestones_parent}'" >&2
+            echo "    is unavailable or inaccessible!" >&2
+            return 1
+        fi
     fi
     if ! command -v lspci >/dev/null 2>&1 ||
         ! command -v dpkg-query >/dev/null 2>&1; then

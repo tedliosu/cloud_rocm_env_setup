@@ -40,16 +40,25 @@ cd "${SCRIPT_DIR}" || {
 
 # shellcheck source=../lib/amd_devcloud_vars.sh
 . "../lib/amd_devcloud_vars.sh"
+# shellcheck source=../lib/amd_devcloud_funcs.sh
+. "../lib/amd_devcloud_funcs.sh"
 # shellcheck source=../../common/lib/shared_vars.sh
 . "../../common/lib/shared_vars.sh"
 # shellcheck source=../../common/lib/util_funcs.sh
 . "../../common/lib/util_funcs.sh"
+
+MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
+readonly MILESTONES_DIR
 
 # BEGIN "MAIN"
 "${SCRIPT_DIR}/amd_devcloud_handoff_preflight.sh"
 ensure_basic_os_env_sanity_dont_wrap \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_NAME}" \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"
+check_amd_devcloud_system_upgrade_admission_dont_wrap "${MILESTONES_DIR}"
+if [ "${SHOW_PLAN_ONLY:-0}" -ne 1 ]; then
+    mkdir --parents "${MILESTONES_DIR}"
+fi
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
     echo "[PLAN ONLY] AMD DevCloud ordinary-user setup preflight passed."

@@ -107,11 +107,22 @@ PENDING_DIR="${TEST_TMP_DIR}/pending"
 COMPLETED_DIR="${TEST_TMP_DIR}/completed"
 CONTRADICTORY_DIR="${TEST_TMP_DIR}/contradictory"
 BAD_MARKER_DIR="${TEST_TMP_DIR}/bad-marker"
+BAD_MILESTONES_PATH="${TEST_TMP_DIR}/not-a-directory"
 mkdir "${BARE_DIR}" "${UPGRADED_DIR}" "${PENDING_DIR}" \
     "${COMPLETED_DIR}" "${CONTRADICTORY_DIR}" "${BAD_MARKER_DIR}"
+touch "${BAD_MILESTONES_PATH}"
 
 reset_observations
 expect_acceptance "${BARE_DIR}"
+
+reset_observations
+expect_acceptance "${TEST_TMP_DIR}/not-created-yet"
+
+reset_observations
+expect_rejection "${BAD_MILESTONES_PATH}"
+
+reset_observations
+expect_rejection "${TEST_TMP_DIR}/missing-parent/milestones"
 
 touch "${UPGRADED_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done"
 expect_acceptance "${UPGRADED_DIR}"
