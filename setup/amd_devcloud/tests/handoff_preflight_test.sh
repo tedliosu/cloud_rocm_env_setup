@@ -87,6 +87,14 @@ if "${HANDOFF_PREFLIGHT}" unexpected >/dev/null 2>&1; then
     exit 1
 fi
 
+_plan_output="$(TEST_UID=0 TEST_USERNAME=root TEST_SUDO_FAIL=1 \
+    "${HANDOFF_PREFLIGHT}" --show-plan-only)"
+if ! grep --fixed-strings --quiet \
+    "No account or system state was changed." <<< "${_plan_output}"; then
+    echo "FAILED: handoff-preflight plan mode did not report its boundary!" >&2
+    exit 1
+fi
+
 "${HANDOFF_PREFLIGHT}" >/dev/null
 
 if HOME=/tmp "${HANDOFF_PREFLIGHT}" >/dev/null 2>&1; then

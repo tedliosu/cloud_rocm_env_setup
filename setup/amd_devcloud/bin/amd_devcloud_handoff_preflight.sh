@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+readonly SHOW_PLAN_ONLY_FLAG="--show-plan-only"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly SCRIPT_DIR
 REPO_ROOT="$(realpath "${SCRIPT_DIR}/../../..")"
@@ -11,16 +12,15 @@ readonly REPO_ROOT
 . "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
 
 usage() {
-    echo "Usage: $0 [-h|--help]"
+    echo "Usage: $0 [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
 }
 
-if [ "$#" -gt 1 ]; then
-    echo "ERROR: this preflight accepts no positional arguments!" >&2
-    usage >&2
-    exit 1
-fi
-if [ "$#" -eq 1 ]; then
+while [ "$#" -gt 0 ]; do
     case $1 in
+        "${SHOW_PLAN_ONLY_FLAG}")
+            export SHOW_PLAN_ONLY=1
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -31,6 +31,14 @@ if [ "$#" -eq 1 ]; then
             exit 1
             ;;
     esac
+done
+
+if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+    echo "[PLAN ONLY] Would verify the ordinary-user identity, home, shell,"
+    echo "[PLAN ONLY]     effective required groups, repository access, and"
+    echo "[PLAN ONLY]     full noninteractive sudo contract."
+    echo "[PLAN ONLY] No account or system state was changed."
+    exit 0
 fi
 
 for _required_command in getent git grep id realpath sudo; do

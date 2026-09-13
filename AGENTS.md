@@ -591,6 +591,12 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
 - Name setup stages, reboot identifiers, helpers, tests, and backlog items for
   the action or state they own. Avoid numbered phase names that require a
   separate mapping to explain their purpose.
+- Give nontrivial executable scripts a `--show-plan-only` mode when they can
+  provide a truthful, useful preview. A plan-mode parent must propagate that
+  boundary to nontrivial child scripts. Plan mode must not mutate state or run
+  sudo-backed or other stateful live probes; it should say which checks and
+  actions were intentionally not performed. Do not add a meaningless plan flag
+  to a simple read-only validator that is not part of a plan-mode workflow.
 - Functions used across file boundaries must not use a leading underscore.
 - Private helpers and private working variables may use leading underscores.
 - Prefer braced variable references, especially for private variables.

@@ -51,7 +51,11 @@ MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
 readonly MILESTONES_DIR
 
 # BEGIN "MAIN"
-"${SCRIPT_DIR}/amd_devcloud_handoff_preflight.sh"
+if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+    "${SCRIPT_DIR}/amd_devcloud_handoff_preflight.sh" "${SHOW_PLAN_ONLY_FLAG}"
+else
+    "${SCRIPT_DIR}/amd_devcloud_handoff_preflight.sh"
+fi
 ensure_basic_os_env_sanity_dont_wrap \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_NAME}" \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"

@@ -4,6 +4,7 @@ set -euo pipefail
 
 readonly TARGET_USER_FLAG="--target-user"
 readonly AUTHORIZED_KEY_FILE_FLAG="--authorized-key-file"
+readonly SHOW_PLAN_ONLY_FLAG="--show-plan-only"
 readonly TARGET_USERNAME_REGEX='^[a-z]([a-z0-9_-]{0,30}[a-z0-9])?$'
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly SCRIPT_DIR
@@ -15,9 +16,11 @@ readonly SCRIPT_DIR
 
 usage() {
     echo "Usage: $0 ${TARGET_USER_FLAG} USERNAME" \
-        "${AUTHORIZED_KEY_FILE_FLAG} FILE [-h|--help]"
+        "${AUTHORIZED_KEY_FILE_FLAG} FILE [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
 }
 
+# These root-only helpers are private to this single entrypoint. Keep them
+#     co-located unless another caller or a clearer test boundary emerges.
 _print_account_diagnostics() {
     local _target_user="$1"
     local _target_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_target_user}"
@@ -267,6 +270,10 @@ while [ "$#" -gt 0 ]; do
             AUTHORIZED_KEY_FILE="$2"
             shift 2
             ;;
+        "${SHOW_PLAN_ONLY_FLAG}")
+            export SHOW_PLAN_ONLY=1
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -291,6 +298,18 @@ if ! (export LC_ALL=C; [[ "${TARGET_USER}" =~ ${TARGET_USERNAME_REGEX} ]]) ||
     echo "    digits, internal '_' or '-', must start with a letter and end" >&2
     echo "    with a letter or digit, and must not be 'root'." >&2
     exit 1
+fi
+
+if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+    echo "[PLAN ONLY] Would require a root invocation on" \
+        "${AMD_DEVCLOUD_EXPECTED_DISTRO_NAME}" \
+        "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}."
+    echo "[PLAN ONLY] Would validate the authorized-key input and existing"
+    echo "[PLAN ONLY]     sudoers policy without displaying key material."
+    echo "[PLAN ONLY] Would recognize the exact handoff baseline for" \
+        "'${TARGET_USER}', or create it only from absent account state."
+    echo "[PLAN ONLY] No account, group, SSH-key, or sudoers changes were made."
+    exit 0
 fi
 
 if [ "${EUID}" -ne 0 ]; then

@@ -44,6 +44,16 @@ if "${ROOT_BOOTSTRAP}" --target-user devcloud \
     exit 1
 fi
 
+_plan_output="$("${ROOT_BOOTSTRAP}" --show-plan-only \
+    --target-user devcloud \
+    --authorized-key-file "${TEST_TMP_DIR}/not-created.pub")"
+if ! grep --fixed-strings --quiet \
+    "No account, group, SSH-key, or sudoers changes were made." \
+    <<< "${_plan_output}"; then
+    echo "FAILED: root-bootstrap plan mode did not report its no-change boundary!" >&2
+    exit 1
+fi
+
 for _invalid_username in root _devcloud devcloud_ devcloud- DevCloud \
     'dev.cloud' 'dev cloud' $'devcloud\nother' \
     'abcdefghijklmnopqrstuvwxyzabcdefg'; do
