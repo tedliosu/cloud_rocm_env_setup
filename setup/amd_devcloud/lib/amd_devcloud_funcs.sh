@@ -28,27 +28,33 @@ _amd_devcloud_collect_path_artifacts() {
     done
 }
 
-# Check for the exact bare AMD DevCloud stack state and internally consistent
-#     system-upgrade milestone state before ordinary-user setup mutation.
-# Usage: check_amd_devcloud_system_upgrade_admission_dont_wrap <milestones_directory>
-# Returns: 0 for plan-only or accepted bare state; 1 for failed observations,
-#          selected stack artifacts, or contradictory system-upgrade markers
-check_amd_devcloud_system_upgrade_admission_dont_wrap() {
+# Classify the finite accepted AMD DevCloud setup states and require internally
+#     consistent stage milestones before ordinary-user setup mutation.
+# Usage: check_amd_devcloud_setup_admission_dont_wrap <milestones_directory>
+# Returns: 0 for plan-only, accepted bare state, or the exact project-installed
+#          repository bootstrap; 1 for failed observations or unknown state
+check_amd_devcloud_setup_admission_dont_wrap() {
     local _milestones_dir
     local _milestones_parent
     local _upgrade_marker
     local _tmux_marker
     local _reboot_pending_marker
     local _reboot_done_marker
+    local _repository_bootstrap_marker
     local _pci_output
     local _pci_count=0
     local _pci_line
     local _package_output
     local _package_name
     local _package_status
+    local _package_version
     local _package_sentinel
     local _command_artifacts
+    local _expected_command_artifacts
     local _path_artifacts
+    local _expected_path_artifacts
+    local _expected_package_artifact
+    local _admission_state=""
     local _amdgpu_loaded=0
     local _kfd_present=0
     local _stage_marker
@@ -56,14 +62,14 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
     local -a _stage_markers=()
 
     if [ "$#" -ne 1 ]; then
-        echo "ERROR: DevCloud system-upgrade admission expects one milestones directory!" >&2
+        echo "ERROR: DevCloud setup admission expects one milestones directory!" >&2
         return 1
     fi
     _milestones_dir="$1"
 
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Would require the finite AMD DevCloud bare-stack"
-        echo "[PLAN ONLY]     sentinels and consistent system-upgrade milestones."
+        echo "[PLAN ONLY] Would require a finite accepted AMD DevCloud stack state"
+        echo "[PLAN ONLY]     and consistent setup milestones."
         return 0
     fi
 
@@ -103,21 +109,26 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
     done <<< "${_pci_output}"
 
     if ! _package_output="$(dpkg-query --show \
-        --showformat='${Package}\t${db:Status-Status}\n')"; then
+        --showformat='${Package}\t${db:Status-Status}\t${Version}\n')"; then
         echo "ERROR: unable to inspect installed package state!" >&2
         return 1
     fi
-    while IFS=$'\t' read -r _package_name _package_status; do
+    while IFS=$'\t' read -r _package_name _package_status _package_version; do
         for _package_sentinel in \
             "${AMD_DEVCLOUD_ADMISSION_PACKAGE_SENTINELS[@]}"; do
             if [ "${_package_name}" = "${_package_sentinel}" ]; then
-                _package_artifacts+=("${_package_name} (${_package_status})")
+                _package_artifacts+=("${_package_name} (${_package_status}, ${_package_version})")
             fi
         done
     done <<< "${_package_output}"
 
     _command_artifacts="$(_amd_devcloud_collect_command_artifacts)"
     _path_artifacts="$(_amd_devcloud_collect_path_artifacts)"
+    _expected_command_artifacts="$(printf '%s\n' \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_COMMAND_ARTIFACTS[@]}")"
+    _expected_path_artifacts="$(printf '%s\n' \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}")"
+    _expected_package_artifact="amdgpu-install (installed, ${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION})"
     if _amd_devcloud_amdgpu_module_is_loaded; then
         _amdgpu_loaded=1
     fi
@@ -129,11 +140,13 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
     _tmux_marker="${_milestones_dir}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done"
     _reboot_pending_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.pending"
     _reboot_done_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done"
+    _repository_bootstrap_marker="${_milestones_dir}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done"
     for _stage_marker in "${_upgrade_marker}" "${_tmux_marker}" \
-        "${_reboot_pending_marker}" "${_reboot_done_marker}"; do
+        "${_reboot_pending_marker}" "${_reboot_done_marker}" \
+        "${_repository_bootstrap_marker}"; do
         if [ -e "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
             if [ ! -f "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
-                echo "ERROR: unexpected DevCloud system-upgrade marker type:" >&2
+                echo "ERROR: unexpected DevCloud setup marker type:" >&2
                 echo "    ${_stage_marker}" >&2
                 return 1
             fi
@@ -154,11 +167,29 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
         echo "ERROR: DevCloud system-upgrade reboot is both pending and complete!" >&2
         return 1
     fi
+    if [ -e "${_repository_bootstrap_marker}" ] &&
+        [ ! -f "${_reboot_done_marker}" ]; then
+        echo "ERROR: DevCloud repository-bootstrap state exists before the" >&2
+        echo "    system-upgrade reboot was acknowledged!" >&2
+        return 1
+    fi
 
-    if [ "${_pci_count}" -ne 1 ] || [ "${_amdgpu_loaded}" -eq 1 ] ||
-        [ "${_kfd_present}" -eq 1 ] ||
-        [ "${#_package_artifacts[@]}" -ne 0 ] ||
-        [ -n "${_command_artifacts}" ] || [ -n "${_path_artifacts}" ]; then
+    if [ "${_pci_count}" -eq 1 ] && [ "${_amdgpu_loaded}" -eq 0 ] &&
+        [ "${_kfd_present}" -eq 0 ]; then
+        if [ ! -e "${_repository_bootstrap_marker}" ] &&
+            [ "${#_package_artifacts[@]}" -eq 0 ] &&
+            [ -z "${_command_artifacts}" ] && [ -z "${_path_artifacts}" ]; then
+            _admission_state="${AMD_DEVCLOUD_ADMISSION_BARE}"
+        elif [ -f "${_repository_bootstrap_marker}" ] &&
+            [ "${#_package_artifacts[@]}" -eq 1 ] &&
+            [ "${_package_artifacts[0]}" = "${_expected_package_artifact}" ] &&
+            [ "${_command_artifacts}" = "${_expected_command_artifacts}" ] &&
+            [ "${_path_artifacts}" = "${_expected_path_artifacts}" ]; then
+            _admission_state="${AMD_DEVCLOUD_ADMISSION_REPOSITORY_BOOTSTRAP}"
+        fi
+    fi
+
+    if [ -z "${_admission_state}" ]; then
         echo "ERROR: AMD DevCloud admission state is unknown; refusing mutation." >&2
         echo "Expected PCI device count: 1; observed: ${_pci_count}" >&2
         if [ "${_amdgpu_loaded}" -eq 1 ]; then
@@ -181,9 +212,9 @@ check_amd_devcloud_system_upgrade_admission_dont_wrap() {
         return 1
     fi
 
-    echo "AMD DevCloud admission state: ${AMD_DEVCLOUD_ADMISSION_BARE}"
+    echo "AMD DevCloud admission state: ${_admission_state}"
     if [ "${#_stage_markers[@]}" -gt 0 ]; then
-        printf 'Recognized system-upgrade marker: %s\n' "${_stage_markers[@]}"
+        printf 'Recognized setup marker: %s\n' "${_stage_markers[@]}"
     fi
 }
 

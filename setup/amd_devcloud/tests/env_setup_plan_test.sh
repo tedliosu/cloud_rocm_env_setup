@@ -20,7 +20,7 @@ _previous_line_number=0
 for _expected_line in \
     "Would verify the ordinary-user identity" \
     "Would ensure that current environment is Ubuntu 24.04" \
-    "Would require the finite AMD DevCloud bare-stack" \
+    "Would require a finite accepted AMD DevCloud stack state" \
     "Would inspect current UFW state and apply the project" \
     "would run stage apt_get_sys_update" \
     "would run stage ensure_tmux" \

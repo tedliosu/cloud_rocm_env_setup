@@ -59,7 +59,7 @@ fi
 ensure_basic_os_env_sanity_dont_wrap \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_NAME}" \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_VERSION}"
-check_amd_devcloud_system_upgrade_admission_dont_wrap "${MILESTONES_DIR}"
+check_amd_devcloud_setup_admission_dont_wrap "${MILESTONES_DIR}"
 if [ "${SHOW_PLAN_ONLY:-0}" -ne 1 ]; then
     mkdir --parents "${MILESTONES_DIR}"
 fi

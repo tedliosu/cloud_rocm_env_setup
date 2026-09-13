@@ -43,7 +43,7 @@ chmod +x "${TEST_BIN_DIR}/lspci" "${TEST_BIN_DIR}/dpkg-query"
 export PATH="${TEST_BIN_DIR}:/usr/bin:/bin"
 
 TEST_PCI_OUTPUT=$'0000:83:00.0 1200: 1002:74b5\n'
-TEST_PACKAGE_OUTPUT=$'bash\tinstalled\n'
+TEST_PACKAGE_OUTPUT=$'bash\tinstalled\t5.2\n'
 TEST_LSPCI_STATUS=0
 TEST_DPKG_STATUS=0
 TEST_AMDGPU_LOADED=0
@@ -71,7 +71,7 @@ _amd_devcloud_collect_path_artifacts() {
 
 reset_observations() {
     TEST_PCI_OUTPUT=$'0000:83:00.0 1200: 1002:74b5\n'
-    TEST_PACKAGE_OUTPUT=$'bash\tinstalled\n'
+    TEST_PACKAGE_OUTPUT=$'bash\tinstalled\t5.2\n'
     TEST_LSPCI_STATUS=0
     TEST_DPKG_STATUS=0
     TEST_AMDGPU_LOADED=0
@@ -81,12 +81,21 @@ reset_observations() {
     unset SHOW_PLAN_ONLY
 }
 
+set_repository_bootstrap_observations() {
+    TEST_PACKAGE_OUTPUT=$'bash\tinstalled\t5.2\n'
+    TEST_PACKAGE_OUTPUT+="amdgpu-install"$'\tinstalled\t'"${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}"$'\n'
+    TEST_COMMAND_ARTIFACTS="$(printf '%s\n' \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_COMMAND_ARTIFACTS[@]}")"
+    TEST_PATH_ARTIFACTS="$(printf '%s\n' \
+        "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}")"
+}
+
 expect_acceptance() {
     local _milestones_dir="$1"
 
-    if ! check_amd_devcloud_system_upgrade_admission_dont_wrap \
+    if ! check_amd_devcloud_setup_admission_dont_wrap \
         "${_milestones_dir}" >/dev/null 2>&1; then
-        echo "FAILED: expected DevCloud system-upgrade admission acceptance!" >&2
+        echo "FAILED: expected DevCloud setup admission acceptance!" >&2
         exit 1
     fi
 }
@@ -94,9 +103,9 @@ expect_acceptance() {
 expect_rejection() {
     local _milestones_dir="$1"
 
-    if check_amd_devcloud_system_upgrade_admission_dont_wrap \
+    if check_amd_devcloud_setup_admission_dont_wrap \
         "${_milestones_dir}" >/dev/null 2>&1; then
-        echo "FAILED: expected DevCloud system-upgrade admission rejection!" >&2
+        echo "FAILED: expected DevCloud setup admission rejection!" >&2
         exit 1
     fi
 }
@@ -106,11 +115,14 @@ UPGRADED_DIR="${TEST_TMP_DIR}/upgraded"
 TMUX_ONLY_DIR="${TEST_TMP_DIR}/tmux-only"
 PENDING_DIR="${TEST_TMP_DIR}/pending"
 COMPLETED_DIR="${TEST_TMP_DIR}/completed"
+MANAGED_DIR="${TEST_TMP_DIR}/managed"
+EARLY_BOOTSTRAP_DIR="${TEST_TMP_DIR}/early-bootstrap"
 CONTRADICTORY_DIR="${TEST_TMP_DIR}/contradictory"
 BAD_MARKER_DIR="${TEST_TMP_DIR}/bad-marker"
 BAD_MILESTONES_PATH="${TEST_TMP_DIR}/not-a-directory"
 mkdir "${BARE_DIR}" "${UPGRADED_DIR}" "${TMUX_ONLY_DIR}" "${PENDING_DIR}" \
     "${COMPLETED_DIR}" "${CONTRADICTORY_DIR}" "${BAD_MARKER_DIR}"
+mkdir "${MANAGED_DIR}" "${EARLY_BOOTSTRAP_DIR}"
 touch "${BAD_MILESTONES_PATH}"
 
 reset_observations
@@ -141,6 +153,43 @@ touch "${COMPLETED_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
     "${COMPLETED_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done"
 expect_acceptance "${COMPLETED_DIR}"
 
+touch "${MANAGED_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
+    "${MANAGED_DIR}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done" \
+    "${MANAGED_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done" \
+    "${MANAGED_DIR}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done"
+reset_observations
+set_repository_bootstrap_observations
+expect_acceptance "${MANAGED_DIR}"
+
+reset_observations
+set_repository_bootstrap_observations
+expect_rejection "${COMPLETED_DIR}"
+
+reset_observations
+set_repository_bootstrap_observations
+TEST_PACKAGE_OUTPUT=$'amdgpu-install\tinstalled\tunexpected\n'
+expect_rejection "${MANAGED_DIR}"
+
+reset_observations
+set_repository_bootstrap_observations
+TEST_COMMAND_ARTIFACTS="amdgpu-install"
+expect_rejection "${MANAGED_DIR}"
+
+reset_observations
+set_repository_bootstrap_observations
+TEST_PATH_ARTIFACTS+=$'\n/opt/rocm'
+expect_rejection "${MANAGED_DIR}"
+
+reset_observations
+expect_rejection "${MANAGED_DIR}"
+
+touch "${EARLY_BOOTSTRAP_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
+    "${EARLY_BOOTSTRAP_DIR}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done" \
+    "${EARLY_BOOTSTRAP_DIR}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done"
+reset_observations
+set_repository_bootstrap_observations
+expect_rejection "${EARLY_BOOTSTRAP_DIR}"
+
 reset_observations
 TEST_PCI_OUTPUT=""
 expect_rejection "${BARE_DIR}"
@@ -158,11 +207,11 @@ TEST_KFD_PRESENT=1
 expect_rejection "${BARE_DIR}"
 
 reset_observations
-TEST_PACKAGE_OUTPUT=$'amdgpu-install\tinstalled\n'
+TEST_PACKAGE_OUTPUT=$'amdgpu-install\tinstalled\tunexpected\n'
 expect_rejection "${BARE_DIR}"
 
 reset_observations
-TEST_PACKAGE_OUTPUT=$'rocm7.2.3\tconfig-files\n'
+TEST_PACKAGE_OUTPUT=$'rocm7.2.3\tconfig-files\t7.2.3\n'
 expect_rejection "${BARE_DIR}"
 
 reset_observations
@@ -199,4 +248,4 @@ TEST_LSPCI_STATUS=25
 TEST_DPKG_STATUS=26
 expect_acceptance "${TEST_TMP_DIR}/missing-plan-directory"
 
-echo "PASSED AMD DevCloud system-upgrade admission tests!"
+echo "PASSED AMD DevCloud setup-admission tests!"
