@@ -526,11 +526,6 @@ reboot_with_ack_dont_wrap() {
             exit 1
             ;;
     esac
-    if [ ! -d "${_milestones_dir}" ]; then
-        echo "ERROR: milestones directory '${_milestones_dir}' does not exist!" >&2
-        exit 1
-    fi
-
     _pending_marker_file="${_milestones_dir}/${_reboot_phase_name}.pending"
     _done_marker_file="${_milestones_dir}/${_reboot_phase_name}.done"
     _reboot_skip_msg="--- skipping reboot phase: ${_reboot_phase_name} (already complete) ---"
@@ -550,6 +545,11 @@ reboot_with_ack_dont_wrap() {
             echo "[PLAN ONLY] Would record reboot phase ${_reboot_phase_name} and reboot system"
         fi
         return 0
+    fi
+
+    if [ ! -d "${_milestones_dir}" ]; then
+        echo "ERROR: milestones directory '${_milestones_dir}' does not exist!" >&2
+        exit 1
     fi
 
     if [ -f "${_done_marker_file}" ]; then

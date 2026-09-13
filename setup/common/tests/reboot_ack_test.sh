@@ -66,6 +66,18 @@ assert_no_done_marker() {
     fi
 }
 
+PLAN_DIR="${TEST_TMP_DIR}/missing-plan-directory"
+SHOW_PLAN_ONLY=1
+_plan_output="$(reboot_with_ack_dont_wrap "${PLAN_DIR}" system_upgrade)"
+unset SHOW_PLAN_ONLY
+if [ -e "${PLAN_DIR}" ] ||
+    ! grep --fixed-strings --quiet \
+        "Would record reboot phase system_upgrade and reboot system" \
+        <<< "${_plan_output}"; then
+    echo "FAILED: reboot plan required or created its milestones directory!" >&2
+    exit 1
+fi
+
 SUCCESS_DIR="${TEST_TMP_DIR}/successful-command"
 SUCCESS_LATER_STAGE="${TEST_TMP_DIR}/successful-command-later-stage"
 mkdir "${SUCCESS_DIR}"

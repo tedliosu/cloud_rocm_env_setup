@@ -64,13 +64,16 @@ if [ "${SHOW_PLAN_ONLY:-0}" -ne 1 ]; then
     mkdir --parents "${MILESTONES_DIR}"
 fi
 check_n_apply_ufw_base_or_warn_dont_wrap
+run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}"
+reboot_with_ack_dont_wrap \
+    "${MILESTONES_DIR}" "${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}"
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-    echo "[PLAN ONLY] AMD DevCloud ordinary-user setup preflight passed."
+    echo "[PLAN ONLY] Would stop before the unimplemented pinned AMDGPU"
+    echo "[PLAN ONLY]     driver installation."
 else
-    echo "AMD DevCloud ordinary-user setup preflight passed."
+    echo "Stopping before the unimplemented pinned AMDGPU driver installation."
 fi
-echo "The AMD DevCloud system-package upgrade and reboot are not implemented yet."
 
 cd "${OLD_CWDIR}" || {
     echo "ERROR: unable to return to the initial working directory!" >&2

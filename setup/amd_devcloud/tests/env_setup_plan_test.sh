@@ -21,7 +21,9 @@ for _expected_line in \
     "Would verify the ordinary-user identity" \
     "Would ensure that current environment is Ubuntu 24.04" \
     "Would require the finite AMD DevCloud bare-stack" \
-    "Would inspect current UFW state and apply the project"; do
+    "Would inspect current UFW state and apply the project" \
+    "would run stage apt_get_sys_update" \
+    "Would record reboot phase amd_devcloud_system_upgrade_reboot"; do
     if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
         "${_expected_line}" <<< "${_plan_output}")"; then
         echo "FAILED: DevCloud setup plan omitted '${_expected_line}'!" >&2
@@ -34,6 +36,16 @@ for _expected_line in \
     fi
     _previous_line_number="${_line_number}"
 done
+
+if grep --invert-match --extended-regexp --quiet '^\[PLAN ONLY\]' \
+    <<< "${_plan_output}"; then
+    echo "FAILED: DevCloud setup plan included unlabeled output!" >&2
+    exit 1
+fi
+if grep --fixed-strings --quiet "preflight passed" <<< "${_plan_output}"; then
+    echo "FAILED: DevCloud setup plan claimed that skipped checks passed!" >&2
+    exit 1
+fi
 
 if [ "${_state_tracker_existed}" -eq 0 ] &&
     { [ -e "${STATE_TRACKER_PATH}" ] || [ -L "${STATE_TRACKER_PATH}" ]; }; then
