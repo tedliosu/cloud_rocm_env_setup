@@ -94,6 +94,11 @@ if ! grep --fixed-strings --quiet \
     echo "FAILED: handoff-preflight plan mode did not report its boundary!" >&2
     exit 1
 fi
+if grep --invert-match --extended-regexp --quiet '^\[PLAN ONLY\]' \
+    <<< "${_plan_output}"; then
+    echo "FAILED: handoff-preflight plan included unlabeled output!" >&2
+    exit 1
+fi
 
 "${HANDOFF_PREFLIGHT}" >/dev/null
 

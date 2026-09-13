@@ -250,17 +250,17 @@ ensure_groups_maybe_require_relogin_dont_wrap() {
     local -a _missing_groups=()
     local -a _required_groups=(video render)
 
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would ensure that the login user is in 'video' and"
+        echo "[PLAN ONLY]     'render' groups. A new SSH login would be required"
+        echo "[PLAN ONLY]     if memberships changed."
+        return 0
+    fi
+
     _env_username="$(logname)" || {
         echo "FAILED to get 'LOGNAME'!" >&2
         exit 1
     }
-
-    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Would ensure that user '${_env_username}' is" \
-             "in 'video' and 'render' groups."
-        echo "[PLAN ONLY]     A new SSH login would be required if memberships changed."
-        return 0
-    fi
 
     if ! _effective_username="$(id --user --name)"; then
         echo "ERROR: failed to determine the effective user!" >&2

@@ -57,18 +57,23 @@ else
 fi
 
 # Create directories containing idempotent milestone markers and logs
-MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
-LOGS_DIR="$(realpath "${LOGS_DIR_RELPATH}")"
-mkdir --parents "$MILESTONES_DIR"
-mkdir --parents "$LOGS_DIR"
-CUPY_BUILD_LOG_PATH="$(realpath "${CUPY_BUILD_LOG_RELPATH}")"
+MILESTONES_DIR="$(realpath --canonicalize-missing "${MILESTONES_DIR_RELPATH}")"
+LOGS_DIR="$(realpath --canonicalize-missing "${LOGS_DIR_RELPATH}")"
+if [ "${SHOW_PLAN_ONLY:-0}" -ne 1 ]; then
+    mkdir --parents "$MILESTONES_DIR"
+    mkdir --parents "$LOGS_DIR"
+fi
+CUPY_BUILD_LOG_PATH="$(realpath --canonicalize-missing \
+    "${CUPY_BUILD_LOG_RELPATH}")"
 # Resolve real path of packages-list files
 APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
 TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
 NON_TORCH_DL_PYPKGS_LISTS_PATH="$(realpath "${NON_TORCH_REQS_TXT_RELPATH}")"
 GPU_ARR_PYPKGS_LISTS_PATH="$(realpath "${GPU_ARR_REQS_TXT_RELPATH}")"
-BEFORE_COMFYUI_LOG_PATH="$(realpath "${PRE_COMFYUI_PIP_FREEZE_RECS}")"
-AFTER_COMFYUI_LOG_PATH="$(realpath "${POST_COMFYUI_PIP_FREEZE_RECS}")"
+BEFORE_COMFYUI_LOG_PATH="$(realpath --canonicalize-missing \
+    "${PRE_COMFYUI_PIP_FREEZE_RECS}")"
+AFTER_COMFYUI_LOG_PATH="$(realpath --canonicalize-missing \
+    "${POST_COMFYUI_PIP_FREEZE_RECS}")"
 
 
 # BEGIN "MAIN"
@@ -111,7 +116,7 @@ fi
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
    echo "[PLAN ONLY] No setup stages were executed."
    echo "[PLAN ONLY] No milestone marker files were created."
-   echo "[PLAN ONLY] Local state/log directories may have been created."
+   echo "[PLAN ONLY] No local state or log directories were created."
 fi
 
 

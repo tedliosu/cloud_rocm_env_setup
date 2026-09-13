@@ -15,6 +15,7 @@ readonly TEST_USERNAME
 TEST_CONFIGURED_GROUPS="${TEST_USERNAME}"
 TEST_EFFECTIVE_GROUPS="${TEST_USERNAME}"
 TEST_USERMOD_STATUS=0
+TEST_LOGNAME_STATUS=0
 SEQUENCE_STATUS=0
 
 cleanup() {
@@ -29,6 +30,7 @@ cd "${SCRIPT_DIR}"
 . "../lib/util_funcs.sh"
 
 logname() {
+    [ "${TEST_LOGNAME_STATUS}" -eq 0 ] || return "${TEST_LOGNAME_STATUS}"
     printf "%s\n" "${TEST_USERNAME}"
 }
 
@@ -71,6 +73,17 @@ run_group_sequence() {
     SEQUENCE_STATUS="$?"
     set -e
 }
+
+PLAN_LATER_STAGE="${TEST_TMP_DIR}/plan-later-stage"
+SHOW_PLAN_ONLY=1
+TEST_LOGNAME_STATUS=43
+run_group_sequence "${PLAN_LATER_STAGE}"
+unset SHOW_PLAN_ONLY
+TEST_LOGNAME_STATUS=0
+if [ "${SEQUENCE_STATUS}" -ne 0 ] || [ ! -f "${PLAN_LATER_STAGE}" ]; then
+    echo "FAILED: group plan required a live login-user probe!" >&2
+    exit 1
+fi
 
 MUTATION_LATER_STAGE="${TEST_TMP_DIR}/mutation-later-stage"
 run_group_sequence "${MUTATION_LATER_STAGE}"

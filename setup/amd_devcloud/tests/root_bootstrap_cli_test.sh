@@ -53,6 +53,11 @@ if ! grep --fixed-strings --quiet \
     echo "FAILED: root-bootstrap plan mode did not report its no-change boundary!" >&2
     exit 1
 fi
+if grep --invert-match --extended-regexp --quiet '^\[PLAN ONLY\]' \
+    <<< "${_plan_output}"; then
+    echo "FAILED: root-bootstrap plan included unlabeled output!" >&2
+    exit 1
+fi
 
 for _invalid_username in root _devcloud devcloud_ devcloud- DevCloud \
     'dev.cloud' 'dev cloud' $'devcloud\nother' \
