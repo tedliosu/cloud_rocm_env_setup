@@ -9,6 +9,7 @@ readonly REPO_ROOT
 
 readonly -a LOCAL_TESTS=(
     setup/amd_devcloud/tests/handoff_preflight_test.sh
+    setup/amd_devcloud/tests/system_upgrade_admission_test.sh
     setup/amd_devcloud/tests/root_bootstrap_cli_test.sh
     setup/common/tests/amd_smi_arch_test.sh
     setup/common/tests/cupy_wheel_failure_test.sh

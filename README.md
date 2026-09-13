@@ -137,26 +137,26 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
 
-- [ ] Implement DevCloud phase 1, early firewall initialization and existing-system upgrade:
+- [ ] Implement DevCloud early firewall initialization and existing-system upgrade:
     - Extend `setup/amd_devcloud/bin/amd_devcloud_env_setup.sh`, which currently runs only the accepted read-only ordinary-user handoff preflight and Ubuntu 24.04 identity check.
     - Keep AMD DevCloud instance provisioning manual, keep orchestration at the DevCloud provider boundary, and reuse only suitable shared primitives.
     - Keep the intended experimental target explicit: one Ubuntu 24.04 bare-OS AMD Instinct MI300X Virtual Function with native `gfx942`. A plan-only run may describe work without enforcing the OS identity; a real run must validate Ubuntu before mutation and confirm the GPU identity after driver installation.
-    - Implement a finite, provider-owned pre-mutation AMDGPU/ROCm admission check rather than an exhaustive compatibility scanner. For the initial bare state, require the expected PCI device `1002:74b5`, no loaded `amdgpu` module or `/dev/kfd`, and no explicitly enumerated project-recipe package, repository, command, or versioned-path artifacts. Do not treat generic `/dev/dri` or `dkms` presence as AMD-stack ownership. On later reruns, accept project-managed state only when exact phase markers and exact phase-owned artifacts agree. Treat failed observations, partial project artifacts, and contradictory phase state as unknown and stop without cleanup or migration.
+    - Implement a finite, provider-owned pre-mutation AMDGPU/ROCm admission check rather than an exhaustive compatibility scanner. For the initial bare state, require the expected PCI device `1002:74b5`, no loaded `amdgpu` module or `/dev/kfd`, and no explicitly enumerated project-recipe package, repository, command, or versioned-path artifacts. Do not treat generic `/dev/dri` or `dkms` presence as AMD-stack ownership. On later reruns, accept project-managed state only when exact stage markers and exact stage-owned artifacts agree. Treat failed observations, partial project artifacts, and contradictory stage state as unknown and stop without cleanup or migration.
     - Keep the sentinel list finite and auditable. Do not infer stack ownership from open-ended prefixes or regular expressions over package names, repository contents, installation paths, or other text that may reject unrelated state or drift as AMD packaging changes. This check deliberately detects known relevant conflicts without claiming to prove that every possible historical ROCm leaf package is absent.
     - Classify UFW on every non-plan invocation. Initialize the exact shared TCP/22 baseline immediately when state is FRESH, before the general upgrade. Preserve and report CUSTOM or UNKNOWN without modifying either; continue on CUSTOM and stop on UNKNOWN. In plan-only mode, describe the check and potential action without collecting sudo-backed UFW state.
-    - Refresh APT metadata, upgrade only the already-installed system packages, record phase-specific pending reboot state, and reboot.
+    - Refresh APT metadata, upgrade only the already-installed system packages, record system-upgrade pending reboot state, and reboot.
     - On rerun, require a changed Linux boot ID and revalidate UFW before proceeding.
 
-- [ ] Implement DevCloud phase 2, the pinned AMDGPU driver installation:
+- [ ] Implement the pinned DevCloud AMDGPU driver installation:
     - Follow the exact ROCm 7.2.3 Ubuntu repository and AMDGPU DKMS installation generation rather than mixing driver and userland releases.
     - Pin the Noble repository-bootstrap package to `https://repo.radeon.com/amdgpu-install/7.2.3/ubuntu/noble/amdgpu-install_7.2.3.70203-1_all.deb`, with the provider-owned value kept in `amd_devcloud_vars.sh`.
     - Verify that bootstrap package against SHA-256 `15606d326bd6d8a0a6c467625cb50c45fa6ecebcf483db04da911efe57b933d9`. On 2026-09-12, the inspected package reported Debian version `30.30.3.0.30300300-2327507.24.04`.
-    - Its relevant exact phase-owned artifacts include `/etc/amdgpu-install/amdgpu-setup.conf`, `/etc/apt/keyrings/rocm.gpg`, `/etc/apt/preferences.d/repo-radeon-pin-600`, `/etc/apt/sources.list.d/amdgpu.list`, `/etc/apt/sources.list.d/rocm.list`, `/usr/bin/amdgpu-install`, and `/usr/bin/amdgpu-setup`. Its post-install script also creates `/etc/apt/sources.list.d/amdgpu-proprietary.list`. Use these exact artifacts when recognizing later project-managed phase state.
+    - Its relevant exact driver-installation artifacts include `/etc/amdgpu-install/amdgpu-setup.conf`, `/etc/apt/keyrings/rocm.gpg`, `/etc/apt/preferences.d/repo-radeon-pin-600`, `/etc/apt/sources.list.d/amdgpu.list`, `/etc/apt/sources.list.d/rocm.list`, `/usr/bin/amdgpu-install`, and `/usr/bin/amdgpu-setup`. Its post-install script also creates `/etc/apt/sources.list.d/amdgpu-proprietary.list`. Use these exact artifacts when recognizing later project-managed stage state.
     - Conservatively reject conflicting single-version or mixed ROCm package state instead of automatically removing or reconciling it.
-    - Install matching `amdgpu-dkms` and AMD SMI, then require a second phase-specific acknowledged reboot.
+    - Install matching `amdgpu-dkms` and AMD SMI, then require a driver-installation-specific acknowledged reboot.
     - After reboot, require the observed MI300X VF, native `gfx942`, successful DKMS state, and a nonempty AMD SMI driver version. Use the first controlled DevCloud installation to record the exact expected driver value before pinning that assertion.
 
-- [ ] Implement DevCloud phase 3, full ROCm 7.2.3 and the common minimum baseline:
+- [ ] Implement DevCloud ROCm 7.2.3 and the common minimum baseline:
     - Install the complete versioned `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage or a guessed minimal subset.
     - Complete every applicable APT and other system-package prerequisite before starting pip-backed environment work.
     - Add an idempotent project-owned `.profile` block selecting `/opt/rocm-7.2.3/bin`; do not depend on the mutable `/opt/rocm` alternative.
@@ -164,7 +164,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Install the smallest set of Python environments that makes the common default `validate_main.sh` pass, including its complete default gates rather than a provider-specific partial substitute.
     - Probe and record the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions in a simple version-stamped environment record.
 
-- [ ] Develop DevCloud phase 4 setup and its packaged RAPIDS validator gate together:
+- [ ] Develop the DevCloud packaged RAPIDS setup and validator gate together:
     - Use an ordinary Python virtual environment with pip, packaged `amd-cupy` and `amd-hipcim`, and the exact ROCm 7.2.0 AMD Python index, `https://pypi.amd.com/rocm-7.2.0/simple/`, on the pinned ROCm 7.2.3 system stack. Do not introduce Conda or generalize this observed cross-patch recipe into a supported version matrix.
     - Add one coherent packaged RAPIDS shared workload-environment gate to the common provider-neutral validator. When active, it must run every check defined as required by that environment rather than silently accepting a partial result.
     - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, and the selected TBB backend coverage justified by the shared private MLP workload.
@@ -289,7 +289,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Azure users may optionally install fastfetch from an official GitHub release during setup.
     - fastfetch is not required by any supported workload, so the main validation script does not validate it.
     - Users can run `fastfetch` manually to confirm the optional installation.
-    - After the DevCloud phases and Hot Aisle quick-start documentation are complete, decide whether DevCloud should offer the same optional GitHub-release convenience. If adopted, share the identical release pin and package filename rather than duplicating them across provider variables.
+    - After the DevCloud setup path and Hot Aisle quick-start documentation are complete, decide whether DevCloud should offer the same optional GitHub-release convenience. If adopted, share the identical release pin and package filename rather than duplicating them across provider variables.
 
 ## Project Information
 

@@ -223,9 +223,9 @@ Preserve these boundaries:
   `/dev/kfd`, and none of the explicitly enumerated project-recipe package,
   repository, command, or versioned-path artifacts. Generic `/dev/dri` may be
   present for the Virtio display, and generic `dkms` presence does not establish
-  AMD-stack ownership. Accept later project-managed state only when exact phase
-  markers and exact phase-owned artifacts agree. Treat failed observations,
-  partial project artifacts, and contradictory phase state as unknown; preserve
+  AMD-stack ownership. Accept later project-managed state only when exact stage
+  markers and exact stage-owned artifacts agree. Treat failed observations,
+  partial project artifacts, and contradictory stage state as unknown; preserve
   and refuse it rather than attempting cleanup or migration.
 - Keep DevCloud admission deliberately conservative but non-exhaustive. Do not
   search open-ended package-name prefixes, repository contents, installation
@@ -564,6 +564,11 @@ Preserve existing code style unless it interferes with correctness, safety, or
 the explicit task. Do not opportunistically normalize surrounding Bash.
 
 - Constants belong near the top of the appropriate file.
+- Group semantically related variables together and use one visibility boundary
+  for the group. Cross-file public constants belong together in the relevant
+  variable file; function-private constants and working state remain private
+  to their implementation. Do not split one feature's public constants between
+  its variable and function files.
 - Provider-specific configuration constants that are used across scripts or
   expected to change with a provider image, platform generation, or supported
   recipe belong in `setup/<provider>/lib/<provider>_vars.sh`. Keep script-local
@@ -580,9 +585,12 @@ the explicit task. Do not opportunistically normalize surrounding Bash.
   that suppression in the file, do not export values solely to silence the
   warning, and also ShellCheck the consuming scripts with source following
   enabled so their use of the variables is analyzed.
-- Constants tightly coupled to common classifier functions may remain beside
+- Private constants tightly coupled to common classifier functions may remain beside
   those functions; do not create `comm_shared_vars.sh` merely for structural
   symmetry.
+- Name setup stages, reboot identifiers, helpers, tests, and backlog items for
+  the action or state they own. Avoid numbered phase names that require a
+  separate mapping to explain their purpose.
 - Functions used across file boundaries must not use a leading underscore.
 - Private helpers and private working variables may use leading underscores.
 - Prefer braced variable references, especially for private variables.
