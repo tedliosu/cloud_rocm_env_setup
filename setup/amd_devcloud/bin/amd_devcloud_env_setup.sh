@@ -76,6 +76,9 @@ reboot_with_ack_dont_wrap \
 # shellcheck disable=SC2119 # The verifier deliberately accepts no arguments.
 verify_amd_devcloud_post_driver_state_dont_wrap
 run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_ROCM_USERLAND_STAGE_NAME}"
+ensure_amd_devcloud_rocm_path_profile_dont_wrap "${CURR_HOME_DIR}"
+# shellcheck disable=SC2119 # The reporter deliberately accepts no arguments.
+print_amd_devcloud_rocm_paths_dont_wrap
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
     echo "[PLAN ONLY] Would stop after ROCm userland before the common minimum baseline."

@@ -629,6 +629,10 @@ when their context explains the difference.
   contract. Equal observations that may drift independently remain
   provider-owned; do not deduplicate them merely because their current text or
   version happens to match.
+- Reuse an existing variable when it already represents the required value in
+  the current scope and doing so keeps ownership and data flow clear. Do not
+  force reuse when values only happen to match, may drift independently, or
+  would introduce misleading coupling or implicit mutable state.
 - Source-only variable files may use a file-scoped ShellCheck `SC2034`
   suppression because standalone analysis cannot see their consumers. Explain
   that suppression in the file, do not export values solely to silence the

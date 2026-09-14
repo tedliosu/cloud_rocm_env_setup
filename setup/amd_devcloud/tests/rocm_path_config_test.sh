@@ -32,12 +32,43 @@ EXACT_PROFILE_HOME="${TEST_TMP_DIR}/exact-profile"
 PARTIAL_PROFILE_HOME="${TEST_TMP_DIR}/partial-profile"
 DUPLICATE_PROFILE_HOME="${TEST_TMP_DIR}/duplicate-profile"
 SYMLINK_PROFILE_HOME="${TEST_TMP_DIR}/symlink-profile"
+PLAN_PROFILE_HOME="${TEST_TMP_DIR}/plan-profile"
 SYMLINK_TARGET="${TEST_TMP_DIR}/symlink-target"
 mkdir "${MISSING_PROFILE_HOME}" "${EXISTING_PROFILE_HOME}" \
     "${EXACT_PROFILE_HOME}" "${PARTIAL_PROFILE_HOME}" \
-    "${DUPLICATE_PROFILE_HOME}" "${SYMLINK_PROFILE_HOME}"
+    "${DUPLICATE_PROFILE_HOME}" "${SYMLINK_PROFILE_HOME}" \
+    "${PLAN_PROFILE_HOME}"
 
-ensure_amd_devcloud_rocm_path_profile "${MISSING_PROFILE_HOME}" >/dev/null
+export SHOW_PLAN_ONLY=1
+_plan_profile_output="$(ensure_amd_devcloud_rocm_path_profile_dont_wrap \
+    "${PLAN_PROFILE_HOME}")"
+if [ "${_plan_profile_output}" != \
+    "[PLAN ONLY] Would ensure the exact versioned ROCm PATH profile block." ]; then
+    echo "FAILED: ROCm PATH profile plan output was unexpected!" >&2
+    exit 1
+fi
+if [ -e "${PLAN_PROFILE_HOME}/.profile" ] ||
+    [ -L "${PLAN_PROFILE_HOME}/.profile" ]; then
+    echo "FAILED: ROCm PATH profile plan created a profile!" >&2
+    exit 1
+fi
+printf '%s\n' 'preserve plan profile' > "${PLAN_PROFILE_HOME}/.profile"
+ensure_amd_devcloud_rocm_path_profile_dont_wrap \
+    "${PLAN_PROFILE_HOME}" >/dev/null
+if [ "$(<"${PLAN_PROFILE_HOME}/.profile")" != "preserve plan profile" ]; then
+    echo "FAILED: ROCm PATH profile plan modified a profile!" >&2
+    exit 1
+fi
+_plan_report="$(print_amd_devcloud_rocm_paths_dont_wrap)"
+if [ "${_plan_report}" != \
+    "[PLAN ONLY] Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use." ]; then
+    echo "FAILED: ROCm path-report plan output was unexpected!" >&2
+    exit 1
+fi
+unset SHOW_PLAN_ONLY
+
+ensure_amd_devcloud_rocm_path_profile_dont_wrap \
+    "${MISSING_PROFILE_HOME}" >/dev/null
 if [ "$(<"${MISSING_PROFILE_HOME}/.profile")" != "$(expected_block)" ]; then
     echo "FAILED: new profile did not contain only the exact PATH block!" >&2
     exit 1
@@ -50,7 +81,8 @@ fi
 printf '%s\n' '# existing profile content' > "${EXISTING_PROFILE_HOME}/.profile"
 chmod 0640 "${EXISTING_PROFILE_HOME}/.profile"
 _existing_owner="$(stat --format='%u:%g' "${EXISTING_PROFILE_HOME}/.profile")"
-ensure_amd_devcloud_rocm_path_profile "${EXISTING_PROFILE_HOME}" >/dev/null
+ensure_amd_devcloud_rocm_path_profile_dont_wrap \
+    "${EXISTING_PROFILE_HOME}" >/dev/null
 printf '%s\n\n' '# existing profile content' > "${TEST_TMP_DIR}/expected-profile"
 expected_block >> "${TEST_TMP_DIR}/expected-profile"
 if ! cmp --silent "${EXISTING_PROFILE_HOME}/.profile" \
@@ -68,7 +100,8 @@ if [ "$(stat --format='%u:%g' "${EXISTING_PROFILE_HOME}/.profile")" != \
     exit 1
 fi
 _existing_checksum="$(sha256sum "${EXISTING_PROFILE_HOME}/.profile")"
-ensure_amd_devcloud_rocm_path_profile "${EXISTING_PROFILE_HOME}" >/dev/null
+ensure_amd_devcloud_rocm_path_profile_dont_wrap \
+    "${EXISTING_PROFILE_HOME}" >/dev/null
 if [ "$(sha256sum "${EXISTING_PROFILE_HOME}/.profile")" != \
     "${_existing_checksum}" ]; then
     echo "FAILED: idempotent profile rerun changed the file!" >&2
@@ -76,12 +109,13 @@ if [ "$(sha256sum "${EXISTING_PROFILE_HOME}/.profile")" != \
 fi
 
 expected_block > "${EXACT_PROFILE_HOME}/.profile"
-ensure_amd_devcloud_rocm_path_profile "${EXACT_PROFILE_HOME}" >/dev/null
+ensure_amd_devcloud_rocm_path_profile_dont_wrap \
+    "${EXACT_PROFILE_HOME}" >/dev/null
 
 printf '%s\n' "${AMD_DEVCLOUD_ROCM_PROFILE_BEGIN_MARKER}" \
     > "${PARTIAL_PROFILE_HOME}/.profile"
 _partial_checksum="$(sha256sum "${PARTIAL_PROFILE_HOME}/.profile")"
-if ensure_amd_devcloud_rocm_path_profile \
+if ensure_amd_devcloud_rocm_path_profile_dont_wrap \
     "${PARTIAL_PROFILE_HOME}" >/dev/null 2>&1; then
     echo "FAILED: partial project-owned profile block was accepted!" >&2
     exit 1
@@ -94,7 +128,7 @@ fi
 
 expected_block > "${DUPLICATE_PROFILE_HOME}/.profile"
 expected_block >> "${DUPLICATE_PROFILE_HOME}/.profile"
-if ensure_amd_devcloud_rocm_path_profile \
+if ensure_amd_devcloud_rocm_path_profile_dont_wrap \
     "${DUPLICATE_PROFILE_HOME}" >/dev/null 2>&1; then
     echo "FAILED: duplicate project-owned profile blocks were accepted!" >&2
     exit 1
@@ -102,7 +136,7 @@ fi
 
 printf '%s\n' 'preserve target' > "${SYMLINK_TARGET}"
 ln --symbolic "${SYMLINK_TARGET}" "${SYMLINK_PROFILE_HOME}/.profile"
-if ensure_amd_devcloud_rocm_path_profile \
+if ensure_amd_devcloud_rocm_path_profile_dont_wrap \
     "${SYMLINK_PROFILE_HOME}" >/dev/null 2>&1; then
     echo "FAILED: symlink profile was accepted!" >&2
     exit 1
@@ -112,22 +146,22 @@ if [ "$(<"${SYMLINK_TARGET}")" != "preserve target" ]; then
     exit 1
 fi
 
-if ensure_amd_devcloud_rocm_path_profile \
+if ensure_amd_devcloud_rocm_path_profile_dont_wrap \
     "${TEST_TMP_DIR}/missing-home" >/dev/null 2>&1; then
     echo "FAILED: missing home directory was accepted!" >&2
     exit 1
 fi
-if ensure_amd_devcloud_rocm_path_profile >/dev/null 2>&1; then
+if ensure_amd_devcloud_rocm_path_profile_dont_wrap >/dev/null 2>&1; then
     echo "FAILED: missing profile-helper argument was accepted!" >&2
     exit 1
 fi
-if ensure_amd_devcloud_rocm_path_profile \
+if ensure_amd_devcloud_rocm_path_profile_dont_wrap \
     "${MISSING_PROFILE_HOME}" unexpected >/dev/null 2>&1; then
     echo "FAILED: extra profile-helper argument was accepted!" >&2
     exit 1
 fi
 
-_path_report="$(print_amd_devcloud_rocm_paths)"
+_path_report="$(print_amd_devcloud_rocm_paths_dont_wrap)"
 if [ "${_path_report}" != \
 "ROCm home for command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"$'\n'\
 "ROCm executable directory: ${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}"$'\n'\
@@ -140,7 +174,7 @@ if [ "${_path_report}" != \
     echo "FAILED: ROCm path report was unexpected!" >&2
     exit 1
 fi
-if print_amd_devcloud_rocm_paths unexpected >/dev/null 2>&1; then
+if print_amd_devcloud_rocm_paths_dont_wrap unexpected >/dev/null 2>&1; then
     echo "FAILED: path reporter accepted an argument!" >&2
     exit 1
 fi

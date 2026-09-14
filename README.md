@@ -58,6 +58,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Setup does not add project ROCm paths to system dynamic-loader configuration or run `ldconfig` merely to make them globally visible.
     - Setup does not persist `LD_LIBRARY_PATH`, `ROCM_HOME`, `ROCM_PATH`, `HIP_PATH`, or similar runtime and build-selection variables in shell startup files.
     - A deliberately dedicated environment with a pinned system stack may add that stack's exact versioned `bin` directory to `PATH`. This narrow executable-selection exception does not permit persistent library or runtime-selection variables or reliance on a mutable `/opt/rocm` alternative.
+    - AMD DevCloud setup maintains that project-owned `/opt/rocm-7.2.3/bin` profile block and prints a temporary current-shell `PATH` command plus command-scoped `ROCM_HOME=/opt/rocm-7.2.3` and `LD_LIBRARY_PATH=/opt/rocm-7.2.3/lib` guidance. It does not change those runtime-selection variables in the invoking shell.
     - The common main validator asks the `hipconfig` selected through `PATH` for its complete ROCm root, resolves and reports the canonical directory, and supplies that directory as `ROCM_HOME` plus its `lib` directory as `LD_LIBRARY_PATH` only within the validator process and its children.
     - The validator entry script owns that environment selection and passes selected paths explicitly into helpers that need them; helpers do not implicitly choose or modify the caller's ROCm environment.
 
@@ -152,8 +153,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - [ ] Implement DevCloud ROCm 7.2.3 and the common minimum baseline:
     - Install the complete versioned `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage or a guessed minimal subset.
     - Complete every applicable APT and other system-package prerequisite before starting pip-backed environment work.
-    - Add an idempotent project-owned `.profile` block whose only environment change is selecting `/opt/rocm-7.2.3/bin`. This is the narrow versioned-`PATH` exception for the dedicated pinned DevCloud environment; do not depend on the mutable `/opt/rocm` alternative. Use that exact path explicitly for the remaining setup process, and tell users that future login shells will read the block while an existing shell can run the printed temporary `PATH` export without logging out or re-sourcing unrelated profile content.
-    - Wire DevCloud setup to print and document command-scoped `ROCM_HOME=/opt/rocm-7.2.3` and `LD_LIBRARY_PATH=/opt/rocm-7.2.3/lib`; do not add an unobserved `lib64` path.
     - Install the smallest set of Python environments that makes the common default `validate_main.sh` pass, including its complete default gates rather than a provider-specific partial substitute.
     - Before the next controlled DevCloud run, audit the newly added DevCloud setup and common-validator paths for unintended exported-variable leakage or implicit helper reads. Keep environment selection top down and correct concrete violations without broad unrelated refactoring.
     - Probe and record the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions in a simple version-stamped environment record.

@@ -59,6 +59,8 @@ for _expected_line in \
     "Would record reboot phase amd_devcloud_driver_reboot" \
     "Would verify the running-kernel AMDGPU DKMS state" \
     "would run stage install_amd_devcloud_rocm_userland" \
+    "Would ensure the exact versioned ROCm PATH profile block" \
+    "Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use" \
     "Would stop after ROCm userland before the common minimum baseline"; do
     if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
         "${_expected_line}" <<< "${_plan_output}")"; then

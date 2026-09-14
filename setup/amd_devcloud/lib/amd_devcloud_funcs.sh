@@ -588,10 +588,10 @@ install_amd_devcloud_rocm_userland() (
 
 # Add the one permitted persistent ROCm environment selection: an exact
 #     versioned bin directory in the dedicated DevCloud user's PATH.
-# Usage: ensure_amd_devcloud_rocm_path_profile <home_directory>
+# Usage: ensure_amd_devcloud_rocm_path_profile_dont_wrap <home_directory>
 # Returns: 0 after creating or recognizing the exact block; 1 for an invalid
 #          home/profile or conflicting project-owned marker state
-ensure_amd_devcloud_rocm_path_profile() (
+ensure_amd_devcloud_rocm_path_profile_dont_wrap() (
     local _home_dir
     local _profile_path
     local _profile_content=""
@@ -607,6 +607,10 @@ ensure_amd_devcloud_rocm_path_profile() (
     if [ "$#" -ne 1 ]; then
         echo "ERROR: AMD DevCloud ROCm PATH setup expects one home directory!" >&2
         return 1
+    fi
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would ensure the exact versioned ROCm PATH profile block."
+        return 0
     fi
     _home_dir="$1"
     if [ ! -d "${_home_dir}" ] || [ -L "${_home_dir}" ] ||
@@ -706,12 +710,16 @@ ensure_amd_devcloud_rocm_path_profile() (
 
 # Print the selected executable directory and the explicit library path for
 #     command-scoped use without exporting runtime-selection variables.
-# Usage: no arguments required
+# Usage: print_amd_devcloud_rocm_paths_dont_wrap
 # Returns: 0 after printing the versioned paths; 1 for an unexpected argument
-print_amd_devcloud_rocm_paths() {
+print_amd_devcloud_rocm_paths_dont_wrap() {
     if [ "$#" -ne 0 ]; then
         echo "ERROR: AMD DevCloud ROCm path reporting expects no arguments!" >&2
         return 1
+    fi
+    if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
+        echo "[PLAN ONLY] Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use."
+        return 0
     fi
 
     echo "ROCm home for command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"
