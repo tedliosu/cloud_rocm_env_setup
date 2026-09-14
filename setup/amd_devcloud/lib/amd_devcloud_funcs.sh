@@ -586,6 +586,147 @@ install_amd_devcloud_rocm_userland() (
     echo "Complete versioned ROCm userland metapackage installed."
 )
 
+# Add the one permitted persistent ROCm environment selection: an exact
+#     versioned bin directory in the dedicated DevCloud user's PATH.
+# Usage: ensure_amd_devcloud_rocm_path_profile <home_directory>
+# Returns: 0 after creating or recognizing the exact block; 1 for an invalid
+#          home/profile or conflicting project-owned marker state
+ensure_amd_devcloud_rocm_path_profile() (
+    local _home_dir
+    local _profile_path
+    local _profile_content=""
+    local _profile_line
+    local _profile_block
+    local _profile_owner
+    local _expected_owner
+    local _begin_marker_count=0
+    local _end_marker_count=0
+    local _temp_path=""
+    local _required_command
+
+    if [ "$#" -ne 1 ]; then
+        echo "ERROR: AMD DevCloud ROCm PATH setup expects one home directory!" >&2
+        return 1
+    fi
+    _home_dir="$1"
+    if [ ! -d "${_home_dir}" ] || [ -L "${_home_dir}" ] ||
+        [ ! -w "${_home_dir}" ] || [ ! -x "${_home_dir}" ]; then
+        echo "ERROR: ROCm PATH setup requires a writable real home directory:" >&2
+        echo "    ${_home_dir}" >&2
+        return 1
+    fi
+    for _required_command in chmod cp id mktemp mv rm stat; do
+        if ! command -v "${_required_command}" >/dev/null 2>&1; then
+            echo "ERROR: ROCm PATH setup requires '${_required_command}'!" >&2
+            return 1
+        fi
+    done
+
+    _profile_path="${_home_dir}/.profile"
+    # Preserve ${PATH} literally for evaluation when the profile is sourced.
+    # shellcheck disable=SC2016
+    _profile_block="$(printf '%s\nexport PATH="%s:${PATH}"\n%s' \
+        "${AMD_DEVCLOUD_ROCM_PROFILE_BEGIN_MARKER}" \
+        "${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}" \
+        "${AMD_DEVCLOUD_ROCM_PROFILE_END_MARKER}")"
+
+    if [ -e "${_profile_path}" ] || [ -L "${_profile_path}" ]; then
+        if [ ! -f "${_profile_path}" ] || [ -L "${_profile_path}" ] ||
+            [ ! -r "${_profile_path}" ]; then
+            echo "ERROR: '${_profile_path}' is not a readable regular file!" >&2
+            return 1
+        fi
+        if ! _profile_owner="$(stat --format='%u:%g' "${_profile_path}")" ||
+            ! _expected_owner="$(id --user):$(id --group)" ||
+            [ "${_profile_owner}" != "${_expected_owner}" ]; then
+            echo "ERROR: '${_profile_path}' is not owned by the current user" >&2
+            echo "    and primary group!" >&2
+            return 1
+        fi
+        _profile_content="$(<"${_profile_path}")"
+        while IFS= read -r _profile_line || [ -n "${_profile_line}" ]; do
+            case ${_profile_line} in
+                "${AMD_DEVCLOUD_ROCM_PROFILE_BEGIN_MARKER}")
+                    _begin_marker_count=$((_begin_marker_count + 1))
+                    ;;
+                "${AMD_DEVCLOUD_ROCM_PROFILE_END_MARKER}")
+                    _end_marker_count=$((_end_marker_count + 1))
+                    ;;
+            esac
+        done < "${_profile_path}"
+    fi
+
+    if [ "${_begin_marker_count}" -eq 1 ] &&
+        [ "${_end_marker_count}" -eq 1 ]; then
+        case ${_profile_content} in
+            *"${_profile_block}"*)
+                echo "Exact AMD DevCloud ROCm PATH profile block already present."
+                return 0
+                ;;
+        esac
+    fi
+    if [ "${_begin_marker_count}" -ne 0 ] ||
+        [ "${_end_marker_count}" -ne 0 ]; then
+        echo "ERROR: conflicting AMD DevCloud ROCm PATH profile markers!" >&2
+        return 1
+    fi
+
+    if ! _temp_path="$(mktemp --tmpdir="${_home_dir}" \
+        .cloud-rocm-profile.XXXXXX)"; then
+        echo "ERROR: unable to create a temporary profile file!" >&2
+        return 1
+    fi
+    trap 'if [ -n "${_temp_path:-}" ]; then rm --force -- "${_temp_path}"; fi' EXIT
+
+    if [ -e "${_profile_path}" ]; then
+        if ! cp --preserve=mode,ownership -- \
+            "${_profile_path}" "${_temp_path}"; then
+            echo "ERROR: unable to prepare the existing profile update!" >&2
+            return 1
+        fi
+        if [ -s "${_profile_path}" ]; then
+            printf '\n' >> "${_temp_path}"
+        fi
+    elif ! chmod 0644 "${_temp_path}"; then
+        echo "ERROR: unable to set the new profile mode!" >&2
+        return 1
+    fi
+    if ! printf '%s\n' "${_profile_block}" >> "${_temp_path}"; then
+        echo "ERROR: unable to write the AMD DevCloud ROCm PATH block!" >&2
+        return 1
+    fi
+    if ! mv --no-target-directory -- "${_temp_path}" "${_profile_path}"; then
+        echo "ERROR: unable to install the AMD DevCloud ROCm PATH profile!" >&2
+        return 1
+    fi
+    _temp_path=""
+
+    echo "Installed exact AMD DevCloud ROCm PATH profile block."
+)
+
+# Print the selected executable directory and the explicit library path for
+#     command-scoped use without exporting runtime-selection variables.
+# Usage: no arguments required
+# Returns: 0 after printing the versioned paths; 1 for an unexpected argument
+print_amd_devcloud_rocm_paths() {
+    if [ "$#" -ne 0 ]; then
+        echo "ERROR: AMD DevCloud ROCm path reporting expects no arguments!" >&2
+        return 1
+    fi
+
+    echo "ROCm home for command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"
+    echo "ROCm executable directory: ${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}"
+    echo "ROCm library directory for command-scoped LD_LIBRARY_PATH: ${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}"
+    printf "Current-shell PATH command: export PATH='%s':\"\${PATH}\"\n" \
+        "${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}"
+    printf "Workload example: env ROCM_HOME='%s' LD_LIBRARY_PATH='%s' command [arguments...]\n" \
+        "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}" \
+        "${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}"
+    echo "New login shells will select the versioned executable directory after profile setup."
+    echo "Existing shells remain unchanged until the printed PATH command is run."
+    echo "Persistent ROCm runtime-selection variables are not configured."
+}
+
 # Verify the running-kernel DKMS installation and the adopted DevCloud GPU
 #     identity after the driver-specific reboot.
 # Usage: no arguments required
