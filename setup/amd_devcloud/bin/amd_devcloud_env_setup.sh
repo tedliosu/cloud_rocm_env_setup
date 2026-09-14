@@ -51,6 +51,10 @@ MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
 readonly MILESTONES_DIR
 APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
 readonly APT_PKGS_LISTS_PATH
+TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
+readonly TORCH_PYPKGS_LISTS_PATH
+NON_TORCH_DL_PYPKGS_LISTS_PATH="$(realpath "${NON_TORCH_REQS_TXT_RELPATH}")"
+readonly NON_TORCH_DL_PYPKGS_LISTS_PATH
 
 # BEGIN "MAIN"
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
@@ -85,11 +89,16 @@ run_stage "${MILESTONES_DIR}" ensure_pinned_cmake \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_CODENAME}" "${CMAKE_APT_PIN_VER}"
 run_stage "${MILESTONES_DIR}" ensure_apt_with_custom_conf \
     "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
+run_stage "${MILESTONES_DIR}" ensure_base_dl_virtualenv \
+    "${DEEP_LEARN_VIRTENV_DIR}" \
+    "${AMD_DEVCLOUD_PYTORCH_ROCM_WHEEL_VERSION}" \
+    "${TORCH_PYPKGS_LISTS_PATH}" \
+    "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${TORCHCODEC_PIN_VER}"
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-    echo "[PLAN ONLY] Would stop after common system prerequisites before the baseline Python environment."
+    echo "[PLAN ONLY] Would complete the DevCloud common minimum baseline setup."
 else
-    echo "Stopping after common system prerequisites before the baseline Python environment."
+    echo "DevCloud common minimum baseline setup stages completed."
 fi
 
 cd "${OLD_CWDIR}" || {

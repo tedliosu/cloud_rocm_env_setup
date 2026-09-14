@@ -63,7 +63,8 @@ for _expected_line in \
     "Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use" \
     "would run stage ensure_pinned_cmake" \
     "would run stage ensure_apt_with_custom_conf" \
-    "Would stop after common system prerequisites before the baseline Python environment"; do
+    "would run stage ensure_base_dl_virtualenv" \
+    "Would complete the DevCloud common minimum baseline setup"; do
     if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
         "${_expected_line}" <<< "${_plan_output}")"; then
         echo "FAILED: DevCloud setup plan omitted '${_expected_line}'!" >&2
