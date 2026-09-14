@@ -505,6 +505,50 @@ install_amd_devcloud_driver() (
     echo "Pinned AMDGPU DKMS and versioned AMD SMI packages installed."
 )
 
+# Install and confirm the complete versioned ROCm userland metapackage for the
+#     adopted DevCloud ROCm generation.
+# Usage: no arguments required
+# Returns: 0 after exact metapackage installation; 1 on failed installation or
+#          unexpected package or versioned-root state
+install_amd_devcloud_rocm_userland() (
+    local _package_state
+    local _required_command
+
+    if [ "$#" -ne 0 ]; then
+        echo "ERROR: AMD DevCloud ROCm userland installation expects no arguments!" >&2
+        return 1
+    fi
+    for _required_command in apt-get dpkg-query sudo; do
+        if ! command -v "${_required_command}" >/dev/null 2>&1; then
+            echo "ERROR: ROCm userland installation requires '${_required_command}'!" >&2
+            return 1
+        fi
+    done
+
+    if ! sudo --set-home env DEBIAN_FRONTEND="noninteractive" \
+        NEEDRESTART_MODE="a" apt-get install --assume-yes \
+        "${AMD_DEVCLOUD_ROCM_METAPACKAGE}=${AMD_DEVCLOUD_ROCM_METAPACKAGE_VERSION}"; then
+        echo "ERROR: unable to install the pinned AMD DevCloud ROCm userland!" >&2
+        return 1
+    fi
+    if ! _package_state="$(dpkg-query --show \
+        --showformat='${db:Status-Status}\t${Version}\n' \
+        "${AMD_DEVCLOUD_ROCM_METAPACKAGE}")" ||
+        [ "${_package_state}" != \
+            $'installed\t'"${AMD_DEVCLOUD_ROCM_METAPACKAGE_VERSION}" ]; then
+        echo "ERROR: installed ROCm metapackage state is unexpected:" >&2
+        echo "    ${_package_state}" >&2
+        return 1
+    fi
+    if ! _amd_devcloud_rocm_alternative_matches_versioned_root; then
+        echo "ERROR: the ROCm alternative does not resolve to the expected" >&2
+        echo "    versioned root '${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}'!" >&2
+        return 1
+    fi
+
+    echo "Complete versioned ROCm userland metapackage installed."
+)
+
 # Verify the running-kernel DKMS installation and the adopted DevCloud GPU
 #     identity after the driver-specific reboot.
 # Usage: no arguments required
