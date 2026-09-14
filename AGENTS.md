@@ -850,10 +850,13 @@ and the source-built CuPy gate is preferable to introducing a fine-grained
 capability framework.
 
 Receipts should record observed reality rather than force historical versions.
-The general structured receipt and validation-summary design is deferred until
-it is justified. A narrow experimental path may still record a simple
-version-stamped environment record without first building a general receipt
-framework.
+Setup scripts do not own or write durable environment receipts; setup success
+must not depend on receipt creation. A narrow experimental path may provide a
+separate read-only acceptance probe that prints version-stamped observations to
+standard output after setup and validation. Capturing that output is an
+acceptance workflow, not a setup stage or support guarantee. The general
+structured receipt and validation-summary design remains deferred until it is
+justified.
 
 Do not canonize observed cloud performance numbers as guarantees. Distinguish
 cold-start, JIT, and cache effects from steady-state measurements when timing

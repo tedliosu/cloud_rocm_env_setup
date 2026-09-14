@@ -741,6 +741,7 @@ print_amd_devcloud_rocm_paths_dont_wrap() {
 # Usage: no arguments required
 # Returns: 0 after exact DKMS, device, architecture, and driver-version
 #          checks; 1 on failed observations or an unexpected environment
+# shellcheck disable=SC2120 # Argument rejection is part of the helper contract.
 verify_amd_devcloud_post_driver_state_dont_wrap() {
     local _required_command
     local _pci_output
@@ -880,3 +881,94 @@ verify_amd_devcloud_post_driver_state_dont_wrap() {
     echo "GPU: ${_gpu_market_name} (${_gpu_arch})"
     echo "AMD SMI driver version: ${_driver_version}"
 }
+
+# Print a version-stamped snapshot for the separate DevCloud acceptance
+#     workflow. This function is read-only and does not create a receipt file.
+# Usage: print_amd_devcloud_acceptance_record <os_release_path> \
+#            <baseline_virtualenv_dir> <common_apt_requirements_path> \
+#            <versioned_rocm_root>
+# Returns: 0 after every observation is collected and printed; 1 if the
+#          environment is incomplete or any observation fails
+print_amd_devcloud_acceptance_record() (
+    local _os_release_path
+    local _baseline_virtualenv_dir
+    local _common_apt_requirements_path
+    local _versioned_rocm_root
+    local _timestamp
+    local _os_release
+    local _kernel
+    local _driver_and_gpu
+    local _rocm_packages
+    local _hip_version
+    local _system_python
+    local _baseline_python
+    local _baseline_apt_versions
+    local _baseline_python_versions
+    local _package_name
+    local -a _baseline_apt_packages=(cmake w3m apt-file)
+
+    if [ "$#" -ne 4 ]; then
+        echo "ERROR: DevCloud acceptance recording expects four arguments!" >&2
+        return 1
+    fi
+    _os_release_path="$1"
+    _baseline_virtualenv_dir="$2"
+    _common_apt_requirements_path="$3"
+    _versioned_rocm_root="$4"
+    if [ ! -r "${_os_release_path}" ] ||
+        [ ! -r "${_common_apt_requirements_path}" ] ||
+        [ ! -x "${_baseline_virtualenv_dir}/bin/python" ] ||
+        [ ! -x "${_versioned_rocm_root}/bin/hipconfig" ]; then
+        echo "ERROR: required DevCloud acceptance-probe input is unavailable!" >&2
+        return 1
+    fi
+
+    while IFS= read -r _package_name || [ -n "${_package_name}" ]; do
+        case ${_package_name} in
+            ''|*[!A-Za-z0-9+.-]*)
+                echo "ERROR: invalid common APT package name '${_package_name}'!" >&2
+                return 1
+                ;;
+        esac
+        _baseline_apt_packages+=("${_package_name}")
+    done < "${_common_apt_requirements_path}"
+
+    # shellcheck disable=SC2119 # The verifier deliberately accepts no arguments.
+    if ! _timestamp="$(date --utc +'%Y-%m-%dT%H:%M:%SZ')" ||
+        ! _os_release="$(cat -- "${_os_release_path}")" ||
+        ! _kernel="$(uname --kernel-release --machine)" ||
+        ! _driver_and_gpu="$(verify_amd_devcloud_post_driver_state_dont_wrap)" ||
+        ! _rocm_packages="$(dpkg-query --show \
+            --showformat='${binary:Package}\t${Version}\n' \
+            amdgpu-install "${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}" \
+            "${AMD_DEVCLOUD_AMD_SMI_PACKAGE}" \
+            "${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}" \
+            "${AMD_DEVCLOUD_ROCM_METAPACKAGE}")" ||
+        ! _hip_version="$(env \
+            LD_LIBRARY_PATH="${_versioned_rocm_root}/lib" \
+            "${_versioned_rocm_root}/bin/hipconfig" --version)" ||
+        ! _system_python="$(python3 --version 2>&1)" ||
+        ! _baseline_python="$("${_baseline_virtualenv_dir}/bin/python" \
+            --version 2>&1)" ||
+        ! _baseline_apt_versions="$(dpkg-query --show \
+            --showformat='${binary:Package}\t${Version}\n' \
+            "${_baseline_apt_packages[@]}")" ||
+        ! _baseline_python_versions="$("${_baseline_virtualenv_dir}/bin/python" \
+            -m pip freeze --all)"; then
+        echo "ERROR: unable to collect the complete DevCloud acceptance record!" >&2
+        return 1
+    fi
+
+    printf 'Recorded UTC: %s\n\n' "${_timestamp}" || return 1
+    printf '[OS]\n%s\n\n' "${_os_release}" || return 1
+    printf '[Kernel]\n%s\n\n' "${_kernel}" || return 1
+    printf '[AMDGPU and GPU]\n%s\n\n' "${_driver_and_gpu}" || return 1
+    printf '[ROCm packages]\n%s\n' "${_rocm_packages}" || return 1
+    printf 'hipconfig --version: %s\n\n' "${_hip_version}" || return 1
+    printf '[Python]\nSystem: %s\nBaseline: %s\n\n' \
+        "${_system_python}" "${_baseline_python}" || return 1
+    printf '[Baseline APT packages]\n%s\n\n' \
+        "${_baseline_apt_versions}" || return 1
+    printf '[Baseline Python packages]\n%s\n' \
+        "${_baseline_python_versions}" || return 1
+)
