@@ -260,6 +260,13 @@ Preserve these boundaries:
   markers and exact stage-owned artifacts agree. Treat failed observations,
   partial project artifacts, and contradictory stage state as unknown; preserve
   and refuse it rather than attempting cleanup or migration.
+- Bound that strict admission classifier to the provider-specific bootstrap
+  through ROCm userland, including the system-upgrade, tmux, reboot,
+  repository-bootstrap, and driver milestones it already tracks. Later common
+  system-package and Python-environment stages use ordinary milestone
+  resumability and downstream validation; do not add their markers or artifacts
+  to the DevCloud admission classifier merely because the DevCloud setup invokes
+  them.
 - Keep DevCloud admission deliberately conservative but non-exhaustive. Do not
   search open-ended package-name prefixes, repository contents, installation
   paths, or other text in an attempt to recognize every historical ROCm state.

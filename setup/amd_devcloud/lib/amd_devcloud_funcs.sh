@@ -732,6 +732,7 @@ print_amd_devcloud_rocm_paths_dont_wrap() {
         "${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}"
     echo "New login shells will select the versioned executable directory after profile setup."
     echo "Existing shells remain unchanged until the printed PATH command is run."
+    echo "Rerun DevCloud setup to print these paths again; completed stages remain skipped."
     echo "Persistent ROCm runtime-selection variables are not configured."
 }
 

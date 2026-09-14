@@ -170,6 +170,7 @@ if [ "${_path_report}" != \
 "Workload example: env ROCM_HOME='${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}' LD_LIBRARY_PATH='${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}' command [arguments...]"$'\n'\
 "New login shells will select the versioned executable directory after profile setup."$'\n'\
 "Existing shells remain unchanged until the printed PATH command is run."$'\n'\
+"Rerun DevCloud setup to print these paths again; completed stages remain skipped."$'\n'\
 "Persistent ROCm runtime-selection variables are not configured." ]; then
     echo "FAILED: ROCm path report was unexpected!" >&2
     exit 1

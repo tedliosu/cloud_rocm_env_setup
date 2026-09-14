@@ -49,6 +49,8 @@ cd "${SCRIPT_DIR}" || {
 
 MILESTONES_DIR="$(realpath "${MILESTONES_DIR_RELPATH}")"
 readonly MILESTONES_DIR
+APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
+readonly APT_PKGS_LISTS_PATH
 
 # BEGIN "MAIN"
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
@@ -79,11 +81,15 @@ run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_ROCM_USERLAND_STAGE_NAME}"
 ensure_amd_devcloud_rocm_path_profile_dont_wrap "${CURR_HOME_DIR}"
 # shellcheck disable=SC2119 # The reporter deliberately accepts no arguments.
 print_amd_devcloud_rocm_paths_dont_wrap
+run_stage "${MILESTONES_DIR}" ensure_pinned_cmake \
+    "${AMD_DEVCLOUD_EXPECTED_DISTRO_CODENAME}" "${CMAKE_APT_PIN_VER}"
+run_stage "${MILESTONES_DIR}" ensure_apt_with_custom_conf \
+    "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-    echo "[PLAN ONLY] Would stop after ROCm userland before the common minimum baseline."
+    echo "[PLAN ONLY] Would stop after common system prerequisites before the baseline Python environment."
 else
-    echo "Stopping after ROCm userland before the common minimum baseline."
+    echo "Stopping after common system prerequisites before the baseline Python environment."
 fi
 
 cd "${OLD_CWDIR}" || {
