@@ -26,6 +26,7 @@ readonly -a LOCAL_TESTS=(
     setup/common/tests/reboot_ack_test.sh
     setup/common/tests/rocm_sanity_test.sh
     setup/common/tests/setup_cli_test.sh
+    setup/common/tests/source_variable_scope_test.sh
     setup/common/tests/stage_failure_test.sh
     setup/common/tests/ufw_classifier_test.sh
     setup/common/tests/ufw_defaults_selector_test.sh
