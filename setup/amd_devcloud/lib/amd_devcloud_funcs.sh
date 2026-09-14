@@ -882,14 +882,14 @@ verify_amd_devcloud_post_driver_state_dont_wrap() {
     echo "AMD SMI driver version: ${_driver_version}"
 }
 
-# Print a version-stamped snapshot for the separate DevCloud acceptance
-#     workflow. This function is read-only and does not create a receipt file.
-# Usage: print_amd_devcloud_acceptance_record <os_release_path> \
+# Print an environment report for the separate DevCloud acceptance workflow.
+#     This function is read-only and does not create a persistent artifact.
+# Usage: print_amd_devcloud_environment_report <os_release_path> \
 #            <baseline_virtualenv_dir> <common_apt_requirements_path> \
 #            <versioned_rocm_root>
 # Returns: 0 after every observation is collected and printed; 1 if the
 #          environment is incomplete or any observation fails
-print_amd_devcloud_acceptance_record() (
+print_amd_devcloud_environment_report() (
     local _os_release_path
     local _baseline_virtualenv_dir
     local _common_apt_requirements_path
@@ -908,7 +908,7 @@ print_amd_devcloud_acceptance_record() (
     local -a _baseline_apt_packages=(cmake w3m apt-file)
 
     if [ "$#" -ne 4 ]; then
-        echo "ERROR: DevCloud acceptance recording expects four arguments!" >&2
+        echo "ERROR: DevCloud environment reporting expects four arguments!" >&2
         return 1
     fi
     _os_release_path="$1"
@@ -955,11 +955,11 @@ print_amd_devcloud_acceptance_record() (
             "${_baseline_apt_packages[@]}")" ||
         ! _baseline_python_versions="$("${_baseline_virtualenv_dir}/bin/python" \
             -m pip freeze --all)"; then
-        echo "ERROR: unable to collect the complete DevCloud acceptance record!" >&2
+        echo "ERROR: unable to collect the complete DevCloud environment report!" >&2
         return 1
     fi
 
-    printf 'Recorded UTC: %s\n\n' "${_timestamp}" || return 1
+    printf 'Observed UTC: %s\n\n' "${_timestamp}" || return 1
     printf '[OS]\n%s\n\n' "${_os_release}" || return 1
     printf '[Kernel]\n%s\n\n' "${_kernel}" || return 1
     printf '[AMDGPU and GPU]\n%s\n\n' "${_driver_and_gpu}" || return 1

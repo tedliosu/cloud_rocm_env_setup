@@ -49,7 +49,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Hot Aisle MI300X, single-GPU VM instances
     - (optional) Azure `Standard_NV24ads_V710_v5` instances
         - Assumed base image: **NVV5 V710 ROCm Linux Image**, **Gen2** variant as of mid-2026; independently verified to be built on Ubuntu 24.04 ([product page on Microsoft Marketplace](https://marketplace.microsoft.com/en-us/product/amdinc1746636494855.nvv5_v710_linux_rocm_image))
-    - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally recorded by probe logic in scripts rather than hard-coded here.
+    - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally reported by probe logic in scripts rather than hard-coded here.
     - Provider support applies to validated environment generations, not every image or software version a provider serves. Supporting a replacement generation does not imply continued support for the previous one. If provisioning cannot reliably select a supported generation, provider support may temporarily be marked transitional or suspended.
 - Reproducible, *minimal* environment setup with *selectively* pinned Python dependencies, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
 - Safe, resumable bootstrap scripts with reboot handling
@@ -155,7 +155,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Complete every applicable APT and other system-package prerequisite before starting pip-backed environment work.
     - Install the smallest set of Python environments that makes the common default `validate_main.sh` pass, including its complete default gates rather than a provider-specific partial substitute.
     - Before the next controlled DevCloud run, audit the newly added DevCloud setup and common-validator paths for unintended exported-variable leakage or implicit helper reads. Keep environment selection top down and correct concrete violations without broad unrelated refactoring.
-    - After setup and the common default validator complete, run the separate read-only `setup/amd_devcloud/bin/amd_devcloud_acceptance_probe.sh` command, which prints the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions. Capture its standard output as version-stamped acceptance evidence when needed; do not make receipt creation part of setup success.
+    - After setup and the common default validator complete, run the separate read-only `setup/amd_devcloud/bin/amd_devcloud_acceptance_probe.sh` command, which prints an environment report covering the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions. Retain its standard output as acceptance evidence when needed; the report is not a persistent artifact owned by setup and does not gate setup success.
     - Complete local and mocked implementation through the minimum environment expected to let the common default `validate_main.sh` run without obvious setup or environment errors before the next controlled AMD DevCloud run. Use that run to accept the integrated userland and minimum baseline rather than spending a separate cloud instance on each locally testable slice.
 
 - [ ] Develop the DevCloud packaged RAPIDS setup and validator gate together:

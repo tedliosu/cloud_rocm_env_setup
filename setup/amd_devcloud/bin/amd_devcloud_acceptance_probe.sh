@@ -41,6 +41,6 @@ cd "${SCRIPT_DIR}" || {
 APT_PKGS_LISTS_PATH="$(realpath "${APT_ONLY_REQS_TXT_RELPATH}")"
 readonly APT_PKGS_LISTS_PATH
 
-print_amd_devcloud_acceptance_record /etc/os-release \
+print_amd_devcloud_environment_report /etc/os-release \
     "${DEEP_LEARN_VIRTENV_DIR}" "${APT_PKGS_LISTS_PATH}" \
     "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"

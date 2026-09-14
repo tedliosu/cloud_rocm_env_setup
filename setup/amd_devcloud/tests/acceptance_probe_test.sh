@@ -94,18 +94,18 @@ verify_amd_devcloud_post_driver_state_dont_wrap() {
 }
 
 export TEST_HIPCONFIG_STATUS=0
-_record="$(print_amd_devcloud_acceptance_record \
+_environment_report="$(print_amd_devcloud_environment_report \
     "${TEST_OS_RELEASE}" "${TEST_VENV_DIR}" \
     "${TEST_APT_REQUIREMENTS}" "${TEST_ROCM_ROOT}")"
 for _expected_text in \
-    'Recorded UTC: 2026-09-14T18:30:00Z' \
+    'Observed UTC: 2026-09-14T18:30:00Z' \
     'PRETTY_NAME="Ubuntu 24.04.4 LTS"' \
     '6.8.0-124-generic x86_64' \
     'GPU: AMD Instinct MI300X VF (gfx942)' \
     'HIP version: 7.2.53210' \
     'Baseline: Python 3.12.3' \
     'torch==2.11.0+rocm7.2'; do
-    if ! grep --fixed-strings --quiet "${_expected_text}" <<< "${_record}"; then
+    if ! grep --fixed-strings --quiet "${_expected_text}" <<< "${_environment_report}"; then
         echo "FAILED: acceptance probe omitted '${_expected_text}'!" >&2
         exit 1
     fi
@@ -113,7 +113,7 @@ done
 
 TEST_HIPCONFIG_STATUS=23
 export TEST_HIPCONFIG_STATUS
-if print_amd_devcloud_acceptance_record \
+if print_amd_devcloud_environment_report \
     "${TEST_OS_RELEASE}" "${TEST_VENV_DIR}" \
     "${TEST_APT_REQUIREMENTS}" "${TEST_ROCM_ROOT}" >/dev/null 2>&1; then
     echo "FAILED: acceptance probe accepted a failed ROCm observation!" >&2
@@ -123,13 +123,13 @@ fi
 TEST_HIPCONFIG_STATUS=0
 export TEST_HIPCONFIG_STATUS
 printf '%s\n' 'bad package name' > "${TEST_APT_REQUIREMENTS}"
-if print_amd_devcloud_acceptance_record \
+if print_amd_devcloud_environment_report \
     "${TEST_OS_RELEASE}" "${TEST_VENV_DIR}" \
     "${TEST_APT_REQUIREMENTS}" "${TEST_ROCM_ROOT}" >/dev/null 2>&1; then
     echo "FAILED: acceptance probe accepted an invalid package name!" >&2
     exit 1
 fi
-if print_amd_devcloud_acceptance_record one two three >/dev/null 2>&1; then
+if print_amd_devcloud_environment_report one two three >/dev/null 2>&1; then
     echo "FAILED: acceptance probe accepted the wrong argument count!" >&2
     exit 1
 fi

@@ -14,14 +14,15 @@ available.
    technical backlog and its ordering as the current priority order.
 4. Do not create `TODO.md`, maintain a parallel backlog in another file, or
    rely on chat memory as the only record of open work.
-5. External recovery notes, receipts, and conversations may be supplied by the
-   maintainer, but the repository must not require files outside the checkout
-   to understand its supported behavior or current backlog.
+5. External recovery notes, acceptance evidence, and conversations may be
+   supplied by the maintainer, but the repository must not require files
+   outside the checkout to understand its supported behavior or current
+   backlog.
 6. If external context conflicts with committed code, report the discrepancy.
    Do not silently assume the external description was implemented.
-7. Newer dated receipts supersede older planning assumptions about the same
-   environment or decision. Preserve version-specific findings as historical
-   evidence rather than permanent project requirements.
+7. Newer dated acceptance evidence supersedes older planning assumptions about
+   the same environment or decision. Preserve version-specific findings as
+   historical evidence rather than permanent project requirements.
 
 `AGENTS.md` is a maintained working agreement, not an immutable historical
 record. Update it through the same review and approval workflow when durable
@@ -118,11 +119,12 @@ understood behavior instead of cosmetically rewriting possibly copied code. Do
 not add third-party license headers or copied comments unless the actual source
 and licensing situation requires them.
 
-Preserve Git chronology, validation receipts, benchmarks, design decisions, and
-other evidence of human review and engineering. Note substantial agent
-assistance prospectively in commits or lightweight development documentation
-when useful, using the repository's established co-author practice where
-applicable. Such disclosure improves transparency but is not proof of
+Preserve Git chronology, validation and acceptance evidence, benchmarks,
+design decisions, and other evidence of human review and engineering. Note
+substantial agent assistance prospectively in commits or lightweight
+development documentation when useful, using the repository's established
+co-author practice where applicable. Such disclosure improves transparency but
+is not proof of
 originality, complete provenance, or license compliance. Do not catastrophize
 all agent-touched code as contaminated.
 
@@ -317,7 +319,9 @@ Preserve these boundaries:
   relevant command, shell, or virtual environment. Print and document the
   versioned library paths rather than editing `ld.so.conf`, running persistent
   dynamic-linker-cache configuration, or globally exporting the variable.
-- Probe and record the actual environment and package versions.
+- Probe and report the actual environment and package versions. Retain output
+  as acceptance evidence when the acceptance workflow calls for it; do not
+  infer a persistent artifact from this requirement alone.
 - Fail clearly when the known assumptions stop holding.
 - Make the adopted minimum DevCloud environment pass the common default main
   validator, but do not require optional feature parity with Hot Aisle or
@@ -650,7 +654,9 @@ when their context explains the difference.
   symmetry.
 - Name setup stages, reboot identifiers, helpers, tests, and backlog items for
   the action or state they own. Avoid numbered phase names that require a
-  separate mapping to explain their purpose.
+  separate mapping to explain their purpose. Numbered planning labels may
+  organize transient discussion, but do not become persistent implementation
+  identifiers or structure by default.
 - Give nontrivial executable scripts a `--show-plan-only` mode when they can
   provide a truthful, useful preview. A plan-mode parent must propagate that
   boundary to nontrivial child scripts. Plan mode must not mutate state or
@@ -849,14 +855,23 @@ it is deliberately adopted. Small orchestration duplication between this gate
 and the source-built CuPy gate is preferable to introducing a fine-grained
 capability framework.
 
-Receipts should record observed reality rather than force historical versions.
-Setup scripts do not own or write durable environment receipts; setup success
-must not depend on receipt creation. A narrow experimental path may provide a
-separate read-only acceptance probe that prints version-stamped observations to
-standard output after setup and validation. Capturing that output is an
-acceptance workflow, not a setup stage or support guarantee. The general
-structured receipt and validation-summary design remains deferred until it is
-justified.
+Use evidence and reporting terms deliberately. A validation summary is the
+human-readable PASS/FAIL/WARN-style result from validation orchestration. A
+structured validation receipt is a possible future machine-readable or
+persistent representation of validation results; it remains deferred until a
+common summary and reporting design justifies it. Acceptance evidence means
+retained logs, dated observations, README evidence, command output, or
+measurements from real provider testing and does not imply a
+repository-generated artifact. An environment report or snapshot probes and
+presents the actual environment and does not itself imply persistence.
+
+Words such as "record", "receipt", or "version-stamped" do not authorize
+artifact generation. Specify a persistent artifact's ownership, format,
+lifecycle, and purpose before implementing it. Setup scripts do not own or
+write durable environment receipts, and setup success must not depend on
+receipt creation. A narrow experimental path may provide a separate read-only
+environment report after setup and validation. Retaining its output is an
+acceptance workflow, not a setup stage or support guarantee.
 
 Do not canonize observed cloud performance numbers as guarantees. Distinguish
 cold-start, JIT, and cache effects from steady-state measurements when timing
