@@ -68,6 +68,23 @@ if [[ -n "${HSA_OVERRIDE_GFX_VERSION:-}" ]]; then
     echo "    override-assisted CuPy experiment." >&2
     exit 1
 fi
+if ! command -v hipconfig >/dev/null 2>&1; then
+    echo "ERROR: unable to find hipconfig through PATH!" >&2
+    exit 1
+fi
+if ! ROCM_PATH_SELECTED_ROOT="$(hipconfig --rocmpath)"; then
+    echo "ERROR: hipconfig --rocmpath failed!" >&2
+    exit 1
+fi
+if ! ROCM_HOME="$(canonicalize_rocm_validation_root \
+    "${ROCM_PATH_SELECTED_ROOT}")"; then
+    exit 1
+fi
+LD_LIBRARY_PATH="${ROCM_HOME}/lib"
+export ROCM_HOME LD_LIBRARY_PATH
+echo "Validator PATH-selected ROCm root: ${ROCM_PATH_SELECTED_ROOT}"
+echo "Validator canonical ROCM_HOME: ${ROCM_HOME}"
+echo "Validator-scoped LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
 if (( DO_UFW_CHECK )); then
     echo "Please enter sudo password when prompted!"
     validate_ufw_config "${STRICT_UFW_CHECK}"
@@ -88,7 +105,7 @@ rm "./${_HIPCC_INIT_SMOKE_EXE}"
 validate_basic_hipco "${CURR_HOME_DIR}/${HIPCO_REPO_LOCAL_DIRNAME}" \
     "${HIPCO_REPO_UPSTREAM_COMMIT}" "${HCC_AMDGPU0_ARCH}" "${HIPCO_BUILD_PATCH_PATH}" \
     "${CURR_HOME_DIR}/${ROCM_DS_CMAKE_REPO_LOCAL_DIRNAME}" "${ROCM_DS_CMAKE_REPO_UPSTREAM_COMMIT}" \
-    "${LIBHIPCXX_PIN_PATCH_PATH}"
+    "${LIBHIPCXX_PIN_PATCH_PATH}" "${ROCM_HOME}"
 if [[ ! -f "${DEEP_LEARN_VIRTENV_DIR}/${_ACTIV_SRC_SCRIPT_RELPATH}" ]]; then
     echo "FAILED to detect deep learning base virtualenv!" >&2
     exit 1
@@ -103,9 +120,10 @@ validate_basic_triton "${CURR_HOME_DIR}/${TRITON_REPO_LOCAL_DIRNAME}" \
 deactivate
 _ONEAPI_TBB_LIBPATHS="/opt/intel/oneapi/tbb/${ONEAPI_TBB_PIN_VER}/lib"
 _ONEAPI_TBB_LIBPATHS="${_ONEAPI_TBB_LIBPATHS}:/opt/intel/oneapi/tcm/${ONEAPI_TCM_PIN_VER}/lib"
+_NUMBA_LIBRARY_PATHS="${_ONEAPI_TBB_LIBPATHS}:${LD_LIBRARY_PATH}"
 validate_source_built_cupy_env "${GPU_ARR_VIRTENV_DIR}" \
     "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" \
-    "${_ONEAPI_TBB_LIBPATHS}" "${REQUIRE_SOURCE_BUILT_CUPY_ENV}" \
+    "${_NUMBA_LIBRARY_PATHS}" "${REQUIRE_SOURCE_BUILT_CUPY_ENV}" \
     "${REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG}"
 if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
     _MODEL_FILENAME="$(jq --raw-output "${COMFYUI_WORKFLOW_MODLNAME_FILTER}" \

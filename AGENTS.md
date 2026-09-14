@@ -751,6 +751,12 @@ code objects, compilers, or runtimes across shells and workloads. Keep such
 values explicit and scoped to the relevant command, process, virtual
 environment activation, or project-owned wrapper.
 
+Keep environment selection strictly top down. Entry scripts may explicitly
+assign and export values that govern their subsequent child processes, but
+helpers should receive those selected values through arguments or printed
+return values instead of implicitly consulting or mutating caller-global
+environment state when explicit data flow is practical.
+
 The narrow exception is an exact versioned ROCm `bin` directory added to
 `PATH` on a deliberately dedicated environment whose system stack is pinned to
 that version. The DevCloud `/opt/rocm-7.2.3/bin` `.profile` block follows this

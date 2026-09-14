@@ -23,6 +23,49 @@ is_plain_filename() {
 
 }
 
+# Validate and canonicalize one ROCm root reported by the caller.
+# Usage: canonicalize_rocm_validation_root <reported_rocm_root>
+# Returns: 0 and prints the canonical root; 1 for an invalid or incomplete root
+canonicalize_rocm_validation_root() {
+
+    local _reported_rocm_root
+    local _canonical_rocm_root
+    local _rocm_library_dir
+
+    if [ "$#" -ne 1 ]; then
+        echo "ERROR: ROCm root canonicalization expects one reported root!" >&2
+        return 1
+    fi
+    _reported_rocm_root="$1"
+    case ${_reported_rocm_root} in
+        ''|*$'\n'*)
+            echo "ERROR: hipconfig reported an empty or multiline ROCm root!" >&2
+            return 1
+            ;;
+        /*) ;;
+        *)
+            echo "ERROR: hipconfig reported a non-absolute ROCm root:" >&2
+            echo "    ${_reported_rocm_root}" >&2
+            return 1
+            ;;
+    esac
+    if ! _canonical_rocm_root="$(realpath --canonicalize-existing -- \
+        "${_reported_rocm_root}")" || [ ! -d "${_canonical_rocm_root}" ]; then
+        echo "ERROR: unable to resolve hipconfig ROCm root:" >&2
+        echo "    ${_reported_rocm_root}" >&2
+        return 1
+    fi
+    _rocm_library_dir="${_canonical_rocm_root}/lib"
+    if [ ! -d "${_rocm_library_dir}" ]; then
+        echo "ERROR: selected ROCm root has no lib directory:" >&2
+        echo "    ${_canonical_rocm_root}" >&2
+        return 1
+    fi
+
+    printf '%s\n' "${_canonical_rocm_root}"
+
+}
+
 # Validate environment UFW configuration status
 # Usage: validate_ufw_config <strict_mode_flag>
 # Returns: with strict checking, 0 only for the known UFW baseline; with relaxed
@@ -116,7 +159,7 @@ validate_ufw_config() (
 # Validate the complete source-built CuPy shared workload environment gate.
 # Usage: validate_source_built_cupy_env <virtualenv_dirpath> \
 #            <activation_script_relpath> <validation_lib_dirpath> \
-#            <oneapi_tbb_library_paths> <strict_presence_flag> \
+#            <numba_library_paths> <strict_presence_flag> \
 #            <strict_presence_cli_flag>
 # Returns: 0 after all required checks pass or optional absence is reported;
 #     1 for required absence or failure of either required validation
@@ -125,7 +168,7 @@ validate_source_built_cupy_env() (
     _source_built_cupy_env_dirpath="${1}"
     _activation_script_relpath="${2}"
     _validation_lib_dirpath="${3}"
-    _oneapi_tbb_library_paths="${4}"
+    _numba_library_paths="${4}"
     _strict_presence_flag="${5}"
     _strict_presence_cli_flag="${6}"
 
@@ -150,12 +193,12 @@ validate_source_built_cupy_env() (
         echo "FAILED source-built CuPy custom-kernel validation!" >&2
         return 1
     fi
-    if ! env LD_LIBRARY_PATH="${_oneapi_tbb_library_paths}" python3 \
+    if ! env LD_LIBRARY_PATH="${_numba_library_paths}" python3 \
         "${_validation_lib_dirpath}/numba_smoke.py"; then
         echo "FAILED source-built environment Numba/TBB validation!" >&2
         return 1
     fi
-    echo "NOTE: Numba test used LD_LIBRARY_PATH='${_oneapi_tbb_library_paths}'"
+    echo "NOTE: Numba test used LD_LIBRARY_PATH='${_numba_library_paths}'"
     echo "PASSED complete source-built CuPy environment validation gate!"
 
 )
@@ -190,8 +233,10 @@ validate_basic_triton() {
 # Usage: validate_basic_hipco <cloned_hipco_repo_abs_dirpath> <hipco_target_commit_sha> \
 #                             <gfx_target_arch(s)> <cmakelists_patch_path> \
 #                             <cloned_rocm_ds_cmake_repo_abs_dirpath> <rocm_ds_cmake_target_commit_sha> \
-#                             <version_json_patch_path>
+#                             <version_json_patch_path> <canonical_rocm_home>
 validate_basic_hipco() {
+
+    local _rocm_home="${8}"
 
     _build_dir_name="build"
     _lib_cmake_relpath="lib/cmake"
@@ -207,20 +252,20 @@ validate_basic_hipco() {
     git -C "$5" -c advice.detachedHead=false checkout "$6"
     git -C "$5" submodule update --init --recursive
     git -C "$5" apply "$7"
-    ROCM_HOME_DIR="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
-        echo "FAILED to detect 'ROCM_HOME_DIR'!" >&2
+    if [ -z "${_rocm_home}" ]; then
+        echo "FAILED: canonical ROCm home was not supplied!" >&2
         exit 1
-    }
+    fi
     # IMPORTANT - env var could be unset, so we use default empty!
     if echo "$3" | grep --quiet "gfx110[01]"; then
         git -C "$1" apply "$4"
-        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/${_lib_cmake_relpath}" \
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${_rocm_home}/${_lib_cmake_relpath}" \
                                  RAPIDS_CMAKE_MODULE_PATH="$5/${_rapids_cmake_relpath}" cmake \
                                  -Drapids-cmake-dir="$5/${_rapids_cmake_relpath}" -DUSE_WARPSIZE_32=1 \
                                  -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF \
                                  -S "$1" -B "$1/${_build_dir_name}"
     else
-        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${ROCM_HOME_DIR}/${_lib_cmake_relpath}" \
+        env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${_rocm_home}/${_lib_cmake_relpath}" \
                                  RAPIDS_CMAKE_MODULE_PATH="$5/${_rapids_cmake_relpath}" cmake \
                                  -Drapids-cmake-dir="$5/${_rapids_cmake_relpath}" \
                                  -DCMAKE_HIP_ARCHITECTURES="$3" -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF \
