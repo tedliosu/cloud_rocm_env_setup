@@ -75,11 +75,12 @@ reboot_with_ack_dont_wrap \
     "${MILESTONES_DIR}" "${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}"
 # shellcheck disable=SC2119 # The verifier deliberately accepts no arguments.
 verify_amd_devcloud_post_driver_state_dont_wrap
+run_stage "${MILESTONES_DIR}" "${AMD_DEVCLOUD_ROCM_USERLAND_STAGE_NAME}"
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-    echo "[PLAN ONLY] Would stop at the driver acceptance checkpoint before ROCm userland."
+    echo "[PLAN ONLY] Would stop after ROCm userland before the common minimum baseline."
 else
-    echo "Stopping at the driver acceptance checkpoint before ROCm userland."
+    echo "Stopping after ROCm userland before the common minimum baseline."
 fi
 
 cd "${OLD_CWDIR}" || {

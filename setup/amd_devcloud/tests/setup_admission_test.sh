@@ -105,6 +105,11 @@ set_driver_observations() {
         "${AMD_DEVCLOUD_DRIVER_PATH_ARTIFACTS[@]}")"
 }
 
+set_rocm_userland_observations() {
+    set_driver_observations
+    TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_ROCM_METAPACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_ROCM_METAPACKAGE_VERSION}"$'\n'
+}
+
 expect_acceptance() {
     local _milestones_dir="$1"
 
@@ -138,6 +143,8 @@ DRIVER_COMPLETED_DIR="${TEST_TMP_DIR}/driver-completed"
 EARLY_DRIVER_DIR="${TEST_TMP_DIR}/early-driver"
 EARLY_DRIVER_REBOOT_DIR="${TEST_TMP_DIR}/early-driver-reboot"
 CONTRADICTORY_DRIVER_REBOOT_DIR="${TEST_TMP_DIR}/contradictory-driver-reboot"
+ROCM_USERLAND_DIR="${TEST_TMP_DIR}/rocm-userland"
+EARLY_ROCM_USERLAND_DIR="${TEST_TMP_DIR}/early-rocm-userland"
 CONTRADICTORY_DIR="${TEST_TMP_DIR}/contradictory"
 BAD_MARKER_DIR="${TEST_TMP_DIR}/bad-marker"
 BAD_MILESTONES_PATH="${TEST_TMP_DIR}/not-a-directory"
@@ -146,7 +153,8 @@ mkdir "${BARE_DIR}" "${UPGRADED_DIR}" "${TMUX_ONLY_DIR}" "${PENDING_DIR}" \
 mkdir "${MANAGED_DIR}" "${EARLY_BOOTSTRAP_DIR}" "${DRIVER_INSTALLED_DIR}" \
     "${DRIVER_PENDING_DIR}" "${DRIVER_COMPLETED_DIR}" \
     "${EARLY_DRIVER_DIR}" "${EARLY_DRIVER_REBOOT_DIR}" \
-    "${CONTRADICTORY_DRIVER_REBOOT_DIR}"
+    "${CONTRADICTORY_DRIVER_REBOOT_DIR}" "${ROCM_USERLAND_DIR}" \
+    "${EARLY_ROCM_USERLAND_DIR}"
 touch "${BAD_MILESTONES_PATH}"
 
 reset_observations
@@ -253,6 +261,67 @@ reset_observations
 set_driver_observations
 TEST_ROCM_ALTERNATIVE_MATCHES=0
 expect_rejection "${DRIVER_INSTALLED_DIR}"
+
+touch "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
+    "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_TMUX_STAGE_NAME}.done" \
+    "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_REBOOT_NAME}.done" \
+    "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done" \
+    "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done" \
+    "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.done" \
+    "${ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_ROCM_USERLAND_STAGE_NAME}.done"
+
+reset_observations
+set_rocm_userland_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+expect_acceptance "${ROCM_USERLAND_DIR}"
+
+reset_observations
+set_rocm_userland_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+TEST_COMMAND_ARTIFACTS+=$'\namd-smi\nrocm-smi\nrocminfo\nhipconfig'
+expect_acceptance "${ROCM_USERLAND_DIR}"
+
+reset_observations
+set_rocm_userland_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+expect_rejection "${DRIVER_COMPLETED_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_ROCM_METAPACKAGE}"$'\tinstalled\tunexpected\n'
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+expect_rejection "${ROCM_USERLAND_DIR}"
+
+reset_observations
+set_rocm_userland_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+TEST_COMMAND_ARTIFACTS="rocminfo"
+expect_rejection "${ROCM_USERLAND_DIR}"
+
+reset_observations
+set_rocm_userland_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+TEST_PACKAGE_OUTPUT+=$'rocm\tinstalled\t7.2.3\n'
+expect_rejection "${ROCM_USERLAND_DIR}"
+
+reset_observations
+set_rocm_userland_observations
+TEST_AMDGPU_LOADED=1
+TEST_KFD_PRESENT=1
+TEST_ROCM_ALTERNATIVE_MATCHES=0
+expect_rejection "${ROCM_USERLAND_DIR}"
+
+touch "${EARLY_ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done" \
+    "${EARLY_ROCM_USERLAND_DIR}/${AMD_DEVCLOUD_ROCM_USERLAND_STAGE_NAME}.done"
+reset_observations
+set_rocm_userland_observations
+expect_rejection "${EARLY_ROCM_USERLAND_DIR}"
 
 touch "${EARLY_DRIVER_DIR}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done"
 reset_observations

@@ -78,6 +78,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     local _driver_marker
     local _driver_reboot_pending_marker
     local _driver_reboot_done_marker
+    local _rocm_userland_marker
     local _pci_output
     local _pci_count=0
     local _pci_line
@@ -94,6 +95,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     local _expected_driver_path_artifacts
     local _expected_driver_command_artifacts
     local _expected_driver_path_command_artifacts
+    local _repository_commands_present=0
     local _admission_state=""
     local _amdgpu_loaded=0
     local _kfd_present=0
@@ -170,6 +172,14 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     _expected_driver_path_artifacts="$(_amd_devcloud_expected_driver_path_artifacts)"
     _expected_driver_command_artifacts="${_expected_command_artifacts}"
     _expected_driver_path_command_artifacts="${_expected_command_artifacts}"$'\n'"amd-smi"
+    # Collection follows the finite sentinel order. Once the complete ROCm
+    #     metapackage is installed, its PATH-visible tools may extend this exact
+    #     repository-bootstrap prefix without changing managed package state.
+    case ${_command_artifacts} in
+        "${_expected_command_artifacts}"|"${_expected_command_artifacts}"$'\n'*)
+            _repository_commands_present=1
+            ;;
+    esac
     if _amd_devcloud_amdgpu_module_is_loaded; then
         _amdgpu_loaded=1
     fi
@@ -185,10 +195,12 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     _driver_marker="${_milestones_dir}/${AMD_DEVCLOUD_DRIVER_STAGE_NAME}.done"
     _driver_reboot_pending_marker="${_milestones_dir}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.pending"
     _driver_reboot_done_marker="${_milestones_dir}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.done"
+    _rocm_userland_marker="${_milestones_dir}/${AMD_DEVCLOUD_ROCM_USERLAND_STAGE_NAME}.done"
     for _stage_marker in "${_upgrade_marker}" "${_tmux_marker}" \
         "${_reboot_pending_marker}" "${_reboot_done_marker}" \
         "${_repository_bootstrap_marker}" "${_driver_marker}" \
-        "${_driver_reboot_pending_marker}" "${_driver_reboot_done_marker}"; do
+        "${_driver_reboot_pending_marker}" "${_driver_reboot_done_marker}" \
+        "${_rocm_userland_marker}"; do
         if [ -e "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
             if [ ! -f "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
                 echo "ERROR: unexpected DevCloud setup marker type:" >&2
@@ -236,6 +248,12 @@ check_amd_devcloud_setup_admission_dont_wrap() {
         echo "ERROR: DevCloud driver reboot is both pending and complete!" >&2
         return 1
     fi
+    if [ -e "${_rocm_userland_marker}" ] &&
+        [ ! -f "${_driver_reboot_done_marker}" ]; then
+        echo "ERROR: DevCloud ROCm userland state exists before the driver" >&2
+        echo "    reboot was acknowledged!" >&2
+        return 1
+    fi
 
     if [ "${_pci_count}" -eq 1 ]; then
         if [ "${_amdgpu_loaded}" -eq 0 ] && [ "${_kfd_present}" -eq 0 ] &&
@@ -253,6 +271,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
             [ "${_path_artifacts}" = "${_expected_path_artifacts}" ]; then
             _admission_state="${AMD_DEVCLOUD_ADMISSION_REPOSITORY_BOOTSTRAP}"
         elif [ -f "${_driver_marker}" ] &&
+            [ ! -e "${_rocm_userland_marker}" ] &&
             [ "${#_package_artifacts[@]}" -eq 4 ] &&
             [ "${_package_artifacts[amdgpu-install]-}" = \
                 "${_expected_package_artifact}" ] &&
@@ -274,6 +293,24 @@ check_amd_devcloud_setup_admission_dont_wrap() {
                     [ "${_amdgpu_loaded}" -eq 1 ] &&
                     [ "${_kfd_present}" -eq 1 ]; }; }; then
             _admission_state="${AMD_DEVCLOUD_ADMISSION_DRIVER_INSTALLED}"
+        elif [ -f "${_rocm_userland_marker}" ] &&
+            [ "${_amdgpu_loaded}" -eq 1 ] &&
+            [ "${_kfd_present}" -eq 1 ] &&
+            [ "${#_package_artifacts[@]}" -eq 5 ] &&
+            [ "${_package_artifacts[amdgpu-install]-}" = \
+                "${_expected_package_artifact}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_AMD_SMI_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_ROCM_CORE_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_ROCM_METAPACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_ROCM_METAPACKAGE_VERSION}" ] &&
+            [ "${_repository_commands_present}" -eq 1 ] &&
+            [ "${_path_artifacts}" = "${_expected_driver_path_artifacts}" ] &&
+            _amd_devcloud_rocm_alternative_matches_versioned_root; then
+            _admission_state="${AMD_DEVCLOUD_ADMISSION_ROCM_USERLAND_INSTALLED}"
         fi
     fi
 

@@ -58,7 +58,8 @@ for _expected_line in \
     "would run stage install_amd_devcloud_driver" \
     "Would record reboot phase amd_devcloud_driver_reboot" \
     "Would verify the running-kernel AMDGPU DKMS state" \
-    "Would stop at the driver acceptance checkpoint before ROCm userland"; do
+    "would run stage install_amd_devcloud_rocm_userland" \
+    "Would stop after ROCm userland before the common minimum baseline"; do
     if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
         "${_expected_line}" <<< "${_plan_output}")"; then
         echo "FAILED: DevCloud setup plan omitted '${_expected_line}'!" >&2
