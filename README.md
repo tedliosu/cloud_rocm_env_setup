@@ -143,19 +143,18 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - After reboot, the running `6.8.0-124-generic` kernel reported installed DKMS module `amdgpu/6.16.13-2327507.24.04`, a loaded `amdgpu` module, `/dev/kfd` owned by the `render` group, and one AMD Instinct MI300X VF with native `gfx942` and AMD SMI driver version `6.16.13`.
     - The transitive `rocm-core7.2.3` dependency maintained `/opt/rocm` through Debian alternatives with canonical target `/opt/rocm-7.2.3`. Setup recognizes that exact link as a driver-stage artifact but continues to use the versioned root directly. A completed-state rerun skipped every prior stage and repeated the post-driver verifier successfully.
     - This acceptance establishes the experimental setup through the driver checkpoint. It does not yet establish the ROCm userland, common validator baseline, packaged RAPIDS environment, or workload readiness.
+11. Version-stamped experimental AMD DevCloud common-baseline evidence:
+    - On 2026-09-17, a fresh single-GPU Bare OS instance at reviewed commit `49df627` completed the root-to-user handoff, exact UFW baseline, both acknowledged reboot boundaries, pinned repository and driver stages, complete `rocm7.2.3` userland, versioned ROCm profile block, common system prerequisites, and baseline Python environment. The system upgrade changed the reported point release from Ubuntu 24.04.4 to 24.04.5 while retaining kernel `6.8.0-124-generic`.
+    - The post-setup environment report observed AMDGPU DKMS `6.16.13-2327507.24.04`, AMD SMI `26.2.2.70203-90~24.04`, one AMD Instinct MI300X VF with native `gfx942`, `rocm7.2.3` `7.2.3.70203-90~24.04`, HIP `7.2.53211-c2d9476115`, Python 3.12.3, and PyTorch 2.11.0 with ROCm 7.2.
+    - The common default validator passed its strict UFW and ROCm checks, HIP and hipCollections smokes, PyTorch audio/codec CPU ABI smoke, ResNet-50 and ViT-B/16 GPU forward-and-backward checks, and Triton fp16 matmul smoke. The absent optional source-built CuPy and ComfyUI environments were skipped as designed.
+    - The accepted post-setup workflow is `./validate/bin/validate_main.sh` followed by the read-only `./setup/amd_devcloud/bin/amd_devcloud_acceptance_probe.sh`. Its standard output may be retained as acceptance evidence when useful; setup does not own a persistent report artifact and does not depend on creating one.
+    - This acceptance establishes the experimental automated ROCm userland and common minimum baseline. It does not yet establish the packaged AMD RAPIDS environment, hipCIM correctness gate, optional hipDF components, or first-class DevCloud support.
 
 # TODOs
 
 ## Current Focus
 
 ### Experimental AMD DevCloud hipCIM and CuPy Path
-
-- [ ] Implement DevCloud ROCm 7.2.3 and the common minimum baseline:
-    - Install the complete versioned `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage or a guessed minimal subset.
-    - Complete every applicable APT and other system-package prerequisite before starting pip-backed environment work.
-    - Install the smallest set of Python environments that makes the common default `validate_main.sh` pass, including its complete default gates rather than a provider-specific partial substitute.
-    - After setup and the common default validator complete, run the separate read-only `setup/amd_devcloud/bin/amd_devcloud_acceptance_probe.sh` command, which prints an environment report covering the actual OS, kernel, GPU, AMDGPU, ROCm, Python, and baseline package versions. Retain its standard output as acceptance evidence when needed; the report is not a persistent artifact owned by setup and does not gate setup success.
-    - Complete local and mocked implementation through the minimum environment expected to let the common default `validate_main.sh` run without obvious setup or environment errors before the next controlled AMD DevCloud run. Use that run to accept the integrated userland and minimum baseline rather than spending a separate cloud instance on each locally testable slice.
 
 - [ ] Develop the DevCloud packaged RAPIDS setup and validator gate together:
     - Use an ordinary Python virtual environment with pip, packaged `amd-cupy` and `amd-hipcim`, and the exact ROCm 7.2.0 AMD Python index, `https://pypi.amd.com/rocm-7.2.0/simple/`, on the pinned ROCm 7.2.3 system stack. Do not introduce Conda or generalize this observed cross-patch recipe into a supported version matrix.
