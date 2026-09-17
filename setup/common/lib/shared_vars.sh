@@ -17,6 +17,7 @@ else
 fi
 readonly DEEP_LEARN_VIRTENV_DIR="${CURR_HOME_DIR}/deep_learn_pyenv"
 readonly GPU_ARR_VIRTENV_DIR="${CURR_HOME_DIR}/gpgpu_arr_pyenv"
+readonly PACKAGED_AMD_RAPIDS_VIRTENV_DIR="${CURR_HOME_DIR}/packaged_amd_rapids_pyenv"
 readonly CUPY_REPO_LOCAL_DIR="${CURR_HOME_DIR}/local_cupy_repo_clone"
 readonly COMFYUI_REPO_LOCAL_DIR="${CURR_HOME_DIR}/local_comfyui_clone"
 _PROJ_ETC_DIR_RELPATH="../../common/etc"
@@ -46,6 +47,7 @@ readonly CMAKE_APT_PIN_VER="4.4.2-0kitware1ubuntu24.04.1"
 #     explicitly. Clear any inherited export attributes so they do not leak to
 #     unrelated child processes.
 export -n CURR_HOME_DIR DEEP_LEARN_VIRTENV_DIR GPU_ARR_VIRTENV_DIR
+export -n PACKAGED_AMD_RAPIDS_VIRTENV_DIR
 export -n CUPY_REPO_LOCAL_DIR COMFYUI_REPO_LOCAL_DIR MILESTONES_DIR_RELPATH
 export -n LOGS_DIR_RELPATH TEMP_DIR_RELPATH CUPY_BUILD_LOG_RELPATH
 export -n APT_ONLY_REQS_TXT_RELPATH TORCH_ONLY_REQS_TXT_RELPATH

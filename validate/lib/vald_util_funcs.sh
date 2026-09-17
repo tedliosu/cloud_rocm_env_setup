@@ -203,6 +203,59 @@ validate_source_built_cupy_env() (
 
 )
 
+# Validate the complete packaged AMD RAPIDS shared workload environment gate.
+# Usage: validate_packaged_amd_rapids_env <virtualenv_dirpath> \
+#            <activation_script_relpath> <validation_lib_dirpath> \
+#            <canonical_rocm_home> <numba_library_paths> <strict_presence_flag> \
+#            <strict_presence_cli_flag> <max_canny_disagreement_percent>
+# Returns: 0 after all required checks pass or optional absence is reported;
+#     1 for required absence or failure of any required validation
+validate_packaged_amd_rapids_env() (
+    _packaged_amd_rapids_env_dirpath="${1}"
+    _activation_script_relpath="${2}"
+    _validation_lib_dirpath="${3}"
+    _canonical_rocm_home="${4}"
+    _numba_library_paths="${5}"
+    _strict_presence_flag="${6}"
+    _strict_presence_cli_flag="${7}"
+    _max_canny_disagreement_percent="${8}"
+
+    if [ ! -f "${_packaged_amd_rapids_env_dirpath}/${_activation_script_relpath}" ]; then
+        if [ "${_strict_presence_flag}" -ne "${_FALSE_NUM_VAL}" ]; then
+            echo "FAILED to detect packaged AMD RAPIDS environment," >&2
+            echo "(${_strict_presence_cli_flag} flag detected)!" >&2
+            return 1
+        fi
+        echo "Packaged AMD RAPIDS environment and ${_strict_presence_cli_flag}" \
+            "flag both not detected,"
+        echo "skipping associated validations..."
+        return 0
+    fi
+
+    # Intentional variable path sourcing; the subshell keeps activation local
+    #     to this complete environment gate.
+    # shellcheck disable=SC1090,SC1091
+    . "${_packaged_amd_rapids_env_dirpath}/${_activation_script_relpath}"
+    if ! env CUPY_ACCELERATORS="cub" python3 \
+        "${_validation_lib_dirpath}/cupy_numpy_smoke.py"; then
+        echo "FAILED packaged AMD CuPy custom-kernel validation!" >&2
+        return 1
+    fi
+    if ! env LD_LIBRARY_PATH="${_numba_library_paths}" python3 \
+        "${_validation_lib_dirpath}/numba_smoke.py"; then
+        echo "FAILED packaged AMD RAPIDS Numba/TBB validation!" >&2
+        return 1
+    fi
+    echo "NOTE: Numba test used LD_LIBRARY_PATH='${_numba_library_paths}'"
+    if ! env CUPY_ACCELERATORS="cub" ROCM_HOME="${_canonical_rocm_home}" \
+        python3 "${_validation_lib_dirpath}/hipcim_canny_smoke.py" \
+            --max-disagreement-percent "${_max_canny_disagreement_percent}"; then
+        echo "FAILED packaged cuCIM Canny correctness validation!" >&2
+        return 1
+    fi
+    echo "PASSED complete packaged AMD RAPIDS environment validation gate!"
+)
+
 # Validate Triton JIT works and resulting kernel runs using upstream Triton fp16 GEMM
 #     tutorial code
 # Usage: validate_basic_triton <cloned_triton_repo_dirpath> <cloned_triton_repo_branch_id> \

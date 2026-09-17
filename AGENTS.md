@@ -171,6 +171,19 @@ Useful runtime targets are approximately:
 
 These are rough planning targets, not performance guarantees.
 
+For pip-installed packages, explicitly declare every dependency imported or
+directly required by the repository's adopted workloads, including established
+compatibility ranges or pins. Use the ordinary resolver and preserve dependency
+metadata supplied by upstream wheels for dependencies that are only transitive.
+Do not use `--no-deps`, manually mirror transitive requirements, or otherwise
+custom-resolve an environment merely to make package sources or versions look
+more explicit. An exception requires a reviewed concrete defect such as a known
+ABI dependency omitted from wheel metadata; the existing TorchCodec handling is
+one such narrow case. Do not invent additional pins for ordinary
+scientific-Python packages without a demonstrated compatibility, ABI, or
+reproducibility reason while a broader cross-project pin policy remains
+undecided.
+
 ## Provider boundaries
 
 ### Supported environments
@@ -481,8 +494,12 @@ deterministic repository-owned fixture, report the percentage of disagreeing
 pixels, and set any acceptance tolerance only after recording a representative
 measurement. Apply no dilation or other edge post-processing before comparison.
 Do not copy the application image or its custom Canny pipeline, and do not turn
-this correctness check into a benchmark. CUDA-side agreement may guide fixture
-development but does not substitute for DevCloud acceptance.
+this correctness check into a benchmark. Keep the comparison script independent
+of ROCm-specific package names and runtime setup so it can also run with cuCIM
+on CUDA during local development. An explicit debug option may write the
+repository-owned fixture, both final edge maps, and a disagreement image; the
+ordinary validation path must remain artifact-free. CUDA-side agreement may
+guide fixture development but does not substitute for DevCloud acceptance.
 
 CuPy installation is environment-dependent. The supported Hot Aisle and Azure
 paths intentionally build pinned upstream CuPy from source and preserve their
@@ -934,6 +951,10 @@ After editing:
 - use a supported cloud instance only when local or mocked checks can no longer
   answer the acceptance question;
 - do not make expensive cloud testing the first iteration step;
+- assume cloud VMs are destroyed after each explicitly coordinated acceptance
+  round unless the maintainer says otherwise. Finish local work first, gather
+  the remaining provider-only questions, and avoid planning incremental tests
+  around continued access to an earlier paid instance;
 - do not stage, commit, or push unless explicitly authorized.
 
 The maintainer commonly reviews `git diff` in another terminal before allowing

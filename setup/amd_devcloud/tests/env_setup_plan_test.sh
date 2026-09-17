@@ -78,6 +78,30 @@ for _expected_line in \
     _previous_line_number="${_line_number}"
 done
 
+_packaged_plan_output="$("${SETUP_SCRIPT}" \
+    --packaged-amd-rapids-env-setup --show-plan-only)"
+_previous_line_number=0
+for _expected_line in \
+    "would run stage ensure_pinned_cmake" \
+    "would run stage ensure_oneapi_tbb_libs" \
+    "would run stage ensure_apt_with_custom_conf" \
+    "would run stage ensure_base_dl_virtualenv" \
+    "would run stage install_amd_devcloud_packaged_rapids_environment" \
+    "Would complete the DevCloud common minimum baseline" \
+    "and optional packaged AMD RAPIDS environment setup"; do
+    if ! _line_match="$(grep --fixed-strings --line-number --max-count=1 \
+        "${_expected_line}" <<< "${_packaged_plan_output}")"; then
+        echo "FAILED: packaged DevCloud setup plan omitted '${_expected_line}'!" >&2
+        exit 1
+    fi
+    _line_number="${_line_match%%:*}"
+    if [ "${_line_number}" -le "${_previous_line_number}" ]; then
+        echo "FAILED: packaged DevCloud setup stages are out of order!" >&2
+        exit 1
+    fi
+    _previous_line_number="${_line_number}"
+done
+
 if grep --invert-match --extended-regexp --quiet '^\[PLAN ONLY\]' \
     <<< "${_plan_output}"; then
     echo "FAILED: DevCloud setup plan included unlabeled output!" >&2

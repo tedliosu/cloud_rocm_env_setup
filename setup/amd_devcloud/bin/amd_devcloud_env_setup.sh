@@ -3,15 +3,21 @@
 set -euo pipefail
 
 readonly SHOW_PLAN_ONLY_FLAG="--show-plan-only"
+readonly PACKAGED_AMD_RAPIDS_ENV_FLAG="--packaged-amd-rapids-env-setup"
+DO_PACKAGED_AMD_RAPIDS_ENV=0
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly SCRIPT_DIR
 
 usage() {
-    echo "Usage: $0 [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
+    echo "Usage: $0 [${PACKAGED_AMD_RAPIDS_ENV_FLAG}] [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
 }
 
 while [ "$#" -gt 0 ]; do
     case $1 in
+        "${PACKAGED_AMD_RAPIDS_ENV_FLAG}")
+            DO_PACKAGED_AMD_RAPIDS_ENV=1
+            shift
+            ;;
         "${SHOW_PLAN_ONLY_FLAG}")
             export SHOW_PLAN_ONLY=1
             shift
@@ -55,6 +61,8 @@ TORCH_PYPKGS_LISTS_PATH="$(realpath "${TORCH_ONLY_REQS_TXT_RELPATH}")"
 readonly TORCH_PYPKGS_LISTS_PATH
 NON_TORCH_DL_PYPKGS_LISTS_PATH="$(realpath "${NON_TORCH_REQS_TXT_RELPATH}")"
 readonly NON_TORCH_DL_PYPKGS_LISTS_PATH
+PACKAGED_AMD_RAPIDS_PYPKGS_LIST_PATH="$(realpath "../etc/packaged_rapids_requirements.txt")"
+readonly PACKAGED_AMD_RAPIDS_PYPKGS_LIST_PATH
 
 # BEGIN "MAIN"
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
@@ -87,6 +95,9 @@ ensure_amd_devcloud_rocm_path_profile_dont_wrap "${CURR_HOME_DIR}"
 print_amd_devcloud_rocm_paths_dont_wrap
 run_stage "${MILESTONES_DIR}" ensure_pinned_cmake \
     "${AMD_DEVCLOUD_EXPECTED_DISTRO_CODENAME}" "${CMAKE_APT_PIN_VER}"
+if (( DO_PACKAGED_AMD_RAPIDS_ENV )); then
+    run_stage "${MILESTONES_DIR}" ensure_oneapi_tbb_libs "${ONEAPI_TBB_PIN_VER}"
+fi
 run_stage "${MILESTONES_DIR}" ensure_apt_with_custom_conf \
     "${CURR_HOME_DIR}" "${APT_PKGS_LISTS_PATH}"
 run_stage "${MILESTONES_DIR}" ensure_base_dl_virtualenv \
@@ -94,11 +105,27 @@ run_stage "${MILESTONES_DIR}" ensure_base_dl_virtualenv \
     "${AMD_DEVCLOUD_PYTORCH_ROCM_WHEEL_VERSION}" \
     "${TORCH_PYPKGS_LISTS_PATH}" \
     "${NON_TORCH_DL_PYPKGS_LISTS_PATH}" "${TORCHCODEC_PIN_VER}"
+if (( DO_PACKAGED_AMD_RAPIDS_ENV )); then
+    run_stage "${MILESTONES_DIR}" \
+        "${AMD_DEVCLOUD_PACKAGED_RAPIDS_STAGE_NAME}" \
+        "${PACKAGED_AMD_RAPIDS_VIRTENV_DIR}" \
+        "${PACKAGED_AMD_RAPIDS_PYPKGS_LIST_PATH}"
+fi
 
 if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-    echo "[PLAN ONLY] Would complete the DevCloud common minimum baseline setup."
+    if (( DO_PACKAGED_AMD_RAPIDS_ENV )); then
+        echo "[PLAN ONLY] Would complete the DevCloud common minimum baseline"
+        echo "[PLAN ONLY]     and optional packaged AMD RAPIDS environment setup."
+    else
+        echo "[PLAN ONLY] Would complete the DevCloud common minimum baseline setup."
+    fi
 else
-    echo "DevCloud common minimum baseline setup stages completed."
+    if (( DO_PACKAGED_AMD_RAPIDS_ENV )); then
+        echo "DevCloud common minimum baseline and optional packaged AMD RAPIDS"
+        echo "environment setup stages completed."
+    else
+        echo "DevCloud common minimum baseline setup stages completed."
+    fi
 fi
 
 cd "${OLD_CWDIR}" || {

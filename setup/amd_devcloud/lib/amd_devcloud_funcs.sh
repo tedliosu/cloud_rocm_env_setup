@@ -586,6 +586,52 @@ install_amd_devcloud_rocm_userland() (
     echo "Complete versioned ROCm userland metapackage installed."
 )
 
+# Install the observed packaged AMD RAPIDS workload environment from its
+#     complete pip requirements manifest.
+# Usage: install_amd_devcloud_packaged_rapids_environment \
+#            <virtualenv_directory> <requirements_file>
+# Returns: 0 after installing and checking the exact packaged recipe; 1 on an
+#          unexpected interpreter, incomplete inputs, or installation failure
+install_amd_devcloud_packaged_rapids_environment() (
+    local _virtualenv_dir
+    local _requirements_file
+    local _python_version
+
+    if [ "$#" -ne 2 ]; then
+        echo "ERROR: packaged AMD RAPIDS setup expects a virtualenv path" >&2
+        echo "    and one requirements manifest!" >&2
+        return 1
+    fi
+    _virtualenv_dir="$1"
+    _requirements_file="$2"
+    if [ ! -f "${_requirements_file}" ] ||
+        [ ! -r "${_requirements_file}" ]; then
+        echo "ERROR: packaged AMD RAPIDS requirements are not readable:" >&2
+        echo "    ${_requirements_file}" >&2
+        return 1
+    fi
+    if ! _python_version="$(python3 -c \
+        'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" ||
+        [ "${_python_version}" != "3.12" ]; then
+        echo "ERROR: packaged AMD RAPIDS setup requires Python 3.12;" >&2
+        echo "    observed '${_python_version:-unknown}'!" >&2
+        return 1
+    fi
+
+    if [ -e "${_virtualenv_dir}" ] || [ -L "${_virtualenv_dir}" ]; then
+        guarded_rm_rf "${_virtualenv_dir}"
+    fi
+    virtualenv "${_virtualenv_dir}"
+    # Intentional variable path sourcing; the subshell keeps activation local.
+    # shellcheck disable=SC1090,SC1091
+    . "${_virtualenv_dir}/bin/activate"
+    pip install --upgrade pip
+    pip install --requirement "${_requirements_file}"
+    pip check
+
+    echo "Installed packaged AMD RAPIDS environment from requirements manifest."
+)
+
 # Add the one permitted persistent ROCm environment selection: an exact
 #     versioned bin directory in the dedicated DevCloud user's PATH.
 # Usage: ensure_amd_devcloud_rocm_path_profile_dont_wrap <home_directory>

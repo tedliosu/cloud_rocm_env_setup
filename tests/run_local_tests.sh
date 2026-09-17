@@ -12,6 +12,7 @@ readonly -a LOCAL_TESTS=(
     setup/amd_devcloud/tests/driver_install_test.sh
     setup/amd_devcloud/tests/env_setup_plan_test.sh
     setup/amd_devcloud/tests/handoff_preflight_test.sh
+    setup/amd_devcloud/tests/packaged_rapids_setup_test.sh
     setup/amd_devcloud/tests/post_driver_verification_test.sh
     setup/amd_devcloud/tests/repository_bootstrap_test.sh
     setup/amd_devcloud/tests/rocm_path_config_test.sh
@@ -31,6 +32,7 @@ readonly -a LOCAL_TESTS=(
     setup/common/tests/ufw_classifier_test.sh
     setup/common/tests/ufw_defaults_selector_test.sh
     validate/tests/plain_filename_test.sh
+    validate/tests/packaged_amd_rapids_gate_test.sh
     validate/tests/rocm_environment_test.sh
     validate/tests/source_built_cupy_gate_test.sh
     validate/tests/triton_failure_test.sh
