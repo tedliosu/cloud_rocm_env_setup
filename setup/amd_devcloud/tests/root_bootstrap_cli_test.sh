@@ -88,8 +88,10 @@ elif os_release_matches_expected /etc/os-release \
     _visudo_test_user="dcvisudotest${$}"
     _visudo_test_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_visudo_test_user}"
     _visudo_test_sudoers="${AMD_DEVCLOUD_SUDOERS_DIR}/${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_visudo_test_user}"
+    _visudo_test_temp_pattern="${AMD_DEVCLOUD_SUDOERS_DIR}/.${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_visudo_test_user}."'*'
     _visudo_test_bin="${TEST_TMP_DIR}/bin"
     _visudo_test_key="${TEST_TMP_DIR}/id_ed25519"
+    _real_visudo="$(command -v visudo)"
 
     if getent passwd "${_visudo_test_user}" >/dev/null ||
         getent group "${_visudo_test_user}" >/dev/null ||
@@ -101,16 +103,29 @@ elif os_release_matches_expected /etc/os-release \
 
     ssh-keygen -q -t ed25519 -N '' -f "${_visudo_test_key}"
     mkdir --parents "${_visudo_test_bin}"
-    printf '%s\n' '#!/bin/bash' 'exit 1' > "${_visudo_test_bin}/visudo"
+    # The single-quoted positional parameters belong to the generated mock.
+    # shellcheck disable=SC2016
+    printf '%s\n' \
+        '#!/bin/bash' \
+        'set -euo pipefail' \
+        'if [ "$#" -eq 1 ] && [ "$1" = "--check" ]; then' \
+        "    exec '${_real_visudo}' \"\$@\"" \
+        'fi' \
+        'exit 1' \
+        > "${_visudo_test_bin}/visudo"
     chmod +x "${_visudo_test_bin}/visudo"
 
     _error_output="$(PATH="${_visudo_test_bin}:${PATH}" "${ROOT_BOOTSTRAP}" \
         --target-user "${_visudo_test_user}" \
         --authorized-key-file "${_visudo_test_key}.pub" 2>&1 || :)"
     if ! grep --fixed-strings --quiet \
-        "existing complete sudoers policy failed validation" \
+        "generated sudoers policy failed validation" \
         <<< "${_error_output}"; then
         echo "FAILED: root bootstrap did not reject invalid sudoers state!" >&2
+        exit 1
+    fi
+    if compgen -G "${_visudo_test_temp_pattern}" >/dev/null; then
+        echo "FAILED: sudoers rejection left temporary handoff state!" >&2
         exit 1
     fi
     if getent passwd "${_visudo_test_user}" >/dev/null ||

@@ -109,14 +109,38 @@ _account_matches_baseline() (
 # Create the exact project-owned root-to-user handoff from an absent account.
 # Usage: _create_handoff_baseline <target_username> <authorized_key_file>
 # Returns: 0 after creating and verifying the baseline; 1 on failure
-_create_handoff_baseline() {
+_create_handoff_baseline() (
     local _target_user="$1"
     local _authorized_key_file="$2"
     local _target_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_target_user}"
     local _sudoers_file="${AMD_DEVCLOUD_SUDOERS_DIR}/${AMD_DEVCLOUD_SUDOERS_FILE_PREFIX}${_target_user}"
-    local _sudoers_temp_file
-    local _key_temp_file
+    local _sudoers_temp_file=""
+    local _key_temp_file=""
     local _required_group
+
+    # Invoked indirectly by the scoped EXIT trap below.
+    # shellcheck disable=SC2317
+    _cleanup_handoff_temp_files() {
+        local _original_status="$?"
+        local _cleanup_status=0
+
+        trap - EXIT
+        if [ -n "${_key_temp_file}" ] &&
+            ! rm --force -- "${_key_temp_file}"; then
+            echo "ERROR: unable to remove temporary authorized-keys file!" >&2
+            _cleanup_status=1
+        fi
+        if [ -n "${_sudoers_temp_file}" ] &&
+            ! rm --force -- "${_sudoers_temp_file}"; then
+            echo "ERROR: unable to remove temporary sudoers file!" >&2
+            _cleanup_status=1
+        fi
+        if [ "${_original_status}" -ne 0 ]; then
+            exit "${_original_status}"
+        fi
+        exit "${_cleanup_status}"
+    }
+    trap _cleanup_handoff_temp_files EXIT
 
     if [ -e "${_target_home}" ] || [ -L "${_target_home}" ] ||
         getent group "${_target_user}" >/dev/null ||
@@ -137,13 +161,11 @@ _create_handoff_baseline() {
         ! chown root:root "${_sudoers_temp_file}" ||
         ! chmod 0440 "${_sudoers_temp_file}"; then
         echo "ERROR: unable to prepare temporary sudoers policy!" >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     fi
     if ! visudo --check --file="${_sudoers_temp_file}" >/dev/null; then
         echo "ERROR: generated sudoers policy failed validation; no account" >&2
         echo "    or group changes were made." >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     fi
 
@@ -154,7 +176,6 @@ _create_handoff_baseline() {
                 echo "ERROR: unable to create group '${_required_group}'!" >&2
                 echo "WARNING: earlier required groups may have been created;" >&2
                 echo "    no automatic rollback was attempted." >&2
-                rm --force "${_sudoers_temp_file}"
                 return 1
             fi
         fi
@@ -169,7 +190,6 @@ _create_handoff_baseline() {
         echo "ERROR: unable to create the password-disabled target account!" >&2
         echo "WARNING: the system may now contain partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     fi
 
@@ -180,12 +200,10 @@ _create_handoff_baseline() {
         echo "ERROR: unable to set the target home or SSH directory state!" >&2
         echo "WARNING: the system now contains partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     fi
     _key_temp_file="$(mktemp "${_target_home}/.ssh/.authorized_keys.XXXXXX")" || {
         echo "ERROR: unable to create temporary authorized-keys file!" >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     }
     # Hard links atomically publish same-filesystem temporary files and refuse
@@ -196,34 +214,18 @@ _create_handoff_baseline() {
         echo "ERROR: unable to install the authorized-key state!" >&2
         echo "WARNING: the system now contains partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
-        rm --force "${_key_temp_file}" "${_sudoers_temp_file}"
-        return 1
-    fi
-    if ! rm --force "${_key_temp_file}"; then
-        echo "ERROR: unable to remove temporary authorized-keys file!" >&2
-        echo "WARNING: the system now contains partial handoff state;" >&2
-        echo "    no automatic rollback was attempted." >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     fi
     if ! ln -- "${_sudoers_temp_file}" "${_sudoers_file}"; then
         echo "ERROR: unable to install the sudoers policy!" >&2
         echo "WARNING: the system now contains partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
-        rm --force "${_sudoers_temp_file}"
         return 1
     fi
     if ! visudo --check >/dev/null; then
         echo "ERROR: complete sudoers policy failed validation after installation!" >&2
         echo "WARNING: the system now contains partial handoff state;" >&2
         echo "    no automatic rollback was attempted." >&2
-        rm --force "${_sudoers_temp_file}"
-        return 1
-    fi
-    if ! rm --force "${_sudoers_temp_file}"; then
-        echo "ERROR: unable to remove temporary sudoers file!" >&2
-        echo "WARNING: the installed sudoers policy passed validation, but" >&2
-        echo "    temporary handoff state remains; no rollback was attempted." >&2
         return 1
     fi
 
@@ -236,7 +238,7 @@ _create_handoff_baseline() {
     echo "Root-to-user handoff baseline configured successfully."
     echo "IMPORTANT: keep this root session open and verify a separate SSH login"
     echo "    as '${_target_user}' before continuing with ordinary-user setup."
-}
+)
 
 # BEGIN "MAIN"
 TARGET_USER=""

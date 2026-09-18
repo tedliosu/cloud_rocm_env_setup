@@ -184,10 +184,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - [ ] As part of the actual public-visibility transition, enable and verify GitHub private vulnerability reporting, then replace the conditional security-reporting wording in `CONTRIBUTING.md` with the confirmed private route (and add a small `SECURITY.md` if useful):
     - GitHub exposes private vulnerability reporting for public repositories, so this cannot be verified while the repository remains private.
 
-- [ ] Complete the remaining privileged temporary-file lifecycle follow-up from the implementation-primitives audit:
-    - Give the DevCloud root handoff's sudoers and authorized-key temporary files one scoped cleanup trap while preserving its same-filesystem, non-clobbering hard-link publication.
-    - Review this separately because it changes privileged partial-failure handling, then rerun the root-only handoff scenarios before acceptance.
-
 ### Hot Aisle Quick Start and Common Use Path
 
 - [ ] Add instructions for using this repository on Hot Aisle MI300X:
