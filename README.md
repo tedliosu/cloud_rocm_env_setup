@@ -176,11 +176,13 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ### Public Release Readiness
 
-- [ ] Before changing the repository to public visibility, perform one bounded public-release audit of the current tree and Git history:
-    - Check for credentials, tokens, private keys, private URLs, personal data, unredacted logs, and environment artifacts that should not become public.
-    - Confirm that private application or coursework code has not entered the repository and that included third-party material has appropriate attribution and licensing treatment.
-    - Recheck public support claims, the issue-only external review policy, and the available path for reporting a security issue without public disclosure.
-    - Treat this as a concrete release checkpoint, not authorization for speculative forensic review or history rewriting. Rewrite history only if an actual finding requires it.
+- [x] Perform one bounded public-release audit of the current tree and reachable Git history:
+    - No committed credentials, tokens, private keys, private URLs, unintended personal data, unredacted logs, environment artifacts, private application or coursework code, or unexplained binary files were found.
+    - Included patches and derived workflow material have documented upstream provenance and licensing treatment. Public support claims and the issue-only external review policy remain consistent with the repository contract.
+    - Existing Git author metadata includes the maintainer's institutional email address; the maintainer reviewed and accepted that disclosure, so no history rewrite is required.
+    - This was a concrete release checkpoint, not a speculative forensic review or precedent for routine history rewriting. A future history rewrite still requires an actual finding.
+- [ ] As part of the actual public-visibility transition, enable and verify GitHub private vulnerability reporting, then replace the conditional security-reporting wording in `CONTRIBUTING.md` with the confirmed private route (and add a small `SECURITY.md` if useful):
+    - GitHub exposes private vulnerability reporting for public repositories, so this cannot be verified while the repository remains private.
 
 ### Hot Aisle Quick Start and Common Use Path
 
