@@ -34,6 +34,8 @@ grep --fixed-strings --line-regexp --quiet \
     'amd-cupy==13.5.1' "${PROJECT_REQUIREMENTS}"
 grep --fixed-strings --line-regexp --quiet \
     'amd-hipcim==25.10.0' "${PROJECT_REQUIREMENTS}"
+grep --fixed-strings --line-regexp --quiet \
+    'scikit-learn[examples]>=1.8,<1.9' "${PROJECT_REQUIREMENTS}"
 
 # Preserve these expressions for the generated command doubles.
 # shellcheck disable=SC2016

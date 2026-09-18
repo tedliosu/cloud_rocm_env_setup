@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 REPO_ROOT="$(realpath "${SCRIPT_DIR}/../..")"
+VALIDATE_MAIN="${REPO_ROOT}/validate/bin/validate_main.sh"
 TEST_TMP_DIR="$(mktemp --directory)"
 TEST_ENV_DIR="${TEST_TMP_DIR}/packaged_amd_rapids_env"
 TEST_LIB_DIR="${TEST_TMP_DIR}/validation_lib"
@@ -18,6 +19,9 @@ trap cleanup EXIT
 
 cd "${REPO_ROOT}/validate/bin"
 source "../lib/vald_util_funcs.sh"
+source "../lib/vald_shared_vars.sh"
+
+"${VALIDATE_MAIN}" --help | grep --fixed-strings --quiet -- "${STRICT_FLAG}"
 
 mkdir --parents "${TEST_ENV_DIR}/bin" "${TEST_LIB_DIR}" "${TEST_BIN_DIR}"
 printf '%s\n' '# Test activation fixture intentionally has no side effects.' \
@@ -43,12 +47,13 @@ export LD_LIBRARY_PATH="/test/rocm/lib"
 
 validate_packaged_amd_rapids_env "${TEST_TMP_DIR}/absent" "bin/activate" \
     "${TEST_LIB_DIR}" "/test/rocm" "/test/tbb/lib:/test/rocm/lib" 0 \
-    "${STRICT_FLAG}" "0.125" >/dev/null
+    "${STRICT_FLAG}" "${HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT}" >/dev/null
 [ ! -e "${TEST_CALL_LOG}" ]
 
 if validate_packaged_amd_rapids_env "${TEST_TMP_DIR}/absent" "bin/activate" \
     "${TEST_LIB_DIR}" "/test/rocm" "/test/tbb/lib:/test/rocm/lib" 1 \
-    "${STRICT_FLAG}" "0.125" >/dev/null 2>&1; then
+    "${STRICT_FLAG}" "${HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT}" \
+    >/dev/null 2>&1; then
     echo "FAILED: strict presence accepted an absent packaged environment!" >&2
     exit 1
 fi
@@ -56,18 +61,19 @@ fi
 : > "${TEST_CALL_LOG}"
 validate_packaged_amd_rapids_env "${TEST_ENV_DIR}" "bin/activate" \
     "${TEST_LIB_DIR}" "/test/rocm" "/test/tbb/lib:/test/rocm/lib" 0 \
-    "${STRICT_FLAG}" "0.125" >/dev/null
+    "${STRICT_FLAG}" "${HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT}" >/dev/null
 [ "$(cat "${TEST_CALL_LOG}")" = "$(printf '%s\n%s\n%s' \
     'cupy_numpy_smoke.py|/test/rocm/lib||cub|' \
     'numba_smoke.py|/test/tbb/lib:/test/rocm/lib|||' \
-    'hipcim_canny_smoke.py|/test/rocm/lib|/test/rocm|cub|--max-disagreement-percent 0.125')" ]
+    'hipcim_canny_smoke.py|/test/rocm/lib|/test/rocm|cub|--max-disagreement-percent 0.0')" ]
 
 for _failed_script in cupy_numpy_smoke.py numba_smoke.py hipcim_canny_smoke.py; do
     : > "${TEST_CALL_LOG}"
     if FAIL_SCRIPT_BASENAME="${_failed_script}" \
         validate_packaged_amd_rapids_env "${TEST_ENV_DIR}" "bin/activate" \
             "${TEST_LIB_DIR}" "/test/rocm" "/test/tbb/lib:/test/rocm/lib" \
-            0 "${STRICT_FLAG}" "0.125" >/dev/null 2>&1; then
+            0 "${STRICT_FLAG}" "${HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT}" \
+            >/dev/null 2>&1; then
         echo "FAILED: packaged gate accepted '${_failed_script}' failure!" >&2
         exit 1
     fi

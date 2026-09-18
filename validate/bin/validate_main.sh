@@ -3,16 +3,19 @@
 set -euo pipefail
 
 REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG="--fail-on-no-source-built-cupy-env"
+REQUIRE_PACKAGED_AMD_RAPIDS_ENV_FLAG="--fail-on-no-packaged-amd-rapids-env"
 CHECK_COMFYUI_FLAG="--fail-on-no-comfyui"
 SKIP_UFW_CHECKS_FLAG="--skip-ufw-checks"
 RELAX_UFW_CHECKS_FLAG="--relax-ufw-checks"
 REQUIRE_SOURCE_BUILT_CUPY_ENV=0
+REQUIRE_PACKAGED_AMD_RAPIDS_ENV=0
 DO_COMFYUI_CHECK=0
 DO_UFW_CHECK=1
 STRICT_UFW_CHECK=1
 
 usage() {
-    echo -n "Usage: $0 [$REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG] [$CHECK_COMFYUI_FLAG] "
+    echo -n "Usage: $0 [$REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG] "
+    echo -n "[$REQUIRE_PACKAGED_AMD_RAPIDS_ENV_FLAG] [$CHECK_COMFYUI_FLAG] "
     echo "[$SKIP_UFW_CHECKS_FLAG|$RELAX_UFW_CHECKS_FLAG] [-h|--help]"
     echo "NOTE: $SKIP_UFW_CHECKS_FLAG and $RELAX_UFW_CHECKS_FLAG are mutually exclusive"
 }
@@ -21,6 +24,7 @@ usage() {
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     "$REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG") REQUIRE_SOURCE_BUILT_CUPY_ENV=1; shift;;
+    "$REQUIRE_PACKAGED_AMD_RAPIDS_ENV_FLAG") REQUIRE_PACKAGED_AMD_RAPIDS_ENV=1; shift;;
     "$CHECK_COMFYUI_FLAG") DO_COMFYUI_CHECK=1; shift;;
     "$SKIP_UFW_CHECKS_FLAG") DO_UFW_CHECK=0; shift;;
     "$RELAX_UFW_CHECKS_FLAG") STRICT_UFW_CHECK=0; shift;;
@@ -125,6 +129,11 @@ validate_source_built_cupy_env "${GPU_ARR_VIRTENV_DIR}" \
     "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" \
     "${_NUMBA_LIBRARY_PATHS}" "${REQUIRE_SOURCE_BUILT_CUPY_ENV}" \
     "${REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG}"
+validate_packaged_amd_rapids_env "${PACKAGED_AMD_RAPIDS_VIRTENV_DIR}" \
+    "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" "${ROCM_HOME}" \
+    "${_NUMBA_LIBRARY_PATHS}" "${REQUIRE_PACKAGED_AMD_RAPIDS_ENV}" \
+    "${REQUIRE_PACKAGED_AMD_RAPIDS_ENV_FLAG}" \
+    "${HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT}"
 if [[ -f "${COMFYUI_REPO_LOCAL_DIR}/${_CHECKPOINTS_INDIC_FILE}" ]]; then
     _MODEL_FILENAME="$(jq --raw-output "${COMFYUI_WORKFLOW_MODLNAME_FILTER}" \
                                                        "${COMFYUI_WORKFLOW_PATH}")" || {
