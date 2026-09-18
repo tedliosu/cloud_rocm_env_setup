@@ -179,9 +179,9 @@ Do not use `--no-deps`, manually mirror transitive requirements, or otherwise
 custom-resolve an environment merely to make package sources or versions look
 more explicit. An exception requires a reviewed concrete defect such as a known
 ABI dependency omitted from wheel metadata; the existing TorchCodec handling is
-one such narrow case. Do not invent additional pins for ordinary
-scientific-Python packages without a demonstrated compatibility, ABI, or
-reproducibility reason while a broader cross-project pin policy remains
+one such narrow case. Do not invent additional version pins or ranges for
+Python packages without a demonstrated compatibility, ABI, reproducibility, or
+similarly concrete reason while a broader cross-project pin policy remains
 undecided.
 
 ## Provider boundaries
@@ -326,6 +326,16 @@ Preserve these boundaries:
   index, `https://pypi.amd.com/rocm-7.2.0/simple/`, as one deliberately
   observed packaged recipe. Do not generalize that cross-patch result into
   arbitrary ROCm and Python package compatibility.
+- When packaged hipDF is adopted later, keep its ROCm 7.2.3 AMD Python index
+  and direct requirements in a separate provider-owned requirements input.
+  Install that more patch-sensitive group into the shared environment before
+  resolving the ROCm 7.2.0 hipCIM/CuPy group. This ordering reproduces the
+  observed recipe; it does not lock transitive dependencies or establish
+  package provenance.
+  Let both operations honor wheel metadata, then require a final `pip check`
+  and complete post-install workload validation. If the later operation makes
+  hipDF invalid, fail and revisit only demonstrated constraints rather than
+  bypassing dependency metadata.
 - Add an idempotent project-owned `.profile` block selecting
   `/opt/rocm-7.2.3/bin`; do not make setup or validation depend on the mutable
   `/opt/rocm` alternative. Keep `LD_LIBRARY_PATH` explicit and scoped to the
@@ -648,8 +658,10 @@ when their context explains the difference.
   its variable and function files.
 - Provider-specific configuration constants that are used across scripts or
   expected to change with a provider image, platform generation, or supported
-  recipe belong in `setup/<provider>/lib/<provider>_vars.sh`. Keep script-local
-  CLI tokens and private implementation literals in the script that owns them.
+  recipe belong in `setup/<provider>/lib/<provider>_vars.sh`, unless an
+  inspectable provider-owned manifest deliberately owns the value as part of
+  one resolver or package-manager input. Keep script-local CLI tokens and
+  private implementation literals in the script that owns them.
   Tests may keep self-contained fixture values, but should source the provider
   variables instead of duplicating a production value when exact agreement is
   part of the test contract.

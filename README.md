@@ -49,9 +49,15 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Hot Aisle MI300X, single-GPU VM instances
     - (optional) Azure `Standard_NV24ads_V710_v5` instances
         - Assumed base image: **NVV5 V710 ROCm Linux Image**, **Gen2** variant as of mid-2026; independently verified to be built on Ubuntu 24.04 ([product page on Microsoft Marketplace](https://marketplace.microsoft.com/en-us/product/amdinc1746636494855.nvv5_v710_linux_rocm_image))
+    - (experimental) AMD DevCloud **Single GPU Plan MI300X Droplet**
+      instances provisioned with the Ubuntu 24.04 Bare OS image
+        - The root-to-user handoff and in-VM bootstrap through the common
+          minimum baseline are accepted for the tested environment generation.
+          The packaged AMD RAPIDS gate and first-class provider support remain
+          pending.
     - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally reported by probe logic in scripts rather than hard-coded here.
     - Provider support applies to validated environment generations, not every image or software version a provider serves. Supporting a replacement generation does not imply continued support for the previous one. If provisioning cannot reliably select a supported generation, provider support may temporarily be marked transitional or suspended.
-- Reproducible, *minimal* environment setup with *selectively* pinned Python dependencies, to minimize maintenance upkeep while also making the most important packages relatively version stable and reproducible
+- Reproducible, *minimal* environment setup with Python dependencies constrained selectively when demonstrated compatibility, ABI, or reproducibility reasons justify it
 - Safe, resumable bootstrap scripts with reboot handling
 - Minimal validation to detect obviously broken environments (e.g., ROCm availability, basic workload execution)
 - Project-specific ROCm library and runtime selection remains process-scoped:
@@ -65,7 +71,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
 # Non-Goals
 
 - Genuinely production ready environment setup
-- Bundling in this repository of any actual code for the workloads listed in [Target Workloads](#target-workloads), whether the workloads are public OR private
+- Bundling the complete application projects or workload implementations listed in [Target Workloads](#target-workloads), whether the workloads are public OR private; small repository-owned validation smokes remain in scope
 - Redistribution of proprietary drivers, runtimes, binaries, and source code
 - Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
 - General-purpose firewall reconciliation, source-IP allowlisting, dynamic DNS, or VPN infrastructure
@@ -163,13 +169,14 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Add a small direct hipCIM/cuCIM-versus-scikit-image Canny comparison using each library's float32 grayscale conversion, `sigma=1.5`, thresholds `15/255` and `35/255`, and `mode="nearest"` on a deterministic repository-owned fixture.
     - Keep that comparison backend-neutral so the same script can run against cuCIM on CUDA for inexpensive development checks. Add an opt-in debug-output directory that writes the fixture and both final Canny result images, with a disagreement image when useful; ordinary validation must not create those artifacts.
     - Report pixel disagreement percentage without dilation or other edge post-processing, and set any pass tolerance only after recording a representative preliminary measurement and confirming it on DevCloud. Do not copy the application image or custom Canny implementation, and do not turn the smoke into a benchmark.
-    - Complete local and CUDA-capable iteration before scheduling paid cloud acceptance. Treat each DevCloud VM as an ephemeral, explicitly coordinated acceptance round and consolidate the remaining ROCm-only questions rather than assuming an earlier instance still exists.
+    - Complete local and CUDA-capable iteration before scheduling paid cloud acceptance when those checks can answer the remaining questions. Test earlier when a provider-only measurement or assumption blocks safe implementation. Treat each DevCloud VM as an ephemeral, explicitly coordinated acceptance round and consolidate the remaining ROCm-only questions rather than assuming an earlier instance still exists.
     - Keep individual validation scripts separate where useful; the environment gate and CLI behavior, rather than Python file layout, define the validation contract.
     - Allow optional absence to skip the entire packaged environment gate, while any future strict-presence flag must fail when the environment is absent.
     - Add bounded checks for the packaged gate's optional-absence, strict-presence, and required-check failure behavior alongside its implementation.
     - Fail clearly when the known environment or package assumptions no longer hold.
-    - Do not require packaged hipDF for the initial hipCIM/CuPy path unless the presentation or supported workload genuinely needs it.
-    - If packaged hipDF is deliberately adopted later, it may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
+    - Do not require packaged hipDF for the initial hipCIM/CuPy path. Its later adoption within the same DevCloud packaged environment is decided but remains a separate deferred task, not a presentation deadline.
+    - Keep the future hipDF direct requirements and ROCm 7.2.3 AMD Python index separate from the ROCm 7.2.0 hipCIM/CuPy requirements input. Resolve the more patch-sensitive hipDF group first and the hipCIM/CuPy group second, using ordinary dependency metadata for both, followed by `pip check` and complete workload validation. This tested ordering is not a claim of general index interoperability or wheel provenance. If the later operation breaks hipDF, fail and revisit demonstrated constraints rather than using `--no-deps` or mirroring the transitive closure.
+    - Packaged hipDF may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
 ### Repository Contract and Test-Structure Review
 

@@ -587,10 +587,10 @@ install_amd_devcloud_rocm_userland() (
 )
 
 # Install the observed packaged AMD RAPIDS workload environment from its
-#     complete pip requirements manifest.
+#     reviewed direct-requirements and resolver-options manifest.
 # Usage: install_amd_devcloud_packaged_rapids_environment \
 #            <virtualenv_directory> <requirements_file>
-# Returns: 0 after installing and checking the exact packaged recipe; 1 on an
+# Returns: 0 after installing and checking the reviewed packaged recipe; 1 on an
 #          unexpected interpreter, incomplete inputs, or installation failure
 install_amd_devcloud_packaged_rapids_environment() (
     local _virtualenv_dir
