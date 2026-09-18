@@ -52,8 +52,8 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - (experimental) AMD DevCloud **Single GPU Plan MI300X Droplet**
       instances provisioned with the Ubuntu 24.04 Bare OS image
         - The root-to-user handoff and in-VM bootstrap through the common
-          minimum baseline are accepted for the tested environment generation.
-          The packaged AMD RAPIDS gate and first-class provider support remain
+          minimum baseline and packaged AMD RAPIDS gate are accepted for the
+          tested environment generation. First-class provider support remains
           pending.
     - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally reported by probe logic in scripts rather than hard-coded here.
     - Provider support applies to validated environment generations, not every image or software version a provider serves. Supporting a replacement generation does not imply continued support for the previous one. If provisioning cannot reliably select a supported generation, provider support may temporarily be marked transitional or suspended.
@@ -155,28 +155,15 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - The common default validator passed its strict UFW and ROCm checks, HIP and hipCollections smokes, PyTorch audio/codec CPU ABI smoke, ResNet-50 and ViT-B/16 GPU forward-and-backward checks, and Triton fp16 matmul smoke. The absent optional source-built CuPy and ComfyUI environments were skipped as designed.
     - The accepted post-setup workflow is `./validate/bin/validate_main.sh` followed by the read-only `./setup/amd_devcloud/bin/amd_devcloud_acceptance_probe.sh`. Its standard output may be retained as acceptance evidence when useful; setup does not own a persistent report artifact and does not depend on creating one.
     - This acceptance establishes the experimental automated ROCm userland and common minimum baseline. It does not yet establish the packaged AMD RAPIDS environment, hipCIM correctness gate, optional hipDF components, or first-class DevCloud support.
+12. Version-stamped experimental AMD DevCloud packaged-environment evidence:
+    - On 2026-09-18, a fresh single-GPU Bare OS instance that began from reviewed commit `146edac` completed the optional packaged AMD RAPIDS setup. After the requirements correction, commit `c6850c5` rebuilt the packaged stage with `amd-cupy` 13.5.1, `amd-hipcim` 25.10.0, scikit-image 0.25.2, scikit-learn 1.8.0, NumPy 2.5.3, and Numba 0.67.0; `pip check` reported no broken requirements.
+    - The common validator with `--fail-on-no-packaged-amd-rapids-env` passed the complete baseline plus the packaged CuPy custom-kernel, Numba/TBB, and hipCIM Canny checks. The Canny comparison disagreed on zero of 20,480 pixels, confirming the adopted zero-percent tolerance on the tested MI300X VF after the same fixture had also measured zero disagreement during CUDA-side development.
+    - The read-only environment report reconfirmed Ubuntu 24.04.5, kernel `6.8.0-124-generic`, AMDGPU DKMS `6.16.13-2327507.24.04`, AMD SMI driver 6.16.13, native `gfx942`, `rocm7.2.3` `7.2.3.70203-90~24.04`, HIP `7.2.53211-c2d9476115`, and Python 3.12.3. A completed-state setup rerun recognized the UFW baseline, repeated the driver and path checks, skipped every setup and reboot stage including the packaged environment, and exited successfully.
+    - This acceptance establishes the automated packaged hipCIM/CuPy environment and its strict validation gate for this experimental generation. It does not establish optional hipDF components, arbitrary ROCm/Python package combinations, or first-class DevCloud support.
 
 # TODOs
 
 ## Current Focus
-
-### Experimental AMD DevCloud hipCIM and CuPy Path
-
-- [ ] Develop the DevCloud packaged RAPIDS setup and validator gate together:
-    - Use an ordinary Python virtual environment with pip, packaged `amd-cupy` and `amd-hipcim`, and the exact ROCm 7.2.0 AMD Python index, `https://pypi.amd.com/rocm-7.2.0/simple/`, on the pinned ROCm 7.2.3 system stack. Follow the documented `--extra-index-url` installation model and let pip honor wheel metadata for transitive dependencies rather than reconstructing them locally. Explicitly declare the shared GPU-array workloads' direct Python requirements and their established compatibility ranges, consistent with the source-built CuPy environment. Do not introduce Conda or generalize this observed cross-patch recipe into a supported version matrix.
-    - Add one coherent packaged RAPIDS shared workload-environment gate to the common provider-neutral validator. When active, it must run every check defined as required by that environment rather than silently accepting a partial result.
-    - Include the implemented Canny-critical CuPy custom-kernel smoke, the Numba behavior relevant to Canny, and the selected TBB backend coverage justified by the shared private MLP workload.
-    - Add a small direct hipCIM/cuCIM-versus-scikit-image Canny comparison using each library's float32 grayscale conversion, `sigma=1.5`, thresholds `15/255` and `35/255`, and `mode="nearest"` on a deterministic repository-owned fixture.
-    - Keep that comparison backend-neutral so the same script can run against cuCIM on CUDA for inexpensive development checks. Add an opt-in debug-output directory that writes the fixture and both final Canny result images, with a disagreement image when useful; ordinary validation must not create those artifacts.
-    - Report pixel disagreement percentage without dilation or other edge post-processing, and set any pass tolerance only after recording a representative preliminary measurement and confirming it on DevCloud. Do not copy the application image or custom Canny implementation, and do not turn the smoke into a benchmark.
-    - Complete local and CUDA-capable iteration before scheduling paid cloud acceptance when those checks can answer the remaining questions. Test earlier when a provider-only measurement or assumption blocks safe implementation. Treat each DevCloud VM as an ephemeral, explicitly coordinated acceptance round and consolidate the remaining ROCm-only questions rather than assuming an earlier instance still exists.
-    - Keep individual validation scripts separate where useful; the environment gate and CLI behavior, rather than Python file layout, define the validation contract.
-    - Allow optional absence to skip the entire packaged environment gate, while any future strict-presence flag must fail when the environment is absent.
-    - Add bounded checks for the packaged gate's optional-absence, strict-presence, and required-check failure behavior alongside its implementation.
-    - Fail clearly when the known environment or package assumptions no longer hold.
-    - Do not require packaged hipDF for the initial hipCIM/CuPy path. Its later adoption within the same DevCloud packaged environment is decided but remains a separate deferred task, not a presentation deadline.
-    - Keep the future hipDF direct requirements and ROCm 7.2.3 AMD Python index separate from the ROCm 7.2.0 hipCIM/CuPy requirements input. Resolve the more patch-sensitive hipDF group first and the hipCIM/CuPy group second, using ordinary dependency metadata for both, followed by `pip check` and complete workload validation. This tested ordering is not a claim of general index interoperability or wheel provenance. If the later operation breaks hipDF, fail and revisit demonstrated constraints rather than using `--no-deps` or mirroring the transitive closure.
-    - Packaged hipDF may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
 ### Repository Contract and Test-Structure Review
 
@@ -184,6 +171,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Check whether subsystem behavior, interfaces, invariants, failure semantics, provider gates, and support claims still match the intended project contract rather than relying on passing tests alone.
     - Review helper and test placement, provider/common boundaries, duplicated or contradictory policy, stale rationale, and details that accumulated in the wrong documentation section.
     - Review whether package declarations are owned by the clearest inspectable manifest instead of being duplicated across requirements files, provider variables, and shell commands. Include both pip requirements and requirements-like APT package lists that setup stages read explicitly; do not assume every installation or runtime concern belongs in a declarative file.
+    - Review the current ShellCheck invocation, diagnostics, and suppressions. Decide whether the repository standard should require every in-scope diagnostic to be resolved or narrowly justified with a targeted suppression; do not use blanket suppression or rewrite intentional constructs merely to obtain a nominally clean run.
     - Inspect stylistic differences such as `grep` versus Bash matching, here-documents versus other text construction, `case` versus `if`/`elif`, and mutable test globals versus explicit data flow only for concrete effects on auditability, testability, portability, failure behavior, maintainability, or control-flow clarity.
     - Prefer the clearest semantic model, including explicit state machines when the problem is inherently detailed. Do not normalize equally valid styles, refactor merely to reduce branches, or begin broad cleanup without first recording specific problems and why they matter.
 
@@ -256,6 +244,11 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Installing an older ROCm stack over provider-installed ROCm libraries risks package conflicts or package stomping.
     - Forward-porting hipDF and maintaining downstream compatibility patches is outside the repository's scope.
     - Keep packaged hipDF validation as a possible later extension of the explicitly aligned experimental AMD DevCloud path, separate from the supported Hot Aisle and Azure baseline.
+
+- [ ] Adopt packaged hipDF later within the experimental DevCloud environment when a concrete workload needs it:
+    - Keep its direct requirements and ROCm 7.2.3 AMD Python index separate from the ROCm 7.2.0 hipCIM/CuPy requirements input.
+    - Resolve the more patch-sensitive hipDF group first and the hipCIM/CuPy group second, using ordinary dependency metadata for both, followed by `pip check` and complete workload validation. This tested ordering is not a claim of general index interoperability or wheel provenance. If the later operation breaks hipDF, fail and revisit demonstrated constraints rather than using `--no-deps` or mirroring the transitive closure.
+    - Packaged hipDF may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
 ## CuPy Build and Architecture Behavior
 

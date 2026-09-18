@@ -220,6 +220,16 @@ building a multi-generation compatibility subsystem. If provisioning cannot
 reliably select a supported generation, describe the provider as transitional
 or not reliably supported until that changes.
 
+Do not assume that a paid cloud VM remains available across tasks or testing
+rounds. Prefer completing a coherent batch of locally testable or common
+refactors before the next provider integration test so that one paid run
+exercises the updated code together. Test earlier when a provider-specific
+assumption must be measured before implementation can proceed safely or when
+later work would otherwise depend materially on an unverified assumption.
+Treat each DevCloud VM as an ephemeral, explicitly coordinated acceptance
+round and consolidate its remaining ROCm-only questions rather than assuming
+an earlier instance still exists.
+
 ### Experimental AMD DevCloud path
 
 AMD DevCloud is not currently part of the Hot Aisle and Azure guarantee. Its
@@ -875,8 +885,8 @@ of it; do not report a broad gate as passing after silently skipping a required
 check. Ordinary fail-fast behavior is still valid because a failed
 required check fails the gate rather than partially passing it.
 
-The future packaged AMD DevCloud RAPIDS gate should cover the shared workload
-environment: complete Canny capability through packaged `amd-cupy` and Numba,
+The packaged AMD DevCloud RAPIDS gate covers the shared workload environment:
+complete Canny capability through packaged `amd-cupy` and Numba,
 the selected TBB backend coverage justified by the private MLP, and the
 required packaged hipCIM correctness check. hipCIM may remain in a separate
 Python script, and packaged hipDF may be folded into the broader gate only if
