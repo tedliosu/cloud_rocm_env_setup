@@ -35,9 +35,10 @@ A useful report includes:
 - the smallest plausible correction boundary, if one is apparent.
 
 Do not post credentials, access tokens, private keys, private application code,
-or unredacted logs containing sensitive information. Use the repository host's
-private vulnerability-reporting channel if one is available for a security
-issue that should not be disclosed publicly.
+or unredacted logs containing sensitive information. For a security issue that
+should not be disclosed publicly, follow [SECURITY.md](SECURITY.md) and use the
+repository's enabled private vulnerability-reporting channel rather than a
+public issue.
 
 Requests for entirely new providers, GPU-platform families, or workload
 categories are outside the current scope freeze. A narrow unsupported-platform

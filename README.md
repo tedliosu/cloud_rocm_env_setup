@@ -17,7 +17,9 @@ accepts issues but not pull requests because the maintainer cannot commit to
 reviewing arbitrary external diffs. Review invitations are read-only unless the
 maintainer explicitly establishes a different boundary. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the reporting policy, review lenses, and
-a reusable handoff brief for human and AI-assisted reviewers.
+a reusable handoff brief for human and AI-assisted reviewers. Report sensitive
+vulnerabilities through the private route documented in
+[SECURITY.md](SECURITY.md), not through a public issue.
 
 # Purpose and Motivation
 
@@ -181,9 +183,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Included patches and derived workflow material have documented upstream provenance and licensing treatment. Public support claims and the issue-only external review policy remain consistent with the repository contract.
     - Existing Git author metadata includes the maintainer's institutional email address; the maintainer reviewed and accepted that disclosure, so no history rewrite is required.
     - This was a concrete release checkpoint, not a speculative forensic review or precedent for routine history rewriting. A future history rewrite still requires an actual finding.
-- [ ] As part of the actual public-visibility transition, enable and verify GitHub private vulnerability reporting, then replace the conditional security-reporting wording in `CONTRIBUTING.md` with the confirmed private route (and add a small `SECURITY.md` if useful):
-    - GitHub exposes private vulnerability reporting for public repositories, so this cannot be verified while the repository remains private.
-
 ### Hot Aisle Quick Start and Common Use Path
 
 - [ ] Add instructions for using this repository on Hot Aisle MI300X:
