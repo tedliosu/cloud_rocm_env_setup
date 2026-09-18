@@ -174,16 +174,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 ## Current Focus
 
-### Repository Contract and Test-Structure Review
-
-- [ ] Perform a bounded retrospective audit of the existing implementation, tests, README, and agent agreement after the current DevCloud path is established:
-    - Check whether subsystem behavior, interfaces, invariants, failure semantics, provider gates, and support claims still match the intended project contract rather than relying on passing tests alone.
-    - Review helper and test placement, provider/common boundaries, duplicated or contradictory policy, stale rationale, and details that accumulated in the wrong documentation section.
-    - Review whether package declarations are owned by the clearest inspectable manifest instead of being duplicated across requirements files, provider variables, and shell commands. Include both pip requirements and requirements-like APT package lists that setup stages read explicitly; do not assume every installation or runtime concern belongs in a declarative file.
-    - Review the current ShellCheck invocation, diagnostics, and suppressions. Decide whether the repository standard should require every in-scope diagnostic to be resolved or narrowly justified with a targeted suppression; do not use blanket suppression or rewrite intentional constructs merely to obtain a nominally clean run.
-    - Inspect stylistic differences such as `grep` versus Bash matching, here-documents versus other text construction, `case` versus `if`/`elif`, and mutable test globals versus explicit data flow only for concrete effects on auditability, testability, portability, failure behavior, maintainability, or control-flow clarity.
-    - Prefer the clearest semantic model, including explicit state machines when the problem is inherently detailed. Do not normalize equally valid styles, refactor merely to reduce branches, or begin broad cleanup without first recording specific problems and why they matter.
-
 ### Public Release Readiness
 
 - [ ] Before changing the repository to public visibility, perform one bounded public-release audit of the current tree and Git history:
