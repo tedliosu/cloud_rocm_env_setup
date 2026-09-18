@@ -11,6 +11,8 @@ readonly TEST_BIN_DIR
 
 # shellcheck source=../lib/amd_devcloud_vars.sh
 . "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
+# shellcheck source=../../../lib/comm_util_funcs.sh
+. "${SCRIPT_DIR}/../../../lib/comm_util_funcs.sh"
 # shellcheck source=../lib/amd_devcloud_funcs.sh
 . "${SCRIPT_DIR}/../lib/amd_devcloud_funcs.sh"
 
@@ -167,9 +169,11 @@ EARLY_ROCM_USERLAND_DIR="${TEST_TMP_DIR}/early-rocm-userland"
 POST_USERLAND_COMMON_DIR="${TEST_TMP_DIR}/post-userland-common"
 CONTRADICTORY_DIR="${TEST_TMP_DIR}/contradictory"
 BAD_MARKER_DIR="${TEST_TMP_DIR}/bad-marker"
+SYMLINK_MARKER_DIR="${TEST_TMP_DIR}/symlink-marker"
 BAD_MILESTONES_PATH="${TEST_TMP_DIR}/not-a-directory"
 mkdir "${BARE_DIR}" "${UPGRADED_DIR}" "${TMUX_ONLY_DIR}" "${PENDING_DIR}" \
-    "${COMPLETED_DIR}" "${CONTRADICTORY_DIR}" "${BAD_MARKER_DIR}"
+    "${COMPLETED_DIR}" "${CONTRADICTORY_DIR}" "${BAD_MARKER_DIR}" \
+    "${SYMLINK_MARKER_DIR}"
 mkdir "${MANAGED_DIR}" "${EARLY_BOOTSTRAP_DIR}" "${DRIVER_INSTALLED_DIR}" \
     "${DRIVER_PENDING_DIR}" "${DRIVER_COMPLETED_DIR}" \
     "${EARLY_DRIVER_DIR}" "${EARLY_DRIVER_REBOOT_DIR}" \
@@ -430,6 +434,12 @@ expect_rejection "${CONTRADICTORY_DIR}"
 mkdir "${BAD_MARKER_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done"
 reset_observations
 expect_rejection "${BAD_MARKER_DIR}"
+
+touch "${TEST_TMP_DIR}/symlink-marker-target"
+ln --symbolic "${TEST_TMP_DIR}/symlink-marker-target" \
+    "${SYMLINK_MARKER_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done"
+reset_observations
+expect_rejection "${SYMLINK_MARKER_DIR}"
 
 reset_observations
 SHOW_PLAN_ONLY=1

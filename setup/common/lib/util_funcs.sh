@@ -29,6 +29,10 @@ run_stage() {
     _done_marker_file="${_milestones_dir}/${_func_to_run}.done"
     _skip_stage_msg="--- skipping stage: ${_func_to_run} (already complete) ---"
 
+    if ! require_regular_or_absent_setup_marker "${_done_marker_file}"; then
+        exit 1
+    fi
+
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
         if [ ! -f "${_done_marker_file}" ]; then
             echo "[PLAN ONLY] --- would run stage ${_func_to_run} ---"
@@ -376,7 +380,25 @@ ensure_rocm_env_sanity_dont_wrap() {
         echo "amdgpu dkms not detected; bailing!" >&2
         exit 1
     fi
-    ROCM_DETECTED_VER="$(hipconfig --rocmpath | cut --delimiter="-" --fields=2)"
+    local _reported_rocm_root
+    local _canonical_rocm_root
+    local _rocm_root_basename
+
+    if ! _reported_rocm_root="$(hipconfig --rocmpath)" ||
+        ! _canonical_rocm_root="$(canonicalize_rocm_root \
+            "${_reported_rocm_root}")"; then
+        echo "FAILED to identify the PATH-selected ROCm root!" >&2
+        exit 1
+    fi
+    _rocm_root_basename="${_canonical_rocm_root##*/}"
+    case ${_rocm_root_basename} in
+        rocm-?*) ROCM_DETECTED_VER="${_rocm_root_basename#rocm-}" ;;
+        *)
+            echo "FAILED: canonical ROCm root does not identify its version:" >&2
+            echo "    ${_canonical_rocm_root}" >&2
+            exit 1
+            ;;
+    esac
     if echo "$ROCM_DETECTED_VER" | \
        grep --extended-regexp --invert-match --quiet "$2"; then
         echo "'hipconfig' reports ROCm userland version $ROCM_DETECTED_VER!" >&2
@@ -529,6 +551,11 @@ reboot_with_ack_dont_wrap() {
     _pending_marker_file="${_milestones_dir}/${_reboot_phase_name}.pending"
     _done_marker_file="${_milestones_dir}/${_reboot_phase_name}.done"
     _reboot_skip_msg="--- skipping reboot phase: ${_reboot_phase_name} (already complete) ---"
+
+    if ! require_regular_or_absent_setup_marker "${_pending_marker_file}" ||
+        ! require_regular_or_absent_setup_marker "${_done_marker_file}"; then
+        exit 1
+    fi
 
     if [ -e "${_pending_marker_file}" ] && [ -e "${_done_marker_file}" ]; then
         echo "ERROR: reboot phase '${_reboot_phase_name}' has both pending" >&2
@@ -707,7 +734,7 @@ ensure_github_fastfetch() {
     fastfetch --gen-config-full
     jq ".logo.source = \"ubuntu_old\"" "${_fastfetch_config_dir}/config.jsonc" | \
                                         sponge "${_fastfetch_config_dir}/config.jsonc"
-    which fastfetch >/dev/null 2>&1 && guarded_rm_rf "$4"
+    command -v fastfetch >/dev/null 2>&1 && guarded_rm_rf "$4"
 
 }
 
@@ -735,7 +762,17 @@ ensure_base_dl_virtualenv() {
 #            <non_cupy_requirements_txt_path> <cupy_version_tag> <cupy_build_log_path>
 ensure_gpu_arr_virtualenv() {
 
+    local _reported_rocm_root
+    local _canonical_rocm_root
     _gfx11_fallback_arch="gfx1100"
+    if ! _reported_rocm_root="$(hipconfig --rocmpath)" ||
+        ! _canonical_rocm_root="$(canonicalize_rocm_root \
+            "${_reported_rocm_root}")" ||
+        ! ROCM_HOME="$(select_cupy_rocm_home "${_canonical_rocm_root}" \
+            "${CUPY_CONVENTIONAL_ROCM_HOME}")"; then
+        echo "FAILED to select CuPy's conventional ROCM_HOME!" >&2
+        exit 1
+    fi
     test -d "$1" && guarded_rm_rf "$1"
     virtualenv "$1"
     # Parameterized source since this function encapsulate setup logic invariants
@@ -747,10 +784,6 @@ ensure_gpu_arr_virtualenv() {
     git clone https://github.com/cupy/cupy.git "$2"
     git -C "$2" -c advice.detachedHead=false checkout "$4"
     git -C "$2" submodule update --init --recursive
-    ROCM_HOME="$(hipconfig --rocmpath | cut --delimiter="-" --fields=1)" || {
-        echo "FAILED to detect 'ROCM_HOME'!" >&2
-        exit 1
-    }
     HCC_AMDGPU_TARGET="$(detect_amd_smi_gpu_arch 0)" || {
         echo "FAILED to detect GFX Version of ROCm device 0!" >&2
         exit 1

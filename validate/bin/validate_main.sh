@@ -80,7 +80,7 @@ if ! ROCM_PATH_SELECTED_ROOT="$(hipconfig --rocmpath)"; then
     echo "ERROR: hipconfig --rocmpath failed!" >&2
     exit 1
 fi
-if ! ROCM_HOME="$(canonicalize_rocm_validation_root \
+if ! ROCM_HOME="$(canonicalize_rocm_root \
     "${ROCM_PATH_SELECTED_ROOT}")"; then
     exit 1
 fi
@@ -127,10 +127,12 @@ _ONEAPI_TBB_LIBPATHS="${_ONEAPI_TBB_LIBPATHS}:/opt/intel/oneapi/tcm/${ONEAPI_TCM
 _NUMBA_LIBRARY_PATHS="${_ONEAPI_TBB_LIBPATHS}:${LD_LIBRARY_PATH}"
 validate_source_built_cupy_env "${GPU_ARR_VIRTENV_DIR}" \
     "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" \
+    "${ROCM_HOME}" "${CUPY_CONVENTIONAL_ROCM_HOME}" \
     "${_NUMBA_LIBRARY_PATHS}" "${REQUIRE_SOURCE_BUILT_CUPY_ENV}" \
     "${REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG}"
 validate_packaged_amd_rapids_env "${PACKAGED_AMD_RAPIDS_VIRTENV_DIR}" \
-    "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" "${ROCM_HOME}" \
+    "${_ACTIV_SRC_SCRIPT_RELPATH}" "${LIB_DIR_ABS_PATH}" \
+    "${ROCM_HOME}" "${CUPY_CONVENTIONAL_ROCM_HOME}" \
     "${_NUMBA_LIBRARY_PATHS}" "${REQUIRE_PACKAGED_AMD_RAPIDS_ENV}" \
     "${REQUIRE_PACKAGED_AMD_RAPIDS_ENV_FLAG}" \
     "${HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT}"

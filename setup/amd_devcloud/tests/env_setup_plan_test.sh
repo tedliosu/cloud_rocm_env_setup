@@ -60,7 +60,7 @@ for _expected_line in \
     "Would verify the running-kernel AMDGPU DKMS state" \
     "would run stage install_amd_devcloud_rocm_userland" \
     "Would ensure the exact versioned ROCm PATH profile block" \
-    "Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use" \
+    "Would report versioned PATH and library paths plus" \
     "would run stage ensure_pinned_cmake" \
     "would run stage ensure_apt_with_custom_conf" \
     "would run stage ensure_base_dl_virtualenv" \

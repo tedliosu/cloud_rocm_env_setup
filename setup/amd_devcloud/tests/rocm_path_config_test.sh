@@ -61,7 +61,8 @@ if [ "$(<"${PLAN_PROFILE_HOME}/.profile")" != "preserve plan profile" ]; then
 fi
 _plan_report="$(print_amd_devcloud_rocm_paths_dont_wrap)"
 if [ "${_plan_report}" != \
-    "[PLAN ONLY] Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use." ]; then
+"[PLAN ONLY] Would report versioned PATH and library paths plus"$'\n'\
+"[PLAN ONLY]     validated conventional CuPy ROCM_HOME use." ]; then
     echo "FAILED: ROCm path-report plan output was unexpected!" >&2
     exit 1
 fi
@@ -163,11 +164,13 @@ fi
 
 _path_report="$(print_amd_devcloud_rocm_paths_dont_wrap)"
 if [ "${_path_report}" != \
-"ROCm home for command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"$'\n'\
+"Pinned ROCm root: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"$'\n'\
+"CuPy-family command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}"$'\n'\
+"The CuPy path is accepted only while it resolves to the pinned root."$'\n'\
 "ROCm executable directory: ${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}"$'\n'\
 "ROCm library directory for command-scoped LD_LIBRARY_PATH: ${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}"$'\n'\
 "Current-shell PATH command: export PATH='${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}':\"\${PATH}\""$'\n'\
-"Workload example: env ROCM_HOME='${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}' LD_LIBRARY_PATH='${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}' command [arguments...]"$'\n'\
+"CuPy-family example: env ROCM_HOME='${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}' LD_LIBRARY_PATH='${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}' command [arguments...]"$'\n'\
 "New login shells will select the versioned executable directory after profile setup."$'\n'\
 "Existing shells remain unchanged until the printed PATH command is run."$'\n'\
 "Rerun DevCloud setup to print these paths again; completed stages remain skipped."$'\n'\

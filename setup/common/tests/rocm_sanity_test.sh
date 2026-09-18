@@ -16,6 +16,8 @@ HIPCONFIG_CALLED_MARKER="${TEST_TMP_DIR}/hipconfig-called"
 readonly HIPCONFIG_CALLED_MARKER
 TEST_ROCMINFO_MODE=""
 SCENARIO_STATUS=0
+TEST_ROCM_ROOT="${TEST_TMP_DIR}/rocm-7.2.4"
+readonly TEST_ROCM_ROOT
 
 cleanup() {
     rm --recursive --force "${TEST_TMP_DIR}"
@@ -49,8 +51,10 @@ rocminfo() {
 hipconfig() {
     [ "$#" -eq 1 ] && [ "$1" = "--rocmpath" ] || return 64
     touch "${HIPCONFIG_CALLED_MARKER}"
-    printf '/opt/rocm-7.2.4\n'
+    printf '%s\n' "${TEST_ROCM_ROOT}"
 }
+
+mkdir --parents "${TEST_ROCM_ROOT}/lib"
 
 run_scenario() {
     local _output_file="$1"

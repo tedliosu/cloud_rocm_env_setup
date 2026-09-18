@@ -201,12 +201,10 @@ check_amd_devcloud_setup_admission_dont_wrap() {
         "${_repository_bootstrap_marker}" "${_driver_marker}" \
         "${_driver_reboot_pending_marker}" "${_driver_reboot_done_marker}" \
         "${_rocm_userland_marker}"; do
-        if [ -e "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
-            if [ ! -f "${_stage_marker}" ] || [ -L "${_stage_marker}" ]; then
-                echo "ERROR: unexpected DevCloud setup marker type:" >&2
-                echo "    ${_stage_marker}" >&2
-                return 1
-            fi
+        if ! require_regular_or_absent_setup_marker "${_stage_marker}"; then
+            return 1
+        fi
+        if [ -f "${_stage_marker}" ]; then
             _stage_markers+=("${_stage_marker}")
         fi
     done
@@ -766,17 +764,20 @@ print_amd_devcloud_rocm_paths_dont_wrap() {
         return 1
     fi
     if [ "${SHOW_PLAN_ONLY:-0}" -eq 1 ]; then
-        echo "[PLAN ONLY] Would report versioned PATH, ROCM_HOME, and LD_LIBRARY_PATH use."
+        echo "[PLAN ONLY] Would report versioned PATH and library paths plus"
+        echo "[PLAN ONLY]     validated conventional CuPy ROCM_HOME use."
         return 0
     fi
 
-    echo "ROCm home for command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"
+    echo "Pinned ROCm root: ${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}"
+    echo "CuPy-family command-scoped ROCM_HOME: ${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}"
+    echo "The CuPy path is accepted only while it resolves to the pinned root."
     echo "ROCm executable directory: ${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}"
     echo "ROCm library directory for command-scoped LD_LIBRARY_PATH: ${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}"
     printf "Current-shell PATH command: export PATH='%s':\"\${PATH}\"\n" \
         "${AMD_DEVCLOUD_ROCM_VERSIONED_BIN}"
-    printf "Workload example: env ROCM_HOME='%s' LD_LIBRARY_PATH='%s' command [arguments...]\n" \
-        "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}" \
+    printf "CuPy-family example: env ROCM_HOME='%s' LD_LIBRARY_PATH='%s' command [arguments...]\n" \
+        "${AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH}" \
         "${AMD_DEVCLOUD_ROCM_VERSIONED_LIBRARY_DIR}"
     echo "New login shells will select the versioned executable directory after profile setup."
     echo "Existing shells remain unchanged until the printed PATH command is run."

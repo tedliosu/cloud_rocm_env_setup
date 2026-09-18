@@ -24,49 +24,6 @@ is_plain_filename() {
 
 }
 
-# Validate and canonicalize one ROCm root reported by the caller.
-# Usage: canonicalize_rocm_validation_root <reported_rocm_root>
-# Returns: 0 and prints the canonical root; 1 for an invalid or incomplete root
-canonicalize_rocm_validation_root() {
-
-    local _reported_rocm_root
-    local _canonical_rocm_root
-    local _rocm_library_dir
-
-    if [ "$#" -ne 1 ]; then
-        echo "ERROR: ROCm root canonicalization expects one reported root!" >&2
-        return 1
-    fi
-    _reported_rocm_root="$1"
-    case ${_reported_rocm_root} in
-        ''|*$'\n'*)
-            echo "ERROR: hipconfig reported an empty or multiline ROCm root!" >&2
-            return 1
-            ;;
-        /*) ;;
-        *)
-            echo "ERROR: hipconfig reported a non-absolute ROCm root:" >&2
-            echo "    ${_reported_rocm_root}" >&2
-            return 1
-            ;;
-    esac
-    if ! _canonical_rocm_root="$(realpath --canonicalize-existing -- \
-        "${_reported_rocm_root}")" || [ ! -d "${_canonical_rocm_root}" ]; then
-        echo "ERROR: unable to resolve hipconfig ROCm root:" >&2
-        echo "    ${_reported_rocm_root}" >&2
-        return 1
-    fi
-    _rocm_library_dir="${_canonical_rocm_root}/lib"
-    if [ ! -d "${_rocm_library_dir}" ]; then
-        echo "ERROR: selected ROCm root has no lib directory:" >&2
-        echo "    ${_canonical_rocm_root}" >&2
-        return 1
-    fi
-
-    printf '%s\n' "${_canonical_rocm_root}"
-
-}
-
 # Validate environment UFW configuration status
 # Usage: validate_ufw_config <strict_mode_flag>
 # Returns: with strict checking, 0 only for the known UFW baseline; with relaxed
@@ -160,6 +117,7 @@ validate_ufw_config() (
 # Validate the complete source-built CuPy shared workload environment gate.
 # Usage: validate_source_built_cupy_env <virtualenv_dirpath> \
 #            <activation_script_relpath> <validation_lib_dirpath> \
+#            <canonical_rocm_home> <conventional_rocm_path> \
 #            <numba_library_paths> <strict_presence_flag> \
 #            <strict_presence_cli_flag>
 # Returns: 0 after all required checks pass or optional absence is reported;
@@ -169,9 +127,11 @@ validate_source_built_cupy_env() (
     _source_built_cupy_env_dirpath="${1}"
     _activation_script_relpath="${2}"
     _validation_lib_dirpath="${3}"
-    _numba_library_paths="${4}"
-    _strict_presence_flag="${5}"
-    _strict_presence_cli_flag="${6}"
+    _canonical_rocm_home="${4}"
+    _conventional_rocm_path="${5}"
+    _numba_library_paths="${6}"
+    _strict_presence_flag="${7}"
+    _strict_presence_cli_flag="${8}"
 
     if [ ! -f "${_source_built_cupy_env_dirpath}/${_activation_script_relpath}" ]; then
         if [ "${_strict_presence_flag}" -ne "${_FALSE_NUM_VAL}" ]; then
@@ -189,7 +149,11 @@ validate_source_built_cupy_env() (
     #     to this complete environment gate.
     # shellcheck disable=SC1090,SC1091
     . "${_source_built_cupy_env_dirpath}/${_activation_script_relpath}"
-    if ! env CUPY_ACCELERATORS="cub" python3 \
+    if ! _cupy_rocm_home="$(select_cupy_rocm_home \
+        "${_canonical_rocm_home}" "${_conventional_rocm_path}")"; then
+        return 1
+    fi
+    if ! env CUPY_ACCELERATORS="cub" ROCM_HOME="${_cupy_rocm_home}" python3 \
         "${_validation_lib_dirpath}/cupy_numpy_smoke.py"; then
         echo "FAILED source-built CuPy custom-kernel validation!" >&2
         return 1
@@ -207,7 +171,8 @@ validate_source_built_cupy_env() (
 # Validate the complete packaged AMD RAPIDS shared workload environment gate.
 # Usage: validate_packaged_amd_rapids_env <virtualenv_dirpath> \
 #            <activation_script_relpath> <validation_lib_dirpath> \
-#            <canonical_rocm_home> <numba_library_paths> <strict_presence_flag> \
+#            <canonical_rocm_home> <conventional_rocm_path> \
+#            <numba_library_paths> <strict_presence_flag> \
 #            <strict_presence_cli_flag> <max_canny_disagreement_percent>
 # Returns: 0 after all required checks pass or optional absence is reported;
 #     1 for required absence or failure of any required validation
@@ -216,10 +181,11 @@ validate_packaged_amd_rapids_env() (
     _activation_script_relpath="${2}"
     _validation_lib_dirpath="${3}"
     _canonical_rocm_home="${4}"
-    _numba_library_paths="${5}"
-    _strict_presence_flag="${6}"
-    _strict_presence_cli_flag="${7}"
-    _max_canny_disagreement_percent="${8}"
+    _conventional_rocm_path="${5}"
+    _numba_library_paths="${6}"
+    _strict_presence_flag="${7}"
+    _strict_presence_cli_flag="${8}"
+    _max_canny_disagreement_percent="${9}"
 
     if [ ! -f "${_packaged_amd_rapids_env_dirpath}/${_activation_script_relpath}" ]; then
         if [ "${_strict_presence_flag}" -ne "${_FALSE_NUM_VAL}" ]; then
@@ -237,7 +203,11 @@ validate_packaged_amd_rapids_env() (
     #     to this complete environment gate.
     # shellcheck disable=SC1090,SC1091
     . "${_packaged_amd_rapids_env_dirpath}/${_activation_script_relpath}"
-    if ! env CUPY_ACCELERATORS="cub" python3 \
+    if ! _cupy_rocm_home="$(select_cupy_rocm_home \
+        "${_canonical_rocm_home}" "${_conventional_rocm_path}")"; then
+        return 1
+    fi
+    if ! env CUPY_ACCELERATORS="cub" ROCM_HOME="${_cupy_rocm_home}" python3 \
         "${_validation_lib_dirpath}/cupy_numpy_smoke.py"; then
         echo "FAILED packaged AMD CuPy custom-kernel validation!" >&2
         return 1
@@ -248,7 +218,7 @@ validate_packaged_amd_rapids_env() (
         return 1
     fi
     echo "NOTE: Numba test used LD_LIBRARY_PATH='${_numba_library_paths}'"
-    if ! env CUPY_ACCELERATORS="cub" ROCM_HOME="${_canonical_rocm_home}" \
+    if ! env CUPY_ACCELERATORS="cub" ROCM_HOME="${_cupy_rocm_home}" \
         python3 "${_validation_lib_dirpath}/hipcim_canny_smoke.py" \
             --max-disagreement-percent "${_max_canny_disagreement_percent}"; then
         echo "FAILED packaged cuCIM Canny correctness validation!" >&2

@@ -6,6 +6,9 @@ readonly UFW_INSTALLED_FRESH="UFW_FRESH"
 readonly UFW_KNOWN_BASELINE="UFW_BASELINE"
 readonly UFW_CUSTOM_STATE="UFW_CUSTOM_STAT"
 readonly UFW_UNK_STATE="UFW_UNKNOWN_STAT"
+# Consumed by setup and validation scripts that source this common file.
+# shellcheck disable=SC2034
+readonly CUPY_CONVENTIONAL_ROCM_HOME="/opt/rocm"
 # Consumed by setup and validation helpers that source this common file;
 #     standalone analysis cannot see those uses.
 # shellcheck disable=SC2034
@@ -27,6 +30,121 @@ DEFAULT_INPUT_POLICY=\"DROP\"
 DEFAULT_OUTPUT_POLICY=\"ACCEPT\"
 DEFAULT_FORWARD_POLICY=\"DROP\"
 DEFAULT_APPLICATION_POLICY=\"SKIP\""
+
+# Validate and canonicalize one ROCm root reported by a trusted selector such
+#     as the hipconfig found through the caller-selected PATH.
+# Usage: canonicalize_rocm_root <reported_rocm_root>
+# Returns: 0 and prints the canonical root; 1 for an invalid or incomplete root
+canonicalize_rocm_root() {
+
+    local _reported_rocm_root
+    local _canonical_rocm_root
+
+    if [ "$#" -ne 1 ]; then
+        echo "ERROR: ROCm root canonicalization expects one reported root!" >&2
+        return 1
+    fi
+    _reported_rocm_root="$1"
+    case ${_reported_rocm_root} in
+        ''|*$'\n'*)
+            echo "ERROR: hipconfig reported an empty or multiline ROCm root!" >&2
+            return 1
+            ;;
+        /*) ;;
+        *)
+            echo "ERROR: hipconfig reported a non-absolute ROCm root:" >&2
+            echo "    ${_reported_rocm_root}" >&2
+            return 1
+            ;;
+    esac
+    if ! _canonical_rocm_root="$(realpath --canonicalize-existing -- \
+        "${_reported_rocm_root}")" || [ ! -d "${_canonical_rocm_root}" ]; then
+        echo "ERROR: unable to resolve hipconfig ROCm root:" >&2
+        echo "    ${_reported_rocm_root}" >&2
+        return 1
+    fi
+    if [ ! -d "${_canonical_rocm_root}/lib" ]; then
+        echo "ERROR: selected ROCm root has no lib directory:" >&2
+        echo "    ${_canonical_rocm_root}" >&2
+        return 1
+    fi
+
+    printf '%s\n' "${_canonical_rocm_root}"
+
+}
+
+# Select the conventional ROCm path required by CuPy only after proving that
+#     it resolves to the caller-selected canonical ROCm root.
+# Usage: select_cupy_rocm_home <canonical_rocm_root> <conventional_rocm_path>
+# Returns: 0 and prints the conventional path; 1 if the roots do not agree
+select_cupy_rocm_home() {
+
+    local _canonical_rocm_root
+    local _conventional_rocm_path
+    local _resolved_selected_root
+    local _resolved_conventional_root
+
+    if [ "$#" -ne 2 ]; then
+        echo "ERROR: CuPy ROCm selection expects a canonical root and" >&2
+        echo "    conventional ROCm path!" >&2
+        return 1
+    fi
+    _canonical_rocm_root="$1"
+    _conventional_rocm_path="$2"
+    if ! _resolved_selected_root="$(canonicalize_rocm_root \
+        "${_canonical_rocm_root}")"; then
+        return 1
+    fi
+    case ${_conventional_rocm_path} in
+        ''|*$'\n'*)
+            echo "ERROR: invalid conventional CuPy ROCm path!" >&2
+            return 1
+            ;;
+        /*) ;;
+        *)
+            echo "ERROR: conventional CuPy ROCm path is not absolute:" >&2
+            echo "    ${_conventional_rocm_path}" >&2
+            return 1
+            ;;
+    esac
+    if ! _resolved_conventional_root="$(realpath --canonicalize-existing -- \
+        "${_conventional_rocm_path}")" ||
+        [ ! -d "${_resolved_conventional_root}" ]; then
+        echo "ERROR: unable to resolve conventional CuPy ROCm path:" >&2
+        echo "    ${_conventional_rocm_path}" >&2
+        return 1
+    fi
+    if [ "${_resolved_conventional_root}" != "${_resolved_selected_root}" ]; then
+        echo "ERROR: conventional CuPy ROCm path selects a different stack!" >&2
+        echo "    PATH-selected root: ${_resolved_selected_root}" >&2
+        echo "    ${_conventional_rocm_path}: ${_resolved_conventional_root}" >&2
+        return 1
+    fi
+
+    printf '%s\n' "${_conventional_rocm_path}"
+
+}
+
+# Require one setup marker path to be absent or a non-symlink regular file.
+# Usage: require_regular_or_absent_setup_marker <marker_path>
+# Returns: 0 for an absent or valid marker; 1 for invalid arguments or type
+require_regular_or_absent_setup_marker() {
+
+    local _marker_path
+
+    if [ "$#" -ne 1 ]; then
+        echo "ERROR: setup marker validation expects one path!" >&2
+        return 1
+    fi
+    _marker_path="$1"
+    if [ -L "${_marker_path}" ] ||
+        { [ -e "${_marker_path}" ] && [ ! -f "${_marker_path}" ]; }; then
+        echo "ERROR: setup marker is not a non-symlink regular file:" >&2
+        echo "    ${_marker_path}" >&2
+        return 1
+    fi
+
+}
 
 # Detect one GPU's native architecture through AMD SMI's static JSON output.
 # Usage: detect_amd_smi_gpu_arch <gpu_index>
@@ -217,10 +335,18 @@ print_ufw_diagnostics() {
 # Usage: guarded_rm_rf [files]...
 guarded_rm_rf() {
 
-    _permitted_root_dir=""
+    local _permitted_root_dir=""
+    local _curr_username
+    local _target_path
+    local _canonical_target_path
+
+    if [ "$#" -eq 0 ]; then
+        echo "Refusing recursive deletion without an explicit target!" >&2
+        return 1
+    fi
     _curr_username=$(id --user --name) || {
         echo "FAILED to get effective user name string!" >&2
-        exit 1
+        return 1
     }
     if [ "${_curr_username}" = "root" ]; then
         _permitted_root_dir="/root"
@@ -229,33 +355,32 @@ guarded_rm_rf() {
     fi
     if [ ! -d "${_permitted_root_dir}" ]; then
         echo "Expected directory '${_permitted_root_dir}' does NOT exist!"
-        exit 1
+        return 1
     fi
 
-    if ! _str_paths_list="$(realpath --canonicalize-missing "$@")"; then
-        echo "Refusing to forcefully and recursively delete paths because" >&2
-        echo "    one or more target paths could not be resolved!" >&2
-        exit 1
-    fi
-    _old_ifs="$IFS"
-    # Don't let command substitution swallow trailing newlines
-    IFS="$(printf '\n%s' ".")"
-    IFS="${IFS%.}"
-    for str_path in ${_str_paths_list}; do
-        if echo "${str_path}" | \
-                grep --quiet --invert-match "^${_permitted_root_dir}/"; then
-            echo "Refusing to forcefully and recursively delete path" >&2
-            echo "    corresponding to '${str_path}'," >&2
-            echo "    since it is not a path that starts with" \
-                                "'${_permitted_root_dir}/'!" >&2
-            exit 1
-        elif [ "${str_path}" = "${_permitted_root_dir}/" ]; then
-            echo "Refusing to forcefully and recursively delete path" >&2
-            echo "    '${_permitted_root_dir}' itself!" >&2
-            exit 1
+    for _target_path in "$@"; do
+        if ! _canonical_target_path="$(realpath --canonicalize-missing -- \
+            "${_target_path}")"; then
+            echo "Refusing to forcefully and recursively delete path because" >&2
+            echo "    target '${_target_path}' could not be resolved!" >&2
+            return 1
         fi
+        case ${_canonical_target_path} in
+            "${_permitted_root_dir}"/*) ;;
+            "${_permitted_root_dir}")
+                echo "Refusing to forcefully and recursively delete path" >&2
+                echo "    '${_permitted_root_dir}' itself!" >&2
+                return 1
+                ;;
+            *)
+                echo "Refusing to forcefully and recursively delete path" >&2
+                echo "    corresponding to '${_canonical_target_path}'," >&2
+                echo "    since it is not a path that starts with" \
+                    "'${_permitted_root_dir}/'!" >&2
+                return 1
+                ;;
+        esac
     done
-    IFS="${_old_ifs}"
 
     # We execute this only after checks have passed and
     #     WITHOUT sudo

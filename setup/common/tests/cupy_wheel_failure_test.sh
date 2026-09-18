@@ -46,6 +46,17 @@ hipconfig() {
     printf '/opt/rocm-7.2.0\n'
 }
 
+canonicalize_rocm_root() {
+    [ "$#" -eq 1 ] && [ "$1" = "/opt/rocm-7.2.0" ] || return 64
+    printf '/opt/rocm-7.2.0\n'
+}
+
+select_cupy_rocm_home() {
+    [ "$#" -eq 2 ] && [ "$1" = "/opt/rocm-7.2.0" ] &&
+        [ "$2" = "${CUPY_CONVENTIONAL_ROCM_HOME}" ] || return 64
+    printf '%s\n' "${CUPY_CONVENTIONAL_ROCM_HOME}"
+}
+
 detect_amd_smi_gpu_arch() {
     printf 'gfx942\n'
 }

@@ -742,6 +742,16 @@ when their context explains the difference.
   of a `main` function. Do not begin new setup actions before that marker.
 - Idempotent checks that must run on every invocation should normally remain
   outside milestone-wrapped stages.
+- Treat setup milestone paths as repository state, not generic filesystem
+  inputs. A completed or pending marker must be absent or a non-symlink regular
+  file; refuse symlinks and other file types rather than following them or
+  treating them as completed work.
+- Setup entry points currently assume one coordinated invocation per checkout
+  and host. Do not add per-stage `flock` calls or imply concurrent mutation is
+  supported without first defining a useful machine-versus-checkout lock scope,
+  plan-only behavior, and recovery contract. If demonstrated concurrent use
+  justifies locking later, prefer one entrypoint-level lock over scattered
+  stage locks.
 - Add a source guard only after the actual sourcing topology demonstrates that
   repeated sourcing can redeclare protected state or repeat harmful
   initialization. Do not add guards mechanically to utility, variable, or
@@ -842,13 +852,18 @@ helpers should receive those selected values through arguments or printed
 return values instead of implicitly consulting or mutating caller-global
 environment state when explicit data flow is practical.
 
-The narrow exception is an exact versioned ROCm `bin` directory added to
-`PATH` on a deliberately dedicated environment whose system stack is pinned to
-that version. The DevCloud `/opt/rocm-7.2.3/bin` `.profile` block follows this
-exception. It does not authorize use of the mutable `/opt/rocm` alternative or
-persistent exports of library and runtime-selection variables. `PATH` affects
-which executable is selected; dynamic-loader and runtime-selection variables
-can change how that executable behaves.
+The narrow persistent exception is an exact versioned ROCm `bin` directory
+added to `PATH` on a deliberately dedicated environment whose system stack is
+pinned to that version. The DevCloud `/opt/rocm-7.2.3/bin` `.profile` block
+follows this exception. CuPy upstream and AMD-fork operations have a separate
+command-scoped contract: use conventional `ROCM_HOME=/opt/rocm` only after
+canonicalizing the complete root reported by the `hipconfig` selected through
+`PATH` and proving that `/opt/rocm` resolves to that same root. Keep the loader
+path explicit and versioned. This validated CuPy exception does not authorize
+generic reliance on the mutable alternative or persistent exports of library
+and runtime-selection variables. `PATH` affects which executable is selected;
+dynamic-loader and runtime-selection variables can change how that executable
+behaves.
 
 Apply this policy when reviewing existing scripts and documentation as well as
 new work. Treat a concrete conflict as a bug or bounded migration task, but do

@@ -160,6 +160,22 @@ if [ -e "${MALFORMED_LATER_STAGE}" ]; then
 fi
 assert_no_done_marker "${MALFORMED_DIR}" system_upgrade
 
+SYMLINK_DIR="${TEST_TMP_DIR}/symlink-state"
+SYMLINK_LATER_STAGE="${TEST_TMP_DIR}/symlink-state-later-stage"
+SYMLINK_TARGET="${TEST_TMP_DIR}/symlink-pending-target"
+mkdir "${SYMLINK_DIR}"
+printf "%s\n" "${BOOT_ID_A}" > "${SYMLINK_TARGET}"
+ln --symbolic "${SYMLINK_TARGET}" "${SYMLINK_DIR}/system_upgrade.pending"
+run_reboot_sequence "${SYMLINK_DIR}" system_upgrade "${SYMLINK_LATER_STAGE}"
+if [ "${SEQUENCE_STATUS}" -eq 0 ] || [ -e "${SYMLINK_LATER_STAGE}" ]; then
+    echo "FAILED: reboot helper accepted a symlink pending marker!" >&2
+    exit 1
+fi
+if [ "$(<"${SYMLINK_TARGET}")" != "${BOOT_ID_A}" ]; then
+    echo "FAILED: rejected symlink reboot state modified its target!" >&2
+    exit 1
+fi
+
 LEGACY_DIR="${TEST_TMP_DIR}/legacy-completed-state"
 LEGACY_LATER_STAGE="${TEST_TMP_DIR}/legacy-later-stage"
 mkdir "${LEGACY_DIR}"

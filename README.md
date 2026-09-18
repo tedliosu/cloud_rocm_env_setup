@@ -72,9 +72,9 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - Project-specific ROCm library and runtime selection remains process-scoped:
     - Setup does not add project ROCm paths to system dynamic-loader configuration or run `ldconfig` merely to make them globally visible.
     - Setup does not persist `LD_LIBRARY_PATH`, `ROCM_HOME`, `ROCM_PATH`, `HIP_PATH`, or similar runtime and build-selection variables in shell startup files.
-    - A deliberately dedicated environment with a pinned system stack may add that stack's exact versioned `bin` directory to `PATH`. This narrow executable-selection exception does not permit persistent library or runtime-selection variables or reliance on a mutable `/opt/rocm` alternative.
-    - AMD DevCloud setup maintains that project-owned `/opt/rocm-7.2.3/bin` profile block immediately after the ROCm userland stage and prints a temporary current-shell `PATH` command plus command-scoped `ROCM_HOME=/opt/rocm-7.2.3` and `LD_LIBRARY_PATH=/opt/rocm-7.2.3/lib` guidance. A rerun prints the guidance again while completed stages remain skipped; no separate path-report log is required. Setup does not change those runtime-selection variables in the invoking shell.
-    - The common main validator asks the `hipconfig` selected through `PATH` for its complete ROCm root, resolves and reports the canonical directory, and supplies that directory as `ROCM_HOME` plus its `lib` directory as `LD_LIBRARY_PATH` only within the validator process and its children.
+    - A deliberately dedicated environment with a pinned system stack may add that stack's exact versioned `bin` directory to `PATH`. This narrow executable-selection exception does not permit persistent library or runtime-selection variables. The conventional `/opt/rocm` path is used for a CuPy-family command only after the repository proves that it resolves to the complete ROCm root selected through `PATH`; this does not authorize unverified reliance on a mutable alternative.
+    - AMD DevCloud setup maintains that project-owned `/opt/rocm-7.2.3/bin` profile block immediately after the ROCm userland stage and prints a temporary current-shell `PATH` command, the pinned root, command-scoped `LD_LIBRARY_PATH=/opt/rocm-7.2.3/lib`, and CuPy-family `ROCM_HOME=/opt/rocm` guidance. DevCloud accepts that CuPy path only while the alternatives link resolves exactly to `/opt/rocm-7.2.3`. A rerun prints the guidance again while completed stages remain skipped; no separate path-report log is required. Setup does not change those runtime-selection variables in the invoking shell.
+    - The common main validator asks the `hipconfig` selected through `PATH` for its complete ROCm root, resolves and reports the canonical directory, and supplies that root plus its `lib` directory only within the validator process and its children. Activated upstream CuPy, `amd-cupy`, and hipCIM checks instead receive command-scoped `ROCM_HOME=/opt/rocm` only after it resolves to that same canonical root; their loader path remains the explicit versioned library directory.
     - The validator entry script owns that environment selection and passes selected paths explicitly into helpers that need them; helpers do not implicitly choose or modify the caller's ROCm environment.
 
 # Non-Goals
@@ -184,6 +184,10 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - [ ] As part of the actual public-visibility transition, enable and verify GitHub private vulnerability reporting, then replace the conditional security-reporting wording in `CONTRIBUTING.md` with the confirmed private route (and add a small `SECURITY.md` if useful):
     - GitHub exposes private vulnerability reporting for public repositories, so this cannot be verified while the repository remains private.
 
+- [ ] Complete the remaining privileged temporary-file lifecycle follow-up from the implementation-primitives audit:
+    - Give the DevCloud root handoff's sudoers and authorized-key temporary files one scoped cleanup trap while preserving its same-filesystem, non-clobbering hard-link publication.
+    - Review this separately because it changes privileged partial-failure handling, then rerun the root-only handoff scenarios before acceptance.
+
 ### Hot Aisle Quick Start and Common Use Path
 
 - [ ] Add instructions for using this repository on Hot Aisle MI300X:
@@ -255,6 +259,11 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Packaged hipDF may join the broader RAPIDS gate when that keeps orchestration simpler. Do not source-build or forward-port hipDF, create a compatibility solver, or require feature parity with Hot Aisle and Azure.
 
 ## CuPy Build and Architecture Behavior
+
+- [ ] Revalidate conventional CuPy ROCm-root selection on the next applicable provider acceptance rounds:
+    - Confirm the supported Hot Aisle and Azure source builds use command-scoped `ROCM_HOME=/opt/rocm` only after it resolves to the `hipconfig`-selected canonical root.
+    - Confirm DevCloud packaged `amd-cupy` and hipCIM use the same validated conventional path while retaining `/opt/rocm-7.2.3/lib` as the scoped loader path.
+    - This verifies alignment with [upstream CuPy's conventional-path recommendation](https://docs.cupy.dev/en/v14.1.1/install.html#using-cupy-on-amd-gpu-experimental) and [AMD's corresponding ROCm CuPy-fork build guidance](https://rocm.docs.amd.com/projects/hipDF/en/docs-25.10/install/BUILD.html); it does not make `/opt/rocm` a general unverified runtime selector.
 
 - [ ] Document why the supported Hot Aisle and Azure paths build CuPy from source:
     - Current ROCm versions and less commonly validated targets such as Azure Pro V710 `gfx1101` may not be adequately supported by prebuilt wheels.
