@@ -184,11 +184,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Inspect stylistic differences such as `grep` versus Bash matching, here-documents versus other text construction, `case` versus `if`/`elif`, and mutable test globals versus explicit data flow only for concrete effects on auditability, testability, portability, failure behavior, maintainability, or control-flow clarity.
     - Prefer the clearest semantic model, including explicit state machines when the problem is inherently detailed. Do not normalize equally valid styles, refactor merely to reduce branches, or begin broad cleanup without first recording specific problems and why they matter.
 
-- [ ] Evaluate organization of the growing local shell-test surface:
-    - Compare the current `tests/run_local_tests.sh`, possible focused test drivers, and Bats based on readability, failure reporting, maintenance cost, portability, and execution on development and provider environments.
-    - Determine how Bats would be installed reproducibly on arbitrary provider VMs and whether an added bootstrap dependency or vendored framework is justified.
-    - Do not adopt a framework or split drivers until the expected organizational benefit outweighs dependency and maintenance costs.
-
 ### Public Release Readiness
 
 - [ ] Before changing the repository to public visibility, perform one bounded public-release audit of the current tree and Git history:

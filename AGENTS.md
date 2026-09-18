@@ -899,12 +899,27 @@ fingerprints should mainly determine whether checks are applicable rather than
 create separate provider-specific validation implementations. Add provider
 specialization only when a concrete environmental difference requires it.
 
-The current explicit shell tests and `tests/run_local_tests.sh` remain an
-acceptable dependency-free organization while the repository evaluates its
-growing test surface. Do not assume Bats, multiple drivers, or vendoring a test
-framework is automatically better. Any change should justify its readability,
-maintenance, portability, and failure-reporting benefits against installation
-reliability and bootstrap dependency costs on arbitrary provider VMs.
+The current explicit shell tests and single `tests/run_local_tests.sh` driver
+are the selected dependency-free organization at the repository's present
+scale. Its explicit list provides one inspectable registration point, its
+per-file headings localize failures, and each focused script owns its detailed
+diagnostics. Multiple drivers would currently add duplicate registration or
+ambiguous partial-suite selection, while Bats would add either a provider
+bootstrap dependency or a vendored framework plus broad test conversion.
+Revisit this choice only when a concrete problem such as excessive runtime,
+repeated fixture machinery, inadequate failure localization, or a need for
+safe parallel execution makes the expected benefit outweigh those portability
+and maintenance costs.
+
+Do not standardize test implementation style mechanically. Use direct Bash
+equality or `case` for one known scalar value, fixed-string line matching for
+exact lines within files or multiline output, and regular expressions only
+when the accepted language is intentionally a pattern. Mutable globals remain
+reasonable for clearly named mock observations and scenario fixtures. Prefer
+explicit arguments, return values, or scenario isolation when hidden mutation
+creates order dependence, state leakage, or unclear failure behavior. Revise
+existing tests only for a concrete correctness, auditability, portability, or
+maintenance benefit rather than superficial consistency.
 
 Treat each validation CLI gate as a meaningful environment or capability
 bundle. If an optional environment is absent and not explicitly required,
