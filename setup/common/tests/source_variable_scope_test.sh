@@ -48,6 +48,24 @@ readonly -a VALIDATION_SOURCE_VARIABLES=(
     HIPCIM_CANNY_MAX_DISAGREEMENT_PERCENT
     COMFYUI_WORKFLOW_MODLNAME_FILTER
 )
+readonly -a AZURE_SOURCE_VARIABLES=(
+    EXPECTED_DISTRO
+    EXPECTED_DIST_VER
+    EXPECTED_DIST_CODENAME
+    EXPECTED_ROCM_VER
+    EXPECTED_ROCMVER_REGEX
+    FASTFETCH_PIN_VER
+    FASTFETCH_DEB_FILENAME
+)
+readonly -a HOT_AISLE_SOURCE_VARIABLES=(
+    EXPECTED_DISTRO
+    EXPECTED_DIST_VER
+    EXPECTED_DIST_CODENAME
+    EXPECTED_ROCM_VER
+    EXPECTED_ROCMVER_REGEX
+    FASTFETCH_PPA_FULLPATH
+    FASTFETCH_PPA_URL
+)
 
 assert_not_exported() {
     local _variable_name
@@ -80,12 +98,43 @@ assert_not_exported() {
     export COMFYUI_VALD_MODEL_REPO_TYPE="ambient-model-type"
 
     cd "${REPO_ROOT}/validate/bin"
-    # shellcheck source=../lib/vald_shared_vars.sh
+    # shellcheck source=../../../validate/lib/vald_shared_vars.sh
     . "../lib/vald_shared_vars.sh"
 
     [ "${TRITON_REPO_LOCAL_DIRNAME}" = "local_triton_repo" ]
     [ "${COMFYUI_VALD_MODEL_REPO_TYPE}" = "model" ]
     assert_not_exported "${VALIDATION_SOURCE_VARIABLES[@]}"
+)
+
+(
+    # Each provider owns constants with the same names. Subshells deliberately
+    #     isolate their readonly declarations and ambient-value fixtures.
+    # shellcheck disable=SC2030
+    export EXPECTED_DISTRO="Ambient Linux"
+    export FASTFETCH_PIN_VER="ambient-version"
+
+    cd "${REPO_ROOT}/setup/azure/bin"
+    # shellcheck source=../../azure/lib/azure_vars.sh
+    . "../lib/azure_vars.sh"
+
+    [ "${EXPECTED_DISTRO}" = "Ubuntu" ]
+    [ "${FASTFETCH_PIN_VER}" = "2.62.1" ]
+    assert_not_exported "${AZURE_SOURCE_VARIABLES[@]}"
+)
+
+(
+    # See the intentional provider-test isolation above.
+    # shellcheck disable=SC2031
+    export EXPECTED_DISTRO="Ambient Linux"
+    export FASTFETCH_PPA_URL="ambient-url"
+
+    cd "${REPO_ROOT}/setup/hot_aisle/bin"
+    # shellcheck source=../../hot_aisle/lib/hot_aisle_vars.sh
+    . "../lib/hot_aisle_vars.sh"
+
+    [ "${EXPECTED_DISTRO}" = "Ubuntu" ]
+    [[ "${FASTFETCH_PPA_URL}" == *"/noble/Release" ]]
+    assert_not_exported "${HOT_AISLE_SOURCE_VARIABLES[@]}"
 )
 
 echo "PASSED source-only variable scope tests!"

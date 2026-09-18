@@ -995,7 +995,8 @@ After editing:
 - show or summarize the exact diff for maintainer review;
 - run `git diff --check`;
 - run syntax checks for changed shell and Python files;
-- run ShellCheck consistently with the repository's sourced-file structure;
+- run `tests/run_shellcheck.sh`, which analyzes every repository shell file
+  with source following enabled and source paths relative to each script;
 - run `tests/run_local_tests.sh` when repository-local shell behavior is
   affected, and add new local or mocked shell tests to its explicit list;
 - test important state matrices with mocks when live cloud access is unnecessary;

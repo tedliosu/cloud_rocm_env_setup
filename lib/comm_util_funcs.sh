@@ -6,6 +6,9 @@ readonly UFW_INSTALLED_FRESH="UFW_FRESH"
 readonly UFW_KNOWN_BASELINE="UFW_BASELINE"
 readonly UFW_CUSTOM_STATE="UFW_CUSTOM_STAT"
 readonly UFW_UNK_STATE="UFW_UNKNOWN_STAT"
+# Consumed by setup and validation helpers that source this common file;
+#     standalone analysis cannot see those uses.
+# shellcheck disable=SC2034
 readonly UFW_DEFAULTS_SELECTOR_REGEX='^(IPV6|DEFAULT_INPUT_POLICY|DEFAULT_OUTPUT_POLICY|DEFAULT_FORWARD_POLICY|DEFAULT_APPLICATION_POLICY)='
 # Trailing whitespace in this is INTENTIONAL for fingerprinting!
 readonly _UFW_BASELINE_STATUS_CONTENTS="Status: active

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 
 # Utility shell functions each used to encapsulate non-trivial amounts of logic
 #     needed for basic validation of specific ROCm workloads
