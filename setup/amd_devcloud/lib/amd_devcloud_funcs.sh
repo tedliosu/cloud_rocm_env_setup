@@ -65,8 +65,8 @@ _amd_devcloud_expected_driver_path_artifacts() {
 # Classify the finite accepted AMD DevCloud setup states and require internally
 #     consistent stage milestones before ordinary-user setup mutation.
 # Usage: check_amd_devcloud_setup_admission_dont_wrap <milestones_directory>
-# Returns: 0 for plan-only, accepted bare state, or exact project-managed
-#          repository or driver state; 1 for failed observations or unknown state
+# Returns: 0 for plan-only or an exact accepted bare, repository-bootstrap,
+#          driver-installed, or ROCm-userland state; 1 otherwise
 check_amd_devcloud_setup_admission_dont_wrap() {
     local _milestones_dir
     local _milestones_parent
@@ -255,6 +255,8 @@ check_amd_devcloud_setup_admission_dont_wrap() {
         return 1
     fi
 
+    # Keep the complete state fingerprints adjacent so their mutually exclusive
+    #     marker and artifact requirements remain directly comparable.
     if [ "${_pci_count}" -eq 1 ]; then
         if [ "${_amdgpu_loaded}" -eq 0 ] && [ "${_kfd_present}" -eq 0 ] &&
             [ ! -e "${_repository_bootstrap_marker}" ] &&

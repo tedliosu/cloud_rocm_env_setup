@@ -120,6 +120,25 @@ expect_acceptance() {
     fi
 }
 
+expect_state() {
+    local _milestones_dir="$1"
+    local _expected_state="$2"
+    local _admission_output
+    local _first_line
+
+    if ! _admission_output="$(check_amd_devcloud_setup_admission_dont_wrap \
+        "${_milestones_dir}" 2>/dev/null)"; then
+        echo "FAILED: expected DevCloud setup admission acceptance!" >&2
+        exit 1
+    fi
+    _first_line="${_admission_output%%$'\n'*}"
+    if [ "${_first_line}" != "AMD DevCloud admission state: ${_expected_state}" ]; then
+        echo "FAILED: expected DevCloud admission state '${_expected_state}'," >&2
+        echo "    observed '${_first_line}'!" >&2
+        exit 1
+    fi
+}
+
 expect_rejection() {
     local _milestones_dir="$1"
 
@@ -159,7 +178,7 @@ mkdir "${MANAGED_DIR}" "${EARLY_BOOTSTRAP_DIR}" "${DRIVER_INSTALLED_DIR}" \
 touch "${BAD_MILESTONES_PATH}"
 
 reset_observations
-expect_acceptance "${BARE_DIR}"
+expect_state "${BARE_DIR}" "${AMD_DEVCLOUD_ADMISSION_BARE}"
 
 reset_observations
 expect_acceptance "${TEST_TMP_DIR}/not-created-yet"
@@ -192,7 +211,8 @@ touch "${MANAGED_DIR}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done" \
     "${MANAGED_DIR}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_STAGE_NAME}.done"
 reset_observations
 set_repository_bootstrap_observations
-expect_acceptance "${MANAGED_DIR}"
+expect_state "${MANAGED_DIR}" \
+    "${AMD_DEVCLOUD_ADMISSION_REPOSITORY_BOOTSTRAP}"
 
 reset_observations
 set_repository_bootstrap_observations
@@ -229,7 +249,8 @@ touch "${DRIVER_COMPLETED_DIR}/${AMD_DEVCLOUD_DRIVER_REBOOT_NAME}.done"
 
 reset_observations
 set_driver_observations
-expect_acceptance "${DRIVER_INSTALLED_DIR}"
+expect_state "${DRIVER_INSTALLED_DIR}" \
+    "${AMD_DEVCLOUD_ADMISSION_DRIVER_INSTALLED}"
 
 reset_observations
 set_driver_observations
@@ -275,7 +296,8 @@ reset_observations
 set_rocm_userland_observations
 TEST_AMDGPU_LOADED=1
 TEST_KFD_PRESENT=1
-expect_acceptance "${ROCM_USERLAND_DIR}"
+expect_state "${ROCM_USERLAND_DIR}" \
+    "${AMD_DEVCLOUD_ADMISSION_ROCM_USERLAND_INSTALLED}"
 
 cp --archive "${ROCM_USERLAND_DIR}/." "${POST_USERLAND_COMMON_DIR}/"
 touch "${POST_USERLAND_COMMON_DIR}/ensure_pinned_cmake.done" \
