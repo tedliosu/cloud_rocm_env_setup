@@ -100,6 +100,35 @@ concrete policy, safety, auditability, or coherence problem, describe its
 impact and handle it as a bounded reviewed change or preserve it in the README
 backlog.
 
+Use layered, event-triggered review rather than treating every change as a
+repository-wide audit or relying on one permanent global review:
+
+- Review each nontrivial change in proportion to its risk. Privileged mutation,
+  destructive behavior, failure propagation, environment selection, provider
+  gating, validation semantics, dependency sources, and support claims require
+  especially careful review.
+- Review a subsystem at the end of a coherent setup, validation, dependency,
+  or documentation batch when cross-file behavior can be judged together.
+- Perform a bounded repository-wide review before an initial public release or
+  major support promotion, after a substantial cross-cutting architectural
+  change, or after a serious security, destructive-operation, or false-success
+  failure. If development remains active without one of those triggers,
+  reconsider whether another global review is useful after roughly six to
+  twelve months; a quiet interval does not require a ceremonial reread.
+- Keep provider acceptance separate from general code review. Schedule paid
+  cloud testing only when the remaining acceptance question requires that
+  provider, and consolidate those questions into one coordinated round.
+
+External participation is review-only unless the maintainer explicitly changes
+the contribution model. Issues may report findings, but pull requests are not
+currently accepted because arbitrary external diffs would create unbounded
+review load. Use `CONTRIBUTING.md` as the public reporting policy and reusable
+review handoff for people and independent AI-assisted tools. Ask reviewers to
+work from an immutable commit or tag, remain read-only, cite exact evidence,
+separate confirmed findings from questions, and report findings before
+proposing implementation. Independent model output is a source of leads, not
+proof, and must be checked against repository contracts and observed behavior.
+
 ## Software provenance and generative-AI assistance
 
 Treat software provenance according to concrete risk rather than assuming that

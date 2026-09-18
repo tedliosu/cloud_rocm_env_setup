@@ -10,6 +10,15 @@ mutation, small real workload checks, and maintenance costs that remain
 realistic for a small project. Optional and experimental paths stay separate
 from baseline guarantees.
 
+# Reviews and Issue Reports
+
+External review and in-scope issue reports are welcome. The project currently
+accepts issues but not pull requests because the maintainer cannot commit to
+reviewing arbitrary external diffs. Review invitations are read-only unless the
+maintainer explicitly establishes a different boundary. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the reporting policy, review lenses, and
+a reusable handoff brief for human and AI-assisted reviewers.
+
 # Purpose and Motivation
 
 Installing packages, importing a library, or detecting a GPU does not by
@@ -180,6 +189,14 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Determine how Bats would be installed reproducibly on arbitrary provider VMs and whether an added bootstrap dependency or vendored framework is justified.
     - Do not adopt a framework or split drivers until the expected organizational benefit outweighs dependency and maintenance costs.
 
+### Public Release Readiness
+
+- [ ] Before changing the repository to public visibility, perform one bounded public-release audit of the current tree and Git history:
+    - Check for credentials, tokens, private keys, private URLs, personal data, unredacted logs, and environment artifacts that should not become public.
+    - Confirm that private application or coursework code has not entered the repository and that included third-party material has appropriate attribution and licensing treatment.
+    - Recheck public support claims, the issue-only external review policy, and the available path for reporting a security issue without public disclosure.
+    - Treat this as a concrete release checkpoint, not authorization for speculative forensic review or history rewriting. Rewrite history only if an actual finding requires it.
+
 ### Hot Aisle Quick Start and Common Use Path
 
 - [ ] Add instructions for using this repository on Hot Aisle MI300X:
@@ -302,13 +319,6 @@ cases while keeping its support and maintenance surface deliberately bounded.
 ## Project Information
 
 - [ ] Add a note that links to custom public projects will be added when those projects are ready to be showcased with this repository.
-
-- [ ] Add a contributing section:
-    - Bugs, regressions, documentation fixes, compatibility reports, and improvement suggestions within existing scope are welcome.
-    - Requests for entirely new providers, GPU-platform families, or workload categories are currently declined.
-    - Narrow unsupported-platform diagnostic reports may be considered, but requests for ongoing unofficial platform enablement are not accepted as support obligations.
-    - Pull requests are not currently accepted because of limited review bandwidth.
-    - This policy may change in the future.
 
 ## Conditional Documentation Maintenance
 
