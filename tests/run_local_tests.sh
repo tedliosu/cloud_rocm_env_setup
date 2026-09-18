@@ -32,6 +32,7 @@ readonly -a LOCAL_TESTS=(
     setup/common/tests/ufw_classifier_test.sh
     setup/common/tests/ufw_defaults_selector_test.sh
     validate/tests/plain_filename_test.sh
+    validate/tests/hipco_contract_test.sh
     validate/tests/packaged_amd_rapids_gate_test.sh
     validate/tests/rocm_environment_test.sh
     validate/tests/source_built_cupy_gate_test.sh

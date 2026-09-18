@@ -282,6 +282,27 @@ validate_basic_triton() {
 
 }
 
+# Return whether an exact architecture in a comma- or semicolon-separated CMake
+#     architecture list needs the narrow RDNA warp-size compatibility patch.
+_hipco_arches_need_warpsize_32() {
+
+    [ "$#" -eq 1 ] || return 1
+    case ",${1//;/,}," in
+        *,gfx1100,*|*,gfx1101,*) return 0;;
+        *) return 1;;
+    esac
+
+}
+
+# Return whether example output contains the exact upstream success line.
+_hipco_example_reported_success() {
+
+    [ "$#" -eq 1 ] || return 1
+    grep --fixed-strings --line-regexp --quiet \
+        'Success! Found all values.' <<<"${1}"
+
+}
+
 # Validate hipCollections static map host bulk API example works
 #     with system ROCm and CMake.
 # Usage: validate_basic_hipco <cloned_hipco_repo_abs_dirpath> <hipco_target_commit_sha> \
@@ -291,6 +312,7 @@ validate_basic_triton() {
 validate_basic_hipco() {
 
     local _rocm_home="${8}"
+    local _example_output
 
     _build_dir_name="build"
     _lib_cmake_relpath="lib/cmake"
@@ -311,7 +333,7 @@ validate_basic_hipco() {
         exit 1
     fi
     # IMPORTANT - env var could be unset, so we use default empty!
-    if echo "$3" | grep --quiet "gfx110[01]"; then
+    if _hipco_arches_need_warpsize_32 "$3"; then
         git -C "$1" apply "$4"
         env CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH:-}:${_rocm_home}/${_lib_cmake_relpath}" \
                                  RAPIDS_CMAKE_MODULE_PATH="$5/${_rapids_cmake_relpath}" cmake \
@@ -326,13 +348,17 @@ validate_basic_hipco() {
                                  -S "$1" -B "$1/${_build_dir_name}"
     fi
     cmake --build "$1/${_build_dir_name}" --target "${_example_bin_name}"
-    if "$1/${_build_dir_name}/examples/${_example_bin_name}" | \
-        grep --ignore-case "success"; then
-        echo "PASSED ${_test_common_str}"
-    else
+    if ! _example_output="$("$1/${_build_dir_name}/examples/${_example_bin_name}")"; then
+        printf '%s\n' "${_example_output}"
         echo "FAILED ${_test_common_str}" >&2
         exit 1
     fi
+    printf '%s\n' "${_example_output}"
+    if ! _hipco_example_reported_success "${_example_output}"; then
+        echo "FAILED ${_test_common_str}" >&2
+        exit 1
+    fi
+    echo "PASSED ${_test_common_str}"
     guarded_rm_rf "$1" "$5"
 
 }
