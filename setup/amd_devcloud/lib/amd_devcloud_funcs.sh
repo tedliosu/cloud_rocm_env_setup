@@ -951,7 +951,7 @@ print_amd_devcloud_environment_report() (
     local _baseline_apt_versions
     local _baseline_python_versions
     local _package_name
-    local -a _baseline_apt_packages=(cmake w3m apt-file)
+    local -a _baseline_apt_packages=(cmake)
 
     if [ "$#" -ne 4 ]; then
         echo "ERROR: DevCloud environment reporting expects four arguments!" >&2

@@ -15,6 +15,9 @@ readonly TEST_REQUIREMENTS
 PROJECT_REQUIREMENTS="$(realpath \
     "${SCRIPT_DIR}/../etc/packaged_rapids_requirements.txt")"
 readonly PROJECT_REQUIREMENTS
+COMMON_GPU_REQUIREMENTS="$(realpath \
+    "${SCRIPT_DIR}/../../common/etc/gpu_arr_non_cupy_requirements.txt")"
+readonly COMMON_GPU_REQUIREMENTS
 TEST_CALL_LOG="${TEST_TMP_DIR}/calls.log"
 readonly TEST_CALL_LOG
 
@@ -34,8 +37,11 @@ grep --fixed-strings --line-regexp --quiet \
     'amd-cupy==13.5.1' "${PROJECT_REQUIREMENTS}"
 grep --fixed-strings --line-regexp --quiet \
     'amd-hipcim==25.10.0' "${PROJECT_REQUIREMENTS}"
+grep --fixed-strings --line-regexp --quiet -- \
+    '-r ../../common/etc/gpu_arr_non_cupy_requirements.txt' \
+    "${PROJECT_REQUIREMENTS}"
 grep --fixed-strings --line-regexp --quiet \
-    'scikit-learn[examples]>=1.8,<1.9' "${PROJECT_REQUIREMENTS}"
+    'scikit-learn[examples]>=1.8,<1.9' "${COMMON_GPU_REQUIREMENTS}"
 
 # Preserve these expressions for the generated command doubles.
 # shellcheck disable=SC2016

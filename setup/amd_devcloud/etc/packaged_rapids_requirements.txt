@@ -2,12 +2,5 @@
 
 amd-cupy==13.5.1
 amd-hipcim==25.10.0
-Cython>=3.1,<3.2
-numba>=0.62,<0.72
-numpy>=2.0,<2.6
-scikit-image[data,optional]
-# scikit-learn 1.9 removed the examples extra used by the adopted MLP workload.
-scikit-learn[examples]>=1.8,<1.9
-scipy>=1.14
-setuptools>=77
-wheel
+
+-r ../../common/etc/gpu_arr_non_cupy_requirements.txt

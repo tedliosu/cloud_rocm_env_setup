@@ -669,7 +669,7 @@ ensure_apt_with_custom_conf() {
     sudo --set-home touch "/root/${_w3m_hidden_dirname}/${_w3m_hist_filename}"
     # safe because apt package names each NEVER contain whitespace(s)
     # shellcheck disable=SC2086
-    sudo --set-home apt-get install --assume-yes ${_common_apt_packages} w3m apt-file
+    sudo --set-home apt-get install --assume-yes ${_common_apt_packages}
     sudo --set-home apt-file update
     sudo --set-home update-alternatives --set "pager" "/usr/bin/w3m"
 
