@@ -20,13 +20,18 @@ collaboration demonstrates that additional review capacity actually exists.
 
 ## Useful Issue Reports
 
-Before filing an issue, read the top-level `README.md` and `AGENTS.md`, search
-for an existing report, and identify the exact commit reviewed or tested.
+Before filing an issue, read the relevant part of the top-level `README.md`,
+search for an existing report, and identify the exact commit reviewed or
+tested. Ordinary issue reporters do not need to read all of `AGENTS.md`, locate
+the responsible source file, or diagnose the cause. Reviewers examining
+implementation contracts should also consult [AGENTS.md](AGENTS.md);
+test-focused reviewers may start with the [testing guide](tests/README.md).
 
 A useful report includes:
 
 - a concise description of the problem and its practical impact;
-- the affected file, function, command, or documentation section;
+- the affected command, provider, behavior, or documentation section, and the
+  file or function if already known;
 - the exact commit and, for runtime failures, the relevant provider, OS,
   kernel, GPU, ROCm, and package versions;
 - reproducible steps or direct evidence when available;
@@ -44,6 +49,23 @@ Requests for entirely new providers, GPU-platform families, or workload
 categories are outside the current scope freeze. A narrow unsupported-platform
 diagnostic may still be useful evidence, but it does not create a support or
 maintenance obligation.
+
+## Finding the Right Area
+
+If the responsible code is unclear, file the issue with the observed command
+and behavior; the maintainer can route it. These broad areas are enough:
+
+| Observed problem | Repository area |
+| --- | --- |
+| Provider setup, package installation, permissions, or reboot behavior | `setup/<provider>/` |
+| Behavior shared by multiple setup paths | `setup/common/` or `lib/` |
+| Validation options, skipped checks, false success, or workload smoke failure | `validate/` |
+| Local test behavior or missing contract coverage | `tests/` and the relevant subsystem test directory |
+| Support claim, instructions, or reporting policy | `README.md`, `CONTRIBUTING.md`, or `SECURITY.md` |
+| Confidential vulnerability | GitHub private vulnerability reporting; see `SECURITY.md` |
+
+Misclassification is not a reason to avoid reporting a reproducible in-scope
+problem.
 
 ## Review Approach
 

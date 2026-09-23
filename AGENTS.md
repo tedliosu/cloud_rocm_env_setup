@@ -921,6 +921,9 @@ per-file headings localize failures, and each focused script owns its detailed
 diagnostics. Multiple drivers would currently add duplicate registration or
 ambiguous partial-suite selection, while Bats would add either a provider
 bootstrap dependency or a vendored framework plus broad test conversion.
+Keep `tests/README.md` as the human-facing semantic coverage map and usage
+guide; do not duplicate the driver's executable registry or turn the guide into
+a second backlog.
 Intentionally remain with plain shell while those properties hold. Reconsider
 Bats only when a concrete problem such as excessive runtime, nontrivial fixture
 or setup/teardown machinery repeated across several tests, inadequate failure

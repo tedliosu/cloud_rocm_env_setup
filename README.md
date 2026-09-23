@@ -21,6 +21,20 @@ a reusable handoff brief for human and AI-assisted reviewers. Report sensitive
 vulnerabilities through the private route documented in
 [SECURITY.md](SECURITY.md), not through a public issue.
 
+# Repository Map
+
+- `setup/amd_devcloud/`, `setup/azure/`, and `setup/hot_aisle/` contain the
+  explicit provider setup paths.
+- `setup/common/` contains shared setup stages and requirements used by more
+  than one provider.
+- `lib/` contains small shared shell primitives.
+- `validate/` contains the provider-neutral validator and representative
+  workload smokes.
+- `tests/` contains the local test driver, repository-wide ShellCheck entry
+  point, and the human-facing [testing guide](tests/README.md).
+- `README.md`, `CONTRIBUTING.md`, and `SECURITY.md` describe support, public
+  reporting, and confidential vulnerability reporting respectively.
+
 # Purpose and Motivation
 
 Installing packages, importing a library, or detecting a GPU does not by
