@@ -921,10 +921,31 @@ per-file headings localize failures, and each focused script owns its detailed
 diagnostics. Multiple drivers would currently add duplicate registration or
 ambiguous partial-suite selection, while Bats would add either a provider
 bootstrap dependency or a vendored framework plus broad test conversion.
-Revisit this choice only when a concrete problem such as excessive runtime,
-repeated fixture machinery, inadequate failure localization, or a need for
-safe parallel execution makes the expected benefit outweigh those portability
-and maintenance costs.
+Intentionally remain with plain shell while those properties hold. Reconsider
+Bats only when a concrete problem such as excessive runtime, nontrivial fixture
+or setup/teardown machinery repeated across several tests, inadequate failure
+localization, order-dependent global state that per-file process isolation no
+longer contains, or a need for safe parallel execution makes the expected
+benefit outweigh its provider dependency and migration costs.
+
+Every test should protect a believable repository regression: a machine state,
+input, command failure, or contract change that could make the assertion fail.
+Do not retain assertions that only restate a literal fixture or prove that a
+mock returns its configured value. A mocked low-level helper is appropriate in
+a caller test when the real helper is covered separately where practical, or
+when it is a thin system observation backed by provider acceptance evidence;
+the caller test must still verify ordering, arguments, environment selection,
+failure propagation, or another behavior not guaranteed by the mock itself.
+
+Keep PATH-based command doubles local to one test process or command invocation,
+place only the intended fake commands in the temporary directory, and make
+unexpected argument shapes fail. Reset mutable scenario observations between
+cases. When several variables describe one meaningful machine state, prefer a
+named scenario helper if it materially shortens the causal explanation; do not
+hide a simple scenario behind a generic fixture framework. Local orchestration
+tests do not replace root-only checks, representative workloads, or provider
+acceptance for behavior that depends on the actual kernel, package manager,
+devices, driver, or ROCm runtime.
 
 Do not standardize test implementation style mechanically. Use direct Bash
 equality or `case` for one known scalar value, fixed-string line matching for

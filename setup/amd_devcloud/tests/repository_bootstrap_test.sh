@@ -114,6 +114,8 @@ _amd_devcloud_collect_path_artifacts() {
 }
 
 reset_observations() {
+    : > "${INSTALL_CALLS}"
+    : > "${UPDATE_CALLS}"
     TEST_WGET_STATUS=0
     TEST_SHA256_STATUS=0
     TEST_DPKG_DEB_STATUS=0
@@ -131,9 +133,20 @@ reset_observations() {
 }
 
 expect_rejection() {
+    local _description="$1"
+    local _expected_install_calls="$2"
+    local _expected_update_calls="$3"
+
     # shellcheck disable=SC2119 # The production function deliberately rejects arguments.
     if install_amd_devcloud_repository_bootstrap >/dev/null 2>&1; then
-        echo "FAILED: expected repository-bootstrap rejection!" >&2
+        echo "FAILED: ${_description} was accepted!" >&2
+        exit 1
+    fi
+    if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne \
+        "${_expected_install_calls}" ] ||
+        [ "$(wc --lines < "${UPDATE_CALLS}")" -ne \
+            "${_expected_update_calls}" ]; then
+        echo "FAILED: ${_description} did not reach the expected mutation step!" >&2
         exit 1
     fi
 }
@@ -141,52 +154,48 @@ expect_rejection() {
 reset_observations
 # shellcheck disable=SC2119 # Exercise the documented zero-argument interface.
 install_amd_devcloud_repository_bootstrap >/dev/null
+if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne 1 ] ||
+    [ "$(wc --lines < "${UPDATE_CALLS}")" -ne 1 ]; then
+    echo "FAILED: successful repository bootstrap did not install and update!" >&2
+    exit 1
+fi
 
 reset_observations
 TEST_WGET_STATUS=21
 export TEST_WGET_STATUS
-expect_rejection
+expect_rejection "failed repository-bootstrap download" 0 0
 
 reset_observations
 TEST_SHA256_STATUS=22
 export TEST_SHA256_STATUS
-expect_rejection
+expect_rejection "failed repository-bootstrap checksum" 0 0
 
 reset_observations
 TEST_PACKAGE_METADATA_VERSION="unexpected"
 export TEST_PACKAGE_METADATA_VERSION
-expect_rejection
+expect_rejection "unexpected downloaded package version" 0 0
 
 reset_observations
 TEST_INSTALL_STATUS=23
 export TEST_INSTALL_STATUS
-expect_rejection
+expect_rejection "failed repository-bootstrap installation" 1 0
 
 reset_observations
 TEST_UPDATE_STATUS=24
 export TEST_UPDATE_STATUS
-expect_rejection
+expect_rejection "failed repository metadata refresh" 1 1
 
 reset_observations
 TEST_INSTALLED_VERSION="unexpected"
 export TEST_INSTALLED_VERSION
-expect_rejection
+expect_rejection "unexpected installed bootstrap version" 1 1
 
 reset_observations
 TEST_COMMAND_ARTIFACTS="amdgpu-install"
-expect_rejection
+expect_rejection "incomplete repository command artifacts" 1 1
 
 reset_observations
 TEST_PATH_ARTIFACTS+=$'\n/opt/rocm'
-expect_rejection
-
-if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne 6 ]; then
-    echo "FAILED: repository bootstrap invoked an unexpected install count!" >&2
-    exit 1
-fi
-if [ "$(wc --lines < "${UPDATE_CALLS}")" -ne 5 ]; then
-    echo "FAILED: repository bootstrap invoked an unexpected update count!" >&2
-    exit 1
-fi
+expect_rejection "unexpected repository path artifact" 1 1
 
 echo "PASSED AMD DevCloud repository-bootstrap tests!"

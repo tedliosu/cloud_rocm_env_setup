@@ -132,6 +132,8 @@ _amd_devcloud_amd_smi_is_executable() {
 }
 
 reset_observations() {
+    : > "${KERNEL_INSTALL_CALLS}"
+    : > "${DRIVER_INSTALL_CALLS}"
     TEST_KERNEL_RELEASE="6.8.0-test"
     TEST_UNAME_STATUS=0
     TEST_KERNEL_INSTALL_STATUS=0
@@ -156,9 +158,20 @@ reset_observations() {
 }
 
 expect_rejection() {
+    local _description="$1"
+    local _expected_kernel_calls="$2"
+    local _expected_driver_calls="$3"
+
     # shellcheck disable=SC2119 # The production function deliberately rejects arguments.
     if install_amd_devcloud_driver >/dev/null 2>&1; then
-        echo "FAILED: expected AMD DevCloud driver-install rejection!" >&2
+        echo "FAILED: ${_description} was accepted!" >&2
+        exit 1
+    fi
+    if [ "$(wc --lines < "${KERNEL_INSTALL_CALLS}")" -ne \
+        "${_expected_kernel_calls}" ] ||
+        [ "$(wc --lines < "${DRIVER_INSTALL_CALLS}")" -ne \
+            "${_expected_driver_calls}" ]; then
+        echo "FAILED: ${_description} did not reach the expected install step!" >&2
         exit 1
     fi
 }
@@ -166,59 +179,55 @@ expect_rejection() {
 reset_observations
 # shellcheck disable=SC2119 # Exercise the documented zero-argument interface.
 install_amd_devcloud_driver >/dev/null
+if [ "$(wc --lines < "${KERNEL_INSTALL_CALLS}")" -ne 1 ] ||
+    [ "$(wc --lines < "${DRIVER_INSTALL_CALLS}")" -ne 1 ]; then
+    echo "FAILED: successful driver setup did not run both install steps!" >&2
+    exit 1
+fi
 
 reset_observations
 TEST_UNAME_STATUS=21
 export TEST_UNAME_STATUS
-expect_rejection
+expect_rejection "failed running-kernel observation" 0 0
 
 reset_observations
 TEST_KERNEL_INSTALL_STATUS=22
 export TEST_KERNEL_INSTALL_STATUS
-expect_rejection
+expect_rejection "failed running-kernel package installation" 1 0
 
 reset_observations
 TEST_DRIVER_INSTALL_STATUS=23
 export TEST_DRIVER_INSTALL_STATUS
-expect_rejection
+expect_rejection "failed AMDGPU package installation" 1 1
 
 reset_observations
 TEST_HEADERS_STATUS="config-files"
 export TEST_HEADERS_STATUS
-expect_rejection
+expect_rejection "incomplete kernel-header package state" 1 1
 
 reset_observations
 TEST_MODULES_VERSION=""
 export TEST_MODULES_VERSION
-expect_rejection
+expect_rejection "missing kernel-modules package version" 1 1
 
 reset_observations
 TEST_INSTALLED_AMDGPU_VERSION="unexpected"
 export TEST_INSTALLED_AMDGPU_VERSION
-expect_rejection
+expect_rejection "unexpected AMDGPU package version" 1 1
 
 reset_observations
 TEST_INSTALLED_AMD_SMI_VERSION="unexpected"
 export TEST_INSTALLED_AMD_SMI_VERSION
-expect_rejection
+expect_rejection "unexpected AMD SMI package version" 1 1
 
 reset_observations
 TEST_ROCM_ALTERNATIVE_MATCHES=0
 export TEST_ROCM_ALTERNATIVE_MATCHES
-expect_rejection
+expect_rejection "wrong ROCm alternative target" 1 1
 
 reset_observations
 TEST_AMD_SMI_EXECUTABLE=0
 export TEST_AMD_SMI_EXECUTABLE
-expect_rejection
-
-if [ "$(wc --lines < "${KERNEL_INSTALL_CALLS}")" -ne 9 ]; then
-    echo "FAILED: driver helper invoked an unexpected kernel-install count!" >&2
-    exit 1
-fi
-if [ "$(wc --lines < "${DRIVER_INSTALL_CALLS}")" -ne 8 ]; then
-    echo "FAILED: driver helper invoked an unexpected driver-install count!" >&2
-    exit 1
-fi
+expect_rejection "missing AMD SMI executable" 1 1
 
 echo "PASSED AMD DevCloud driver-install tests!"

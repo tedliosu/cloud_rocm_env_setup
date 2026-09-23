@@ -67,6 +67,7 @@ _amd_devcloud_rocm_alternative_matches_versioned_root() {
 }
 
 reset_observations() {
+    : > "${INSTALL_CALLS}"
     TEST_INSTALL_STATUS=0
     TEST_DPKG_QUERY_STATUS=0
     TEST_PACKAGE_STATUS="installed"
@@ -77,8 +78,16 @@ reset_observations() {
 }
 
 expect_rejection() {
+    local _description="$1"
+    local _expected_install_calls="$2"
+
     if install_amd_devcloud_rocm_userland >/dev/null 2>&1; then
-        echo "FAILED: expected ROCm userland-install rejection!" >&2
+        echo "FAILED: ${_description} was accepted!" >&2
+        exit 1
+    fi
+    if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne \
+        "${_expected_install_calls}" ]; then
+        echo "FAILED: ${_description} did not reach the expected install step!" >&2
         exit 1
     fi
 }
@@ -86,6 +95,10 @@ expect_rejection() {
 reset_observations
 # shellcheck disable=SC2119 # Exercise the documented zero-argument interface.
 install_amd_devcloud_rocm_userland >/dev/null
+if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne 1 ]; then
+    echo "FAILED: successful ROCm userland setup did not run one install!" >&2
+    exit 1
+fi
 
 reset_observations
 # shellcheck disable=SC2119 # Exercise rejection of an unexpected argument.
@@ -93,35 +106,34 @@ if install_amd_devcloud_rocm_userland unexpected >/dev/null 2>&1; then
     echo "FAILED: ROCm userland installation accepted an argument!" >&2
     exit 1
 fi
+if [ -s "${INSTALL_CALLS}" ]; then
+    echo "FAILED: argument rejection reached ROCm package installation!" >&2
+    exit 1
+fi
 
 reset_observations
 TEST_INSTALL_STATUS=21
 export TEST_INSTALL_STATUS
-expect_rejection
+expect_rejection "failed ROCm userland installation" 1
 
 reset_observations
 TEST_DPKG_QUERY_STATUS=22
 export TEST_DPKG_QUERY_STATUS
-expect_rejection
+expect_rejection "failed ROCm package-state query" 1
 
 reset_observations
 TEST_PACKAGE_STATUS="config-files"
 export TEST_PACKAGE_STATUS
-expect_rejection
+expect_rejection "incomplete ROCm package state" 1
 
 reset_observations
 TEST_INSTALLED_VERSION="unexpected"
 export TEST_INSTALLED_VERSION
-expect_rejection
+expect_rejection "unexpected ROCm package version" 1
 
 reset_observations
 TEST_ROCM_ALTERNATIVE_MATCHES=0
 export TEST_ROCM_ALTERNATIVE_MATCHES
-expect_rejection
-
-if [ "$(wc --lines < "${INSTALL_CALLS}")" -ne 6 ]; then
-    echo "FAILED: ROCm helper invoked an unexpected install count!" >&2
-    exit 1
-fi
+expect_rejection "wrong ROCm alternative target" 1
 
 echo "PASSED AMD DevCloud ROCm userland-install tests!"
