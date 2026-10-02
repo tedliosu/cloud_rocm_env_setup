@@ -583,10 +583,33 @@ The current hipCollections validation smoke uses the
 aggregation methodology; do not redesign it merely to mirror the workload
 methodology.
 
-For the documented aggregation methodology, prefer host-bulk
-`insert_or_apply` over a custom kernel-embedded aggregation implementation.
-This reduces benchmarking confounds caused by custom implementation skill
-rather than the library primitive itself.
+Keep the full applied GMV aggregation workload distinct from its isolated GPU
+execution motif. The full workload filters completed order items, derives
+`order_date` from `created_at`, groups by `(order_date, category)`, and computes
+`SUM(quantity * unit_price)`, `SUM(quantity)`, and `COUNT(*)`. It requires
+hipDF and may be promised only through the experimental AMD DevCloud path after
+packaged hipDF is deliberately adopted and validated; it is not part of the
+Hot Aisle, Azure, or common baseline guarantee. Its current low-arithmetic-
+intensity, irregular-memory-access motif is hash-based GROUP BY group discovery
+and probing with composite keys, represented by cuco/hipCollections
+`static_set`-style insertion and probing. Integer-encoded composite keys may be
+prepared outside the isolated primitive's timed region.
+
+This direction follows the observed cuDF 25.10 design, on which the relevant
+hipDF 26.03 implementation is based: representative row indices or unique key
+rows are discovered through a `static_set`, while aggregation results use
+separate sparse column storage. Treat that observation as the rationale for
+the study's current motif, not as a general compatibility or implementation
+guarantee for future cuDF or hipDF releases.
+
+The earlier `static_map` direct-aggregation and host-bulk `insert_or_apply`
+framing remains historically valid as a separate experiment. Do not describe
+it as the current representative motif, retrofit existing benchmark or
+validation results as `static_set` measurements, or replace a working
+`static_map` workload or smoke merely to match the new study direction. Add a
+new `static_set` workload to this bootstrap only if a separately reviewed
+environment-validation contract actually requires it; the external execution-
+motif study alone does not establish that requirement.
 
 Preserve immutable hipCollections and ROCmDS-CMake dependency pins and the
 purpose of narrow compatibility patches. Do not remove an ugly workaround only
@@ -874,6 +897,12 @@ affected behavior and obtaining the normal review approval.
 
 Setup success is not equivalent to workload success. Validate important
 packages by importing and exercising them with a small real workload.
+
+Named target workloads explain why a capability matters; they do not imply
+that a repository smoke mocks, reproduces, or exhaustively covers the full
+application. State the narrow library, runtime, ABI, or execution contract each
+smoke actually checks, and leave application-level regression coverage in the
+application's own repository.
 
 Prefer:
 

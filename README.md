@@ -109,6 +109,20 @@ cases while keeping its support and maintenance surface deliberately bounded.
 
 # Target Workloads
 
+The projects below motivate the environment capabilities checked here. Each
+repository-owned smoke exercises only a small, explicit library or runtime
+contract; it does not emulate or exhaustively cover the corresponding
+application. Listing a workload also does not imply that every provider or
+setup tier supports every optional dependency it may require.
+
+In this documentation, an *execution motif* is one deliberately isolated GPU
+operation and data-access pattern taken from a larger applied workload. It is
+useful for comparing how hardware and software stacks execute that pattern,
+but it is not the complete application, an application correctness test, or a
+bootstrap support guarantee. The longer-term MI300X-versus-H200 motif study is
+a separate project; this repository records only the environment context that
+overlaps its existing bootstrap scope.
+
 ## Public or To Be Made Public
 - Custom Canny edge detection operator written with CuPy from first principles
 - ResNet-50 vs ViT-B/16 classification and resource usage performance project
@@ -122,10 +136,25 @@ cases while keeping its support and maintenance surface deliberately bounded.
         - Mistral Small (3 and above)
         - (optionally) Llama (3.3 and above)
     - Please see [Additional Notes](#additional-notes) sub-section for why Ollama runtime setup and validation are intentionally excluded from bootstrap scripts.
+- Applied GMV aggregation:
+    - Filter completed order items, derive `order_date` from `created_at`, group
+      by `(order_date, category)`, and calculate `SUM(quantity * unit_price)`,
+      `SUM(quantity)`, and `COUNT(*)`.
+    - This workload requires hipDF. Only the experimental AMD DevCloud path is
+      eligible to support it, after packaged hipDF is deliberately adopted and
+      validated; it is not a current Hot Aisle, Azure, or baseline guarantee.
+    - This full workload is distinct from the isolated GPU execution motif
+      used to study one low-arithmetic-intensity, irregular-memory-access
+      portion of hash-based GROUP BY.
 - HIP micro-benches:
     - Elias Konstantinidis's mixbench
-    - Custom hipCollections `static_map` aggregation using host-bulk `insert_or_apply`.
-        - This favors the library primitive over custom kernel-embedded aggregation to reduce benchmarking confounds from custom implementation skill.
+    - Hash-based GROUP BY group discovery and probing with composite keys,
+      represented by cuco/hipCollections `static_set`-style insertion and
+      probing. Integer-encoded composite keys may be prepared outside the
+      isolated primitive's timed region.
+    - The existing hipCollections `static_map` direct-aggregation and
+      host-bulk `insert_or_apply` implementation remains a separate experiment,
+      not the current representative execution motif.
     - (optional) gather-GEMM via Triton with scrambled row maps
 
 ## Private ONLY
