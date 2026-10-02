@@ -2,7 +2,8 @@
 """
 Smoke test to catch obvious ABI-mismatch and ROCm/CUDA GPU
     (CUB) detection issues with cupy <-> numpy, along with
-    Canny-critical CuPy custom-kernel compatibility issues
+    selected Canny-motivated CuPy operation and custom-kernel
+    compatibility issues
 """
 import sys
 from os import environ
@@ -235,7 +236,7 @@ if __name__ == "__main__":
     npy.testing.assert_array_equal(mat_e_cpu,
                                    mat_e_cpu_ref,
                                            strict=True)
-    print("PASSED randomized gather/scatter of " + \
+    print("PASSED randomized multi-axis advanced-index gather of " + \
             "matrix elements on GPU vs CPU test!")
 
     print("===== PASSED ALL NUMPY/CUPY AND CUSTOM-KERNEL SMOKE TESTS =====")

@@ -521,6 +521,25 @@ deterministic semantic case and a million-attempt scale case for `int32`,
 references for final values and `atomicCAS` returned-old-value counts. Do not
 expand it into CCL, root chasing, hysteresis, or performance benchmarking.
 
+The current bundled NumPy/CuPy main smoke test also compares boolean-mask
+indexing and paired multi-axis integer advanced-index gathering against NumPy.
+Those operations allocate their results normally. Preserve that useful fancy-
+indexing coverage, but do not describe it as direct validation of `take`, take-
+style gathering with preallocated output, scatter behavior, or identical API
+edge cases and internal kernels. The current bundled smoke contains no explicit
+NumPy or CuPy `take` call and no preallocated gather output.
+
+The separate Canny operator is already transitioning to explicit NumPy/CuPy
+take-style gathering with preallocated output to control intermediate
+allocations. Do not infer coverage of that contract from the current bundled
+smoke's fancy indexing or from whichever internal operations an upstream
+library happens to use. Wait for a stable application checkpoint before adding
+a direct `take(..., out=...)` comparison, unless a demonstrated provider
+compatibility question makes that operation an explicit bootstrap contract
+sooner. If added, test the public NumPy and CuPy APIs directly and retain fancy-
+indexing coverage as a distinct case rather than substituting one for the
+other.
+
 On ROCm 7.2 HIPRTC, the smoke deliberately uses the version-sensitive
 `__hip_internal` type traits without a fallback that could hide interface
 drift. Its CUDA NVRTC branch uses `cuda::std` traits as an inexpensive local
@@ -549,6 +568,9 @@ on CUDA during local development. An explicit debug option may write the
 repository-owned fixture, both final edge maps, and a disagreement image; the
 ordinary validation path must remain artifact-free. CUDA-side agreement may
 guide fixture development but does not substitute for DevCloud acceptance.
+This is representative end-to-end coverage of the upstream cuCIM Canny API,
+not the custom CuPy Canny application and not proof of a particular internal
+gather implementation or allocation strategy.
 
 CuPy installation is environment-dependent. The supported Hot Aisle and Azure
 paths intentionally build pinned upstream CuPy from source and preserve their
@@ -998,12 +1020,13 @@ check. Ordinary fail-fast behavior is still valid because a failed
 required check fails the gate rather than partially passing it.
 
 The packaged AMD DevCloud RAPIDS gate covers the shared workload environment:
-complete Canny capability through packaged `amd-cupy` and Numba,
+selected CuPy and Numba capabilities motivated by the custom Canny workload,
 the selected TBB backend coverage justified by the private MLP, and the
-required packaged hipCIM correctness check. hipCIM may remain in a separate
-Python script, and packaged hipDF may be folded into the broader gate only if
-it is deliberately adopted. Small orchestration duplication between this gate
-and the source-built CuPy gate is preferable to introducing a fine-grained
+required packaged hipCIM Canny correctness check. This gate does not claim
+complete custom-Canny coverage. hipCIM may remain in a separate Python script,
+and packaged hipDF may be folded into the broader gate only if it is
+deliberately adopted. Small orchestration duplication between this gate and
+the source-built CuPy gate is preferable to introducing a fine-grained
 capability framework.
 
 Use evidence and reporting terms deliberately. A validation summary is the

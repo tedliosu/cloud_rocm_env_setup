@@ -124,7 +124,18 @@ a separate project; this repository records only the environment context that
 overlaps its existing bootstrap scope.
 
 ## Public or To Be Made Public
-- Custom Canny edge detection operator written with CuPy from first principles
+- Custom Canny edge detection operator written with CuPy from first principles:
+    - This bootstrap repository does not bundle or run that complete
+      application. Its current bundled NumPy/CuPy main smoke test checks
+      boolean-mask indexing and paired multi-axis integer advanced-index
+      gathering, both with normally allocated results, alongside the documented
+      custom-kernel and numerical checks.
+    - That bundled smoke test does not currently call NumPy or CuPy `take`
+      explicitly or validate a take-style gather into preallocated output
+      storage. The separate Canny operator is already transitioning to explicit
+      NumPy/CuPy take usage. The packaged hipCIM smoke is an independent
+      end-to-end comparison of upstream cuCIM Canny with scikit-image Canny,
+      not execution of the custom application.
 - ResNet-50 vs ViT-B/16 classification and resource usage performance project
 - ComfyUI 2D image generation:
     - FLUX.x [dev] (where "x" is 1 or greater)
