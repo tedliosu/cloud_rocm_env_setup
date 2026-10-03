@@ -225,10 +225,56 @@ overlaps its existing bootstrap scope.
     - The common validator with `--fail-on-no-packaged-amd-rapids-env` passed the complete baseline plus the packaged CuPy custom-kernel, Numba/TBB, and hipCIM Canny checks. The Canny comparison disagreed on zero of 20,480 pixels, confirming the adopted zero-percent tolerance on the tested MI300X VF after the same fixture had also measured zero disagreement during CUDA-side development.
     - The read-only environment report reconfirmed Ubuntu 24.04.5, kernel `6.8.0-124-generic`, AMDGPU DKMS `6.16.13-2327507.24.04`, AMD SMI driver 6.16.13, native `gfx942`, `rocm7.2.3` `7.2.3.70203-90~24.04`, HIP `7.2.53211-c2d9476115`, and Python 3.12.3. A completed-state setup rerun recognized the UFW baseline, repeated the driver and path checks, skipped every setup and reboot stage including the packaged environment, and exited successfully.
     - This acceptance establishes the automated packaged hipCIM/CuPy environment and its strict validation gate for this experimental generation. It does not establish optional hipDF components, arbitrary ROCm/Python package combinations, or first-class DevCloud support.
+    - Later setup and validation changes at the current repository head still
+      require the fresh-instance acceptance round listed under Current Focus.
+      In particular, the recorded run predates the shared requirements-manifest
+      change and validated conventional `/opt/rocm` selection for CuPy-family
+      commands.
 
 # TODOs
 
 ## Current Focus
+
+### AMD DevCloud Current-Head Acceptance
+
+- [ ] Revalidate the current repository head on a fresh single-GPU AMD
+  DevCloud Ubuntu 24.04 Bare OS instance:
+    - Run the reviewed root-to-user handoff and verify a separate ordinary-user
+      SSH login before ending the root session.
+    - Complete setup with `--packaged-amd-rapids-env-setup`, including both
+      acknowledged reboot boundaries, then verify a completed-state rerun.
+    - Run the common validator with
+      `--fail-on-no-packaged-amd-rapids-env`, followed by the read-only
+      DevCloud acceptance probe.
+    - Confirm that the `hipconfig`-selected canonical root and `/opt/rocm`
+      both resolve to `/opt/rocm-7.2.3`, CuPy-family commands receive
+      command-scoped `ROCM_HOME=/opt/rocm`, and their loader path remains the
+      versioned `/opt/rocm-7.2.3/lib` directory.
+    - Retain the relevant output as dated acceptance evidence and update the
+      version-stamped observations without generalizing them to future image
+      generations.
+
+### AMD DevCloud `doctl` Provisioning Documentation
+
+- [ ] Add one canonical, manual `doctl` path for AMD DevCloud provisioning
+  before the Hot Aisle quickstart:
+    - First determine whether the maintainer's existing AMD SSO-backed
+      DevCloud account can issue a DigitalOcean API token and whether its
+      permissions expose the required GPU size, Ubuntu 24.04 Bare OS image,
+      region, SSH key, and GPU Droplet operations. Do not assume that an
+      ordinary DigitalOcean account or every standard DigitalOcean resource is
+      interchangeable with this DevCloud account.
+    - Document a Snap-free, version-pinned official standalone-binary install.
+      Prefer a user-local executable, no persistent PATH modification, and
+      checksum verification only when an authoritative or explicitly reviewed
+      digest is available.
+    - Keep authentication material out of repository files, command output
+      retained as acceptance evidence, and environment reports.
+    - Document read-only account and resource discovery before any create
+      command. Use only observed account-visible identifiers in the eventual
+      explicit create, identify, SSH, and destroy examples.
+    - Keep provisioning manual and separate from guest-side ROCm bootstrap;
+      do not implement an instance-lifecycle manager.
 
 ### Public Release Readiness
 
@@ -309,9 +355,9 @@ overlaps its existing bootstrap scope.
 
 ## CuPy Build and Architecture Behavior
 
-- [ ] Revalidate conventional CuPy ROCm-root selection on the next applicable provider acceptance rounds:
+- [ ] Revalidate conventional CuPy ROCm-root selection on the next applicable
+  Hot Aisle and Azure provider acceptance rounds:
     - Confirm the supported Hot Aisle and Azure source builds use command-scoped `ROCM_HOME=/opt/rocm` only after it resolves to the `hipconfig`-selected canonical root.
-    - Confirm DevCloud packaged `amd-cupy` and hipCIM use the same validated conventional path while retaining `/opt/rocm-7.2.3/lib` as the scoped loader path.
     - This verifies alignment with [upstream CuPy's conventional-path recommendation](https://docs.cupy.dev/en/v14.1.1/install.html#using-cupy-on-amd-gpu-experimental) and [AMD's corresponding ROCm CuPy-fork build guidance](https://rocm.docs.amd.com/projects/hipDF/en/docs-25.10/install/BUILD.html); it does not make `/opt/rocm` a general unverified runtime selector.
 
 - [ ] Document why the supported Hot Aisle and Azure paths build CuPy from source:

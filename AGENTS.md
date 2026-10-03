@@ -397,6 +397,15 @@ A possible presentation or other external use case does not establish a
 deadline or imply continuous maintainer availability. Ask for current
 scheduling context before turning that possibility into deadline-driven work.
 
+An RPP host-versus-device Canny demonstration is an unconfirmed standalone
+feasibility experiment for a possible presentation, not an adopted bootstrap
+workload. Keep the initial experiment outside this repository and separate
+from the custom ndarray-based Canny project. It does not add RPP to this
+repository's installation pipeline, validation matrix, dependencies, or
+support claims. Consider a narrow repository change later only if the
+experiment demonstrates a concrete bootstrap-owned deficiency or a separately
+reviewed reusable validation requirement.
+
 ## Closed decisions that must not be reopened implicitly
 
 ### RX 7600 XT retirement
