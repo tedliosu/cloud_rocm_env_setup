@@ -89,7 +89,7 @@ cases while keeping its support and maintenance surface deliberately bounded.
     - Setup does not add project ROCm paths to system dynamic-loader configuration or run `ldconfig` merely to make them globally visible.
     - Setup does not persist `LD_LIBRARY_PATH`, `ROCM_HOME`, `ROCM_PATH`, `HIP_PATH`, or similar runtime and build-selection variables in shell startup files.
     - A deliberately dedicated environment with a pinned system stack may add that stack's exact versioned `bin` directory to `PATH`. This narrow executable-selection exception does not permit persistent library or runtime-selection variables. The conventional `/opt/rocm` path is used for a CuPy-family command only after the repository proves that it resolves to the complete ROCm root selected through `PATH`; this does not authorize unverified reliance on a mutable alternative.
-    - AMD DevCloud setup maintains that project-owned `/opt/rocm-7.2.3/bin` profile block immediately after the ROCm userland stage and prints a temporary current-shell `PATH` command, the pinned root, command-scoped `LD_LIBRARY_PATH=/opt/rocm-7.2.3/lib`, and CuPy-family `ROCM_HOME=/opt/rocm` guidance. DevCloud accepts that CuPy path only while the alternatives link resolves exactly to `/opt/rocm-7.2.3`. A rerun prints the guidance again while completed stages remain skipped; no separate path-report log is required. Setup does not change those runtime-selection variables in the invoking shell.
+    - AMD DevCloud setup maintains that project-owned `/opt/rocm-7.2.3/bin` profile block immediately after the ROCm userland stage and prints a temporary current-shell `PATH` command, the pinned root, command-scoped `LD_LIBRARY_PATH=/opt/rocm-7.2.3/lib`, and CuPy-family `ROCM_HOME=/opt/rocm` guidance. DevCloud accepts that CuPy path only while the alternatives link resolves exactly to `/opt/rocm-7.2.3`. A rerun prints the guidance again while completed stages remain skipped; no separate path-report log is required. Setup does not change those runtime-selection variables in the invoking shell. After setup writes the profile block, end the existing SSH login and establish a new one before relying on or accepting the persistent `PATH`; the printed export is only the immediate-shell alternative.
     - The common main validator asks the `hipconfig` selected through `PATH` for its complete ROCm root, resolves and reports the canonical directory, and supplies that root plus its `lib` directory only within the validator process and its children. Activated upstream CuPy, `amd-cupy`, and hipCIM checks instead receive command-scoped `ROCM_HOME=/opt/rocm` only after it resolves to that same canonical root; their loader path remains the explicit versioned library directory.
     - The validator entry script owns that environment selection and passes selected paths explicitly into helpers that need them; helpers do not implicitly choose or modify the caller's ROCm environment.
 
@@ -225,34 +225,22 @@ overlaps its existing bootstrap scope.
     - The common validator with `--fail-on-no-packaged-amd-rapids-env` passed the complete baseline plus the packaged CuPy custom-kernel, Numba/TBB, and hipCIM Canny checks. The Canny comparison disagreed on zero of 20,480 pixels, confirming the adopted zero-percent tolerance on the tested MI300X VF after the same fixture had also measured zero disagreement during CUDA-side development.
     - The read-only environment report reconfirmed Ubuntu 24.04.5, kernel `6.8.0-124-generic`, AMDGPU DKMS `6.16.13-2327507.24.04`, AMD SMI driver 6.16.13, native `gfx942`, `rocm7.2.3` `7.2.3.70203-90~24.04`, HIP `7.2.53211-c2d9476115`, and Python 3.12.3. A completed-state setup rerun recognized the UFW baseline, repeated the driver and path checks, skipped every setup and reboot stage including the packaged environment, and exited successfully.
     - This acceptance establishes the automated packaged hipCIM/CuPy environment and its strict validation gate for this experimental generation. It does not establish optional hipDF components, arbitrary ROCm/Python package combinations, or first-class DevCloud support.
-    - Later setup and validation changes at the current repository head still
-      require the fresh-instance acceptance round listed under Current Focus.
-      In particular, the recorded run predates the shared requirements-manifest
-      change and validated conventional `/opt/rocm` selection for CuPy-family
-      commands.
+13. Version-stamped experimental AMD DevCloud current-head evidence:
+    - On 2026-10-04, a fresh single-GPU Ubuntu 24.04 Bare OS instance at reviewed commit `a6b6ded` completed the root-to-user handoff, a separate key-only ordinary-user SSH login, the exact UFW baseline, both acknowledged reboot boundaries, ROCm userland, the common baseline, and the packaged AMD RAPIDS environment. A completed-state rerun recognized the managed state, repeated the driver and path checks, skipped every completed setup and reboot stage, and exited successfully.
+    - The acceptance probe observed Ubuntu 24.04.5, kernel `6.8.0-142-generic`, AMDGPU DKMS `6.16.13-2327507.24.04`, AMD SMI `26.2.2.70203-90~24.04`, one AMD Instinct MI300X VF with native `gfx942`, `rocm7.2.3` `7.2.3.70203-90~24.04`, HIP `7.2.53211-c2d9476115`, Python 3.12.3, and PyTorch 2.11.0 with ROCm 7.2. The packaged environment contained `amd-cupy` 13.5.1, `amd-hipcim` 25.10.0, NumPy 2.5.3, and Numba 0.68.0; `pip check` reported no broken requirements.
+    - The strict common validator passed the complete baseline and packaged AMD RAPIDS gate after initial setup and again after the completed-state rerun. The packaged CuPy custom-kernel cases, Numba/TBB checks, and hipCIM Canny comparison passed; the Canny comparison disagreed on zero of 20,480 pixels.
+    - Setup confirmed `/opt/rocm-7.2.3` as the pinned root, accepted command-scoped `ROCM_HOME=/opt/rocm` only while that conventional path resolved to the pinned root, and retained `/opt/rocm-7.2.3/lib` as the command-scoped loader path. The validator independently reported `/opt/rocm-7.2.3` as both its PATH-selected and canonical ROCm root. A separate SSH login after setup prepended `/opt/rocm-7.2.3/bin` to `PATH`, selected the versioned `hipconfig`, and reported `/opt/rocm-7.2.3` from `hipconfig --path`; the preexisting setup shell correctly remained unchanged.
+    - A raw tmux-backed terminal transcript was retained outside the repository and its SHA-256 matched after retrieval. During the reboot workflow, termination of the SSH/tmux session left the maintainer's local XFCE Terminal 1.1.3 under Xfce 4.18 needing the local `reset` command. This is a client-terminal recovery observation, not a VM or bootstrap failure; behavior in other terminals was not tested.
+    - This acceptance closes the current-head revalidation requirement for the experimental DevCloud generation. It does not establish optional hipDF components, arbitrary ROCm/Python package combinations, a download-throughput baseline, or first-class DevCloud support.
+14. Version-stamped experimental AMD DevCloud provisioning evidence:
+    - On 2026-10-03, `doctl` 1.177.0 authenticated an AMD SSO-backed DevCloud API token against `https://api.devcloud.amd.com`. Read-only discovery exposed the account-visible `gpu-mi300x1-192gb-devcloud` size in `atl1` at the observed price of $1.99 per hour and the `ubuntu-24-04-x64` image. These identifiers, availability, and price are an account- and date-specific receipt rather than a provider promise.
+    - An explicitly confirmed `doctl` create used the discovered size, region, image, and an existing account SSH key. The separately managed existing cloud firewall was attached before SSH access. The resulting Droplet appeared in the AMD DevCloud portal at the first manual refresh approximately five to eight minutes after creation; this proves portal visibility, not the exact propagation time.
+    - After the complete guest acceptance and evidence retrieval, an explicitly confirmed `doctl` delete succeeded. A subsequent API lookup of the exact Droplet returned `404`, and the Droplet was absent at the first manual portal refresh less than four minutes later. The repository did not automate either lifecycle decision.
+    - The tested path made no project-management API calls and relied on the account's existing default-project placement. The canonical guide should preserve that boundary rather than request project-mutation scopes or automate project creation, selection, or reassignment. A user who needs non-default project organization must review and perform that separate provider-side operation deliberately.
 
 # TODOs
 
 ## Current Focus
-
-### AMD DevCloud Current-Head Acceptance
-
-- [ ] Revalidate the current repository head on a fresh single-GPU AMD
-  DevCloud Ubuntu 24.04 Bare OS instance:
-    - Run the reviewed root-to-user handoff and verify a separate ordinary-user
-      SSH login before ending the root session.
-    - Complete setup with `--packaged-amd-rapids-env-setup`, including both
-      acknowledged reboot boundaries, then verify a completed-state rerun.
-    - Run the common validator with
-      `--fail-on-no-packaged-amd-rapids-env`, followed by the read-only
-      DevCloud acceptance probe.
-    - Confirm that the `hipconfig`-selected canonical root and `/opt/rocm`
-      both resolve to `/opt/rocm-7.2.3`, CuPy-family commands receive
-      command-scoped `ROCM_HOME=/opt/rocm`, and their loader path remains the
-      versioned `/opt/rocm-7.2.3/lib` directory.
-    - Retain the relevant output as dated acceptance evidence and update the
-      version-stamped observations without generalizing them to future image
-      generations.
 
 ### AMD DevCloud `doctl` Provisioning Documentation
 
@@ -273,6 +261,10 @@ overlaps its existing bootstrap scope.
     - Document read-only account and resource discovery before any create
       command. Use only observed account-visible identifiers in the eventual
       explicit create, identify, SSH, and destroy examples.
+    - Rely on the account's existing default-project placement. Do not request
+      project-mutation token scopes or automate project creation, selection,
+      or reassignment; document non-default project organization as a separate
+      user-owned provider task outside the validated path.
     - Keep provisioning manual and separate from guest-side ROCm bootstrap;
       do not implement an instance-lifecycle manager.
 
