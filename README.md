@@ -24,7 +24,8 @@ vulnerabilities through the private route documented in
 # Repository Map
 
 - `setup/amd_devcloud/`, `setup/azure/`, and `setup/hot_aisle/` contain the
-  explicit provider setup paths.
+  explicit provider setup paths. The experimental DevCloud path includes its
+  canonical [manual `doctl` provisioning guide](setup/amd_devcloud/README.md).
 - `setup/common/` contains shared setup stages and requirements used by more
   than one provider.
 - `lib/` contains small shared shell primitives.
@@ -80,6 +81,9 @@ cases while keeping its support and maintenance surface deliberately bounded.
           minimum baseline and packaged AMD RAPIDS gate are accepted for the
           tested environment generation. First-class provider support remains
           pending.
+        - Provision the provider resource through the canonical
+          [manual `doctl` guide](setup/amd_devcloud/README.md); keep that
+          provider-side workflow separate from guest setup.
     - Exact kernel, ROCm, and `amdgpu` kernel module versions are intentionally reported by probe logic in scripts rather than hard-coded here.
     - Provider support applies to validated environment generations, not every image or software version a provider serves. Supporting a replacement generation does not imply continued support for the previous one. If provisioning cannot reliably select a supported generation, provider support may temporarily be marked transitional or suspended.
 - Reproducible, *minimal* environment setup with Python dependencies constrained selectively when demonstrated compatibility, ABI, or reproducibility reasons justify it
@@ -242,31 +246,20 @@ overlaps its existing bootstrap scope.
 
 ## Current Focus
 
-### AMD DevCloud `doctl` Provisioning Documentation
+### AMD DevCloud `doctl` Installation Example
 
-- [ ] Add one canonical, manual `doctl` path for AMD DevCloud provisioning
-  before the Hot Aisle quickstart:
-    - First determine whether the maintainer's existing AMD SSO-backed
-      DevCloud account can issue a DigitalOcean API token and whether its
-      permissions expose the required GPU size, Ubuntu 24.04 Bare OS image,
-      region, SSH key, and GPU Droplet operations. Do not assume that an
-      ordinary DigitalOcean account or every standard DigitalOcean resource is
-      interchangeable with this DevCloud account.
-    - Document a Snap-free, version-pinned official standalone-binary install.
-      Prefer a user-local executable, no persistent PATH modification, and
-      checksum verification only when an authoritative or explicitly reviewed
-      digest is available.
-    - Keep authentication material out of repository files, command output
-      retained as acceptance evidence, and environment reports.
-    - Document read-only account and resource discovery before any create
-      command. Use only observed account-visible identifiers in the eventual
-      explicit create, identify, SSH, and destroy examples.
-    - Rely on the account's existing default-project placement. Do not request
-      project-mutation token scopes or automate project creation, selection,
-      or reassignment; document non-default project organization as a separate
-      user-owned provider task outside the validated path.
-    - Keep provisioning manual and separate from guest-side ROCm bootstrap;
-      do not implement an instance-lifecycle manager.
+- [ ] On a clean Ubuntu 24.04 x86-64 control environment, cross-check the
+  current upstream `doctl` installation documentation and selected release,
+  then execute the exact pinned standalone-install example in
+  `setup/amd_devcloud/README.md` end to end.
+    - This is a local documentation check; it requires neither an API token nor
+      a paid DevCloud resource.
+    - Keep the example explicitly non-authoritative even after it passes. Do
+      not generalize one result to other operating systems, architectures, or
+      `doctl` releases.
+    - Do not schedule another paid lifecycle round solely to repeat the
+      provisioning, firewall attachment, SSH, and deletion commands already
+      accepted on 2026-10-03 and 2026-10-04.
 
 ### Public Release Readiness
 
@@ -275,6 +268,7 @@ overlaps its existing bootstrap scope.
     - Included patches and derived workflow material have documented upstream provenance and licensing treatment. Public support claims and the issue-only external review policy remain consistent with the repository contract.
     - Existing Git author metadata includes the maintainer's institutional email address; the maintainer reviewed and accepted that disclosure, so no history rewrite is required.
     - This was a concrete release checkpoint, not a speculative forensic review or precedent for routine history rewriting. A future history rewrite still requires an actual finding.
+
 ### Hot Aisle Quick Start and Common Use Path
 
 - [ ] Add instructions for using this repository on Hot Aisle MI300X:
