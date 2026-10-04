@@ -56,6 +56,11 @@ hipconfig() {
 
 mkdir --parents "${TEST_ROCM_ROOT}/lib"
 
+# Usage: run_scenario <combined_output_file>
+# Inputs: Output path and current ROCm command fixtures; does not read stdin.
+# Outputs: Captures scenario stdout/stderr, resets the hipconfig marker, and
+#     records the child status in SCENARIO_STATUS.
+# Returns: 0 after recording the child status; does not exit on child failure.
 run_scenario() {
     local _output_file="$1"
 

@@ -284,6 +284,10 @@ overlaps its existing bootstrap scope.
 
 - [ ] Document recovery from a failed setup stage:
     - Inspect and resolve the original error.
+    - Start with inexpensive, read-only inspection and the narrowest reversible
+      recovery that can address the failed stage. Distinguish required recovery
+      from optional diagnostics, and do not assume spare hardware or a fresh
+      paid-cloud deployment when preserved state can answer the question.
     - Identify the virtual environment, repository clone, or other artifacts owned by the failed stage.
     - Delete stage-owned artifacts only when rebuilding them is necessary.
     - Delete only the relevant completed or pending marker when the documented recovery procedure specifically requires it.

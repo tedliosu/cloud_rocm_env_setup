@@ -10,6 +10,10 @@ DO_SOURCE_BUILT_CUPY_ENV=0
 DO_COMFYUI_ADDONS=0
 DISABLE_FASTF_PPA=0
 
+# Usage: usage
+# Inputs: No arguments or stdin; reads $0 and the supported flag variables.
+# Outputs: Writes the command synopsis to stdout; changes no state.
+# Returns: Status from writing the synopsis; does not exit the caller.
 usage() {
     echo "Usage: $0 [$SOURCE_BUILT_CUPY_ENV_FLAG] [$COMFYUI_FLAG] [$FASTF_PPA_DISABLE_FLAG] [$SHOW_PLAN_ONLY_FLAG] [-h|--help]"
 }

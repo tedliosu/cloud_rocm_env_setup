@@ -39,6 +39,16 @@ A useful report includes:
 - whether the finding is confirmed, suspected, or a question; and
 - the smallest plausible correction boundary, if one is apparent.
 
+Provide the evidence that is practical and state what you could not test. A
+useful report does not require spare GPU hardware, a retained or newly deployed
+paid VM, repeated large downloads, specialized recovery equipment, or
+exhaustive platform testing unless that resource is essential to the specific
+claim. Maintainers may begin with static review, existing logs, local or mocked
+checks, and other inexpensive read-only diagnostics before requesting a
+provider reproduction. Essential safety checks and evidence needed to confirm
+a support claim still apply, and the maintainer decides whether the available
+evidence is sufficient for a particular conclusion.
+
 Do not post credentials, access tokens, private keys, private application code,
 or unredacted logs containing sensitive information. For a security issue that
 should not be disclosed publicly, follow [SECURITY.md](SECURITY.md) and use the

@@ -84,6 +84,11 @@ printf '%s\n' '#!/bin/bash' 'exit 64' > "${TEST_BIN_DIR}/apt-get"
 chmod +x "${TEST_BIN_DIR}"/*
 export PATH="${TEST_BIN_DIR}:/usr/bin:/bin"
 
+# Usage: test_rocm_alternative_resolution
+# Inputs: No arguments or stdin; reads the test temporary-directory globals.
+# Outputs: Creates isolated directories and symlinks; diagnoses failures on stderr.
+# Returns: 0 when both link cases behave as expected; exits its subshell with 1
+#     on an assertion failure.
 test_rocm_alternative_resolution() (
     AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH="${TEST_TMP_DIR}/rocm"
     AMD_DEVCLOUD_ROCM_VERSIONED_ROOT="${TEST_TMP_DIR}/rocm-7.2.3"

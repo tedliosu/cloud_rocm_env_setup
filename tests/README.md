@@ -46,6 +46,14 @@ README's [Additional Notes](../README.md#additional-notes). That evidence
 complements local tests rather than turning paid cloud runs into part of every
 development iteration.
 
+Choose the least costly layer that can answer the question: static analysis,
+local filesystem tests, and mocks should normally precede privileged hosts or
+paid provider acceptance. A real GPU or provider run remains essential when
+the claim depends on the actual kernel, driver, device, image, or workload, but
+an issue reporter who lacks that resource may still submit bounded evidence
+and identify the untested provider question. Optional deeper validation should
+be labeled as such rather than presented as a prerequisite for assistance.
+
 ## Test Doubles and Scenarios
 
 Shell tests sometimes redefine a function or put a temporary executable first

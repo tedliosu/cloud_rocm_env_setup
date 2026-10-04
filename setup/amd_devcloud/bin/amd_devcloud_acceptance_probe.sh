@@ -5,6 +5,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly SCRIPT_DIR
 
+# Usage: usage
+# Inputs: No arguments or stdin; reads the invoking path from $0.
+# Outputs: Writes the command synopsis to stdout; changes no state.
+# Returns: Status from writing the synopsis; does not exit the caller.
 usage() {
     echo "Usage: $0 [-h|--help]"
 }

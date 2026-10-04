@@ -76,6 +76,10 @@ _amd_devcloud_collect_path_artifacts() {
     [ -z "${TEST_PATH_ARTIFACTS}" ] || printf '%s\n' "${TEST_PATH_ARTIFACTS}"
 }
 
+# Usage: reset_observations
+# Inputs: No arguments or stdin; reads the committed DevCloud fixture constants.
+# Outputs: Resets the mutable machine-observation globals; writes no output.
+# Returns: 0 after resetting state; does not exit the test.
 reset_observations() {
     TEST_PCI_OUTPUT=$'0000:83:00.0 1200: 1002:74b5\n'
     TEST_PACKAGE_OUTPUT=$'bash\tinstalled\t5.2\n'
@@ -89,6 +93,10 @@ reset_observations() {
     unset SHOW_PLAN_ONLY
 }
 
+# Usage: set_repository_bootstrap_observations
+# Inputs: No arguments or stdin; reads provider package and artifact constants.
+# Outputs: Mutates fixture globals to the repository-bootstrap state.
+# Returns: 0 after setting the observations; does not exit the test.
 set_repository_bootstrap_observations() {
     TEST_PACKAGE_OUTPUT=$'bash\tinstalled\t5.2\n'
     TEST_PACKAGE_OUTPUT+="amdgpu-install"$'\tinstalled\t'"${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}"$'\n'
@@ -98,6 +106,10 @@ set_repository_bootstrap_observations() {
         "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}")"
 }
 
+# Usage: set_driver_observations
+# Inputs: No arguments or stdin; builds on the repository-bootstrap fixture.
+# Outputs: Mutates fixture globals to the driver-installed state.
+# Returns: 0 after setting the observations; does not exit the test.
 set_driver_observations() {
     set_repository_bootstrap_observations
     TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"$'\n'
@@ -107,6 +119,10 @@ set_driver_observations() {
         "${AMD_DEVCLOUD_DRIVER_PATH_ARTIFACTS[@]}")"
 }
 
+# Usage: set_rocm_userland_observations
+# Inputs: No arguments or stdin; builds on the driver-installed fixture.
+# Outputs: Mutates fixture globals to the ROCm-userland state.
+# Returns: 0 after setting the observations; does not exit the test.
 set_rocm_userland_observations() {
     set_driver_observations
     TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_ROCM_METAPACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_ROCM_METAPACKAGE_VERSION}"$'\n'
@@ -122,6 +138,11 @@ expect_acceptance() {
     fi
 }
 
+# Usage: expect_state <milestones_dir> <expected_admission_state>
+# Inputs: Milestone directory, expected state label, and fixture globals; does
+#     not read stdin.
+# Outputs: Captures admission stdout; writes a failed assertion to stderr.
+# Returns: 0 on the expected state; exits the test with 1 on failure.
 expect_state() {
     local _milestones_dir="$1"
     local _expected_state="$2"

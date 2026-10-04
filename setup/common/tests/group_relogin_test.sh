@@ -61,6 +61,11 @@ sudo() {
     return "${TEST_USERMOD_STATUS}"
 }
 
+# Usage: run_group_sequence <later_stage_marker>
+# Inputs: Marker path and current group-command fixtures; does not read stdin.
+# Outputs: Captures stdout/stderr in SEQUENCE_OUTPUT, may touch the marker, and
+#     records the child status in SEQUENCE_STATUS.
+# Returns: 0 after recording the child status; does not exit on child failure.
 run_group_sequence() {
     local _later_stage_marker="$1"
 

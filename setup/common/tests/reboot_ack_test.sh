@@ -41,6 +41,12 @@ sudo() {
     return "${TEST_REBOOT_STATUS}"
 }
 
+# Usage: run_reboot_sequence <milestones_dir> <phase_name> <later_stage_marker>
+# Inputs: Milestone directory, phase name, marker path, and reboot fixtures;
+#     does not read stdin.
+# Outputs: Captures stdout/stderr in SEQUENCE_OUTPUT, may update markers, and
+#     records the child status in SEQUENCE_STATUS.
+# Returns: 0 after recording the child status; does not exit on child failure.
 run_reboot_sequence() {
     local _milestones_dir="$1"
     local _phase_name="$2"

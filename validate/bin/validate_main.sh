@@ -13,6 +13,10 @@ DO_COMFYUI_CHECK=0
 DO_UFW_CHECK=1
 STRICT_UFW_CHECK=1
 
+# Usage: usage
+# Inputs: No arguments or stdin; reads $0 and the supported flag variables.
+# Outputs: Writes the command synopsis and option constraint to stdout.
+# Returns: Status from writing the final line; does not exit the caller.
 usage() {
     echo -n "Usage: $0 [$REQUIRE_SOURCE_BUILT_CUPY_ENV_FLAG] "
     echo -n "[$REQUIRE_PACKAGED_AMD_RAPIDS_ENV_FLAG] [$CHECK_COMFYUI_FLAG] "

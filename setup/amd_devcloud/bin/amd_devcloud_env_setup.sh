@@ -8,6 +8,10 @@ DO_PACKAGED_AMD_RAPIDS_ENV=0
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly SCRIPT_DIR
 
+# Usage: usage
+# Inputs: No arguments or stdin; reads $0 and the supported flag constants.
+# Outputs: Writes the command synopsis to stdout; changes no state.
+# Returns: Status from writing the synopsis; does not exit the caller.
 usage() {
     echo "Usage: $0 [${PACKAGED_AMD_RAPIDS_ENV_FLAG}] [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
 }

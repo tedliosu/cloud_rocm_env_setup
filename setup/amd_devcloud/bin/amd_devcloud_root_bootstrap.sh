@@ -14,6 +14,10 @@ readonly SCRIPT_DIR
 # shellcheck source=../../../lib/comm_util_funcs.sh
 . "${SCRIPT_DIR}/../../../lib/comm_util_funcs.sh"
 
+# Usage: usage
+# Inputs: No arguments or stdin; reads $0 and the supported flag constants.
+# Outputs: Writes the command synopsis to stdout; changes no state.
+# Returns: Status from writing the synopsis; does not exit the caller.
 usage() {
     echo "Usage: $0 ${TARGET_USER_FLAG} USERNAME" \
         "${AUTHORIZED_KEY_FILE_FLAG} FILE [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
@@ -21,6 +25,11 @@ usage() {
 
 # These root-only helpers are private to this single entrypoint. Keep them
 #     co-located unless another caller or a clearer test boundary emerges.
+# Usage: _print_account_diagnostics <target_username>
+# Inputs: Target username and current account, group, home, SSH, and sudo state;
+#     does not read stdin.
+# Outputs: Writes best-effort diagnostics to stderr; changes no state.
+# Returns: 0 after attempting every diagnostic; does not exit the caller.
 _print_account_diagnostics() {
     local _target_user="$1"
     local _target_home="${AMD_DEVCLOUD_TARGET_HOME_PARENT}/${_target_user}"
@@ -37,7 +46,10 @@ _print_account_diagnostics() {
 
 # Check whether an existing account exactly matches the root-handoff baseline.
 # Usage: _account_matches_baseline <target_username> <authorized_key_file>
-# Returns: 0 for the exact baseline; 1 otherwise
+# Inputs: Target username, public-key file, and current account and sudo state;
+#     does not read stdin.
+# Outputs: Normally silent and changes no state; commands may diagnose on stderr.
+# Returns: 0 for the exact baseline; 1 otherwise; does not exit the caller.
 _account_matches_baseline() (
     local _target_user="$1"
     local _authorized_key_file="$2"
@@ -108,7 +120,11 @@ _account_matches_baseline() (
 
 # Create the exact project-owned root-to-user handoff from an absent account.
 # Usage: _create_handoff_baseline <target_username> <authorized_key_file>
-# Returns: 0 after creating and verifying the baseline; 1 on failure
+# Inputs: Target username, public-key file, root privileges, and expected OS
+#     state; does not read stdin.
+# Outputs: Reports progress to stdout and errors to stderr; creates the reviewed
+#     groups, account, home, SSH key, sudoers policy, and temporary files.
+# Returns: 0 after verification; nonzero on failure, including cleanup failure.
 _create_handoff_baseline() (
     local _target_user="$1"
     local _authorized_key_file="$2"
@@ -118,6 +134,11 @@ _create_handoff_baseline() (
     local _key_temp_file=""
     local _required_group
 
+    # Usage: _cleanup_handoff_temp_files
+    # Inputs: No arguments or stdin; reads the incoming status and scoped temp paths.
+    # Outputs: Removes scoped temporary files and reports cleanup errors to stderr.
+    # Returns: Exits this function's subshell with the original failure status,
+    #     or with the cleanup status after an otherwise successful invocation.
     # Invoked indirectly by the scoped EXIT trap below.
     # shellcheck disable=SC2317
     _cleanup_handoff_temp_files() {

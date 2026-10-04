@@ -11,6 +11,10 @@ readonly REPO_ROOT
 # shellcheck source=../lib/amd_devcloud_vars.sh
 . "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
 
+# Usage: usage
+# Inputs: No arguments or stdin; reads $0 and the plan-only flag constant.
+# Outputs: Writes the command synopsis to stdout; changes no state.
+# Returns: Status from writing the synopsis; does not exit the caller.
 usage() {
     echo "Usage: $0 [${SHOW_PLAN_ONLY_FLAG}] [-h|--help]"
 }

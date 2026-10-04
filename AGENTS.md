@@ -180,6 +180,32 @@ Prefer the smallest reproducible change that improves setup, validation,
 diagnostics, or documentation. If a change begins turning into its own
 subsystem, stop and reconsider its scope.
 
+### Resource-aware engineering and support
+
+Account for practical limits on hardware access, cloud-compute budgets,
+network bandwidth, technical expertise, time, and access to recovery or
+diagnostic equipment. These constraints may affect maintainers, reviewers,
+issue reporters, and end users; do not assume that someone can keep spare
+hardware, retain a paid VM, repeat a large download, redeploy an expensive
+environment, or perform exhaustive matrix testing merely to receive help or
+provide useful evidence.
+
+Prefer the least expensive, reversible, and narrowly scoped investigation,
+validation, troubleshooting, or recovery step that can answer the current
+question safely. Use static inspection, existing evidence, local checks,
+mocks, read-only probes, and preservation of current state before escalating
+to paid provider runs, destructive recovery, broad reinstalls, or lengthy
+experiments. Consolidate questions that genuinely require scarce hardware or
+paid cloud access into a coherent round.
+
+State which checks are essential for safety or a support claim and which are
+optional diagnostics, deeper validation, or useful follow-up. Accept bounded
+findings with clearly disclosed evidence limits; missing access to unrelated
+hardware or optional diagnostics is not by itself grounds to discard an
+otherwise useful report. This principle does not weaken required safety
+checks, correctness or evidence standards, provider acceptance boundaries, or
+maintainer discretion, and it creates no new platform or support obligation.
+
 Decline requests for entirely new cloud providers, GPU-platform families, or
 fundamentally new workload categories while the existing baseline is completed
 and stabilized. Bugs, regressions, documentation fixes, compatibility reports,
@@ -790,8 +816,23 @@ when their context explains the difference.
 - Functions used across file boundaries must not use a leading underscore.
 - Private helpers and private working variables may use leading underscores.
 - Prefer braced variable references, especially for private variables.
-- Document function arguments using the surrounding `# Usage:` style and add
-  concise `# Returns:` documentation when return status is meaningful.
+- For shell functions generally, including functions in sourced libraries,
+  preserve the lightweight minimum: document arguments using the
+  surrounding `# Usage:` style and add concise `# Returns:` documentation when
+  return status is meaningful. Add input, output, external-state, or side-effect
+  details when they are not clear from the short local context, but do not
+  mechanically expand obvious library helpers into repetitive comment blocks.
+- In every user-facing executable shell script, give each function a compact
+  interface comment and keep it synchronized with behavior. Use the
+  surrounding `# Usage:` style with purpose-revealing parameter names, then
+  summarize `# Inputs:`, including positional arguments, stdin, and relevant
+  environment or external state; `# Outputs:`, including stdout, stderr,
+  files, and other side effects; and `# Returns:`, including meaningful status
+  values or process-exit behavior. Explicitly distinguish data printed to
+  stdout from a shell return status. Avoid boilerplate that merely restates an
+  obvious body. Apply the same convention to test helpers when their contract
+  is not apparent from short local use; one-line cleanup functions and simple
+  command doubles do not need ceremonial comments.
 - Existing setup entry scripts intentionally use a marked main section instead
   of a `main` function. Do not begin new setup actions before that marker.
 - Idempotent checks that must run on every invocation should normally remain

@@ -91,6 +91,12 @@ pip() {
     return 0
 }
 
+# Usage: run_failure_scenario <scenario_name> <combined_output_file>
+# Inputs: Scenario name, output path, TEST_PIP_MODE, and temporary test state;
+#     does not read stdin.
+# Outputs: Captures scenario stdout/stderr, creates fixture paths, and records
+#     the child status in SCENARIO_STATUS.
+# Returns: 0 after recording the child status; does not exit on child failure.
 run_failure_scenario() {
     local _scenario_name="$1"
     local _output_file="$2"
