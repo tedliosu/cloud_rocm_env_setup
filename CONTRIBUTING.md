@@ -60,6 +60,15 @@ categories are outside the current scope freeze. A narrow unsupported-platform
 diagnostic may still be useful evidence, but it does not create a support or
 maintenance obligation.
 
+For provenance-sensitive findings, identify the exact URL or package source,
+parsed origin, hosting owner and repository path where applicable, selected
+version or commit, redirect destination, and verification metadata that you
+actually observed. Separate an unexpected change from evidence of compromise;
+do not describe a new hash, key, release, or location as trusted merely because
+the current upstream publishes it. Do not include credentials or authenticated
+request traces. A bounded report may omit expensive or unavailable optional
+forensics as long as it states those evidence limits and does not overclaim.
+
 ## Finding the Right Area
 
 If the responsible code is unclear, file the issue with the observed command
@@ -138,6 +147,8 @@ Review priorities:
 - provider-specific versus shared ownership;
 - setup-to-validation gate correspondence;
 - dependency and package-source ownership;
+- canonical origins, redirect behavior, exact release identity, artifact
+  verification, and privilege transitions for external inputs;
 - contradictions between code, tests, README.md, and AGENTS.md;
 - missing tests only where they protect a meaningful repository contract; and
 - provenance or licensing concerns supported by specific evidence.

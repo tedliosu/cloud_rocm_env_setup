@@ -382,9 +382,11 @@ install_amd_devcloud_repository_bootstrap() (
     trap 'rm --force -- "${_package_path}"; rmdir -- "${_temp_dir}" || :' EXIT
 
     echo "Downloading pinned AMD repository-bootstrap package..."
-    if ! wget --tries=3 --timeout=30 --output-document="${_package_path}" \
+    if ! wget --tries=3 --timeout=30 --max-redirect=0 \
+        --output-document="${_package_path}" \
         "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_URL}"; then
-        echo "ERROR: unable to download the pinned AMD repository bootstrap!" >&2
+        echo "ERROR: unable to download the pinned AMD repository bootstrap" >&2
+        echo "    without a redirect or other fetch failure!" >&2
         return 1
     fi
     if ! printf '%s  %s\n' "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_SHA256}" \

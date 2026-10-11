@@ -26,10 +26,11 @@ printf '%s\n' \
     'set -euo pipefail' \
     '[ "$1" = "--tries=3" ]' \
     '[ "$2" = "--timeout=30" ]' \
-    'case "$3" in --output-document=*) ;; *) exit 64 ;; esac' \
-    '[ "$4" = "${TEST_BOOTSTRAP_URL}" ]' \
+    '[ "$3" = "--max-redirect=0" ]' \
+    'case "$4" in --output-document=*) ;; *) exit 64 ;; esac' \
+    '[ "$5" = "${TEST_BOOTSTRAP_URL}" ]' \
     '[ "${TEST_WGET_STATUS}" -eq 0 ] || exit "${TEST_WGET_STATUS}"' \
-    'printf "mock AMD package\n" > "${3#--output-document=}"' \
+    'printf "mock AMD package\n" > "${4#--output-document=}"' \
     > "${TEST_BIN_DIR}/wget"
 
 # shellcheck disable=SC2016

@@ -38,6 +38,7 @@ sudo -H bash setup/amd_devcloud/tests/root_bootstrap_cli_test.sh
 | Mocked setup orchestration | Command arguments and ordering, exact package policy, resumability, scoped environment, and failure propagation | That APT, DKMS, reboot, or a GPU driver succeeds on a live image |
 | Root-only local checks | Selected privileged account and sudoers failure behavior | ROCm or GPU readiness |
 | Validation-gate tests | Optional/required presence, complete gate scheduling, scoped ROCm variables, and child-failure propagation | Correctness of the mocked workload itself |
+| Security-policy tests | Exact source, redirect, digest, and metadata rejection under modeled conditions | External authenticity, upstream compromise resistance, or overall system security |
 | Real workload smokes | Small HIP, PyTorch, CuPy, Numba, hipCIM, hipCollections, and Triton behavior | Exhaustive application correctness or broad package compatibility |
 | Provider acceptance | The complete tested setup and validation path for one recorded environment generation | Future provider images or arbitrary ROCm, GPU, and Python matrices |
 
@@ -76,6 +77,8 @@ test-validity rules and the concrete triggers for reconsidering Bats are in
 
 - `setup/amd_devcloud/tests/` covers the experimental DevCloud handoff,
   admission states, pinned ROCm setup, paths, and packaged environment.
+- `security/tests/` covers modeled enforcement of narrow repository-owned
+  source and provenance contracts.
 - `setup/common/tests/` covers shared setup, safety, parsing, failure, and
   resumability primitives.
 - `validate/tests/` covers validation helpers and capability-gate

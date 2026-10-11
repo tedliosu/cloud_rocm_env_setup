@@ -157,6 +157,100 @@ is not proof of
 originality, complete provenance, or license compliance. Do not catastrophize
 all agent-touched code as contaminated.
 
+## Supply-chain trust and external sources
+
+Bootstrap automation is security-sensitive because it fetches software,
+changes package and signing configuration, installs persistent system state,
+and may run unattended with elevated privileges. Use this rule throughout the
+repository:
+
+> Discovery may be fuzzy; execution must be exact.
+
+Search results, documentation, people, and agents may identify candidate
+sources. Before repository-owned automation installs or executes anything,
+make the trust decision explicit and proportionate to the artifact's
+privilege, persistence, and reproducibility role.
+
+- Prefer the canonical vendor domain and repository location documented by
+  the expected upstream. Compare parsed origins and repository identities, not
+  visual similarity, branding, filenames, package names, page appearance, or
+  search ranking. Treat look-alike domains, homoglyphs, misleading subdomains,
+  unexpected TLDs, alternate origins, and mirrors as untrusted until reviewed.
+- When a fetch follows redirects, include the effective destination in the
+  provenance contract. Reject unexpected destination drift. Never forward
+  credentials, tokens, cookies, SSH material, or authorization headers across
+  an unreviewed source boundary.
+- Keep transport integrity distinct from artifact provenance. HTTPS is
+  required for direct web fetches unless a reviewed protocol-specific reason
+  says otherwise, but TLS does not prove that an origin, maintainer account,
+  release pipeline, or artifact is uncompromised. A checksum from the same
+  mutable origin detects corruption but gives weaker evidence against origin
+  compromise.
+- Use the strongest practical upstream verification that this project can
+  maintain: package or repository signing, detached signatures and established
+  keys, immutable release identities, independently authenticated digests or
+  attestations, or exact repository-recorded hashes. State only the guarantee
+  that the selected mechanism actually provides.
+- For privileged or reproducibility-sensitive inputs, record the exact
+  version, expected origin, asset name, and digest, signature, or key identity
+  where practical. Treat these as reviewed receipts for one validated
+  generation, not permanent vendor promises. Key rotation, moved feeds,
+  changed origins, and new artifacts require deliberate review rather than
+  automatic acceptance.
+- Never pipe mutable network content directly into a privileged shell. When an
+  upstream primarily offers a shell installer, fetch the exact content to a
+  controlled local path, validate the source and available provenance, record
+  or inspect the selected artifact where practical, and only then execute the
+  local copy. This is a stricter repository trust boundary, not a claim that an
+  upstream convenience installer is inherently malicious.
+- Give artifacts that change system trust or persistent machine state stronger
+  scrutiny. Repository bootstrap packages, signing keys, kernel or module
+  packages, bootloader or firmware changes, privileged installers, services,
+  and root-executed release assets should be downloaded without privilege when
+  practical, validated in controlled temporary storage, and elevated only
+  after the checks pass. Discovery or successful download alone never grants
+  privilege.
+- Package identity includes its source. Preserve provider, distribution, AMD,
+  Python-index, and repository ownership boundaries. If a name is available
+  from multiple indexes or repositories, prevent an unexpected source from
+  silently satisfying a direct project requirement without bypassing ordinary
+  upstream dependency metadata or inventing a custom resolver.
+- For cloned repositories and repository-hosted assets, constrain the expected
+  hosting service, owner or organization, repository path, and immutable tag or
+  commit when privilege or reproducibility warrants it. A similarly named
+  repository or organization is not interchangeable with the reviewed source.
+- Do not make vendoring the default. A justified vendored snapshot still owns
+  provenance, licensing and notices, vulnerability and update tracking,
+  staleness, repository size, and long-term maintenance. Use it only for a
+  strong bounded reason such as a small stable dependency, critical
+  reproducibility, unsuitable distribution, or an unacceptable upstream trust
+  model.
+- Keep diagnostic and convenience tools optional. Prefer distribution or
+  vendor repositories where practical; otherwise require source-appropriate
+  explicit versions and checks. Skip an optional tool when its provenance
+  cannot be established rather than weakening the bootstrap boundary.
+
+Security-oriented unit and smoke tests validate the repository's encoded
+checks and failure behavior under modeled conditions. They do not prove
+external authenticity, transport integrity, upstream compromise resistance,
+threat-model completeness, or overall system security. Keep individual test
+names and comments focused on their exact contract instead of repeating this
+disclaimer.
+
+Use a small number of deterministic, high-signal automated checks for selected
+security-sensitive direct upstreams. Such automation may collect and report
+release, origin, redirect, key, digest, or asset drift, but must not bless new
+trust metadata automatically. Agents may summarize or triage deterministic
+results; they are not a root of trust. Bound schedules and notifications so
+actionable changes receive attention instead of creating routine alert noise.
+
+Apply the resource-awareness policy here too. Begin with the least expensive
+check that can answer the security question, and do not assume enterprise
+tooling, deep security expertise, spare systems, repeated large downloads, or
+unlimited investigation time. This does not weaken essential trust checks or
+turn the repository into a package manager, attestation service, SIEM, or
+general supply-chain framework.
+
 ## Project contract
 
 This repository bootstraps and smoke-validates practical ROCm cloud VMs for

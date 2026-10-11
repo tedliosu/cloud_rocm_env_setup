@@ -33,6 +33,9 @@ vulnerabilities through the private route documented in
   workload smokes.
 - `tests/` contains the local test driver, repository-wide ShellCheck entry
   point, and the human-facing [testing guide](tests/README.md).
+- `security/` contains narrow deterministic checks for selected direct
+  upstream provenance receipts; scheduled automation reports drift without
+  accepting new trust metadata.
 - `README.md`, `CONTRIBUTING.md`, and `SECURITY.md` describe support, public
   reporting, and confidential vulnerability reporting respectively.
 
@@ -89,6 +92,11 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - Reproducible, *minimal* environment setup with Python dependencies constrained selectively when demonstrated compatibility, ABI, or reproducibility reasons justify it
 - Safe, resumable bootstrap scripts with reboot handling
 - Minimal validation to detect obviously broken environments (e.g., ROCm availability, basic workload execution)
+- External inputs that the bootstrap owns use explicit source identities and
+  verification appropriate to their privilege and reproducibility role.
+  Mutable network content is not piped directly into a privileged shell, and
+  selected unexpected origin, redirect, digest, or package-metadata changes
+  fail closed for manual review.
 - Project-specific ROCm library and runtime selection remains process-scoped:
     - Setup does not add project ROCm paths to system dynamic-loader configuration or run `ldconfig` merely to make them globally visible.
     - Setup does not persist `LD_LIBRARY_PATH`, `ROCM_HOME`, `ROCM_PATH`, `HIP_PATH`, or similar runtime and build-selection variables in shell startup files.
@@ -104,6 +112,10 @@ cases while keeping its support and maintenance surface deliberately bounded.
 - Redistribution of proprietary drivers, runtimes, binaries, and source code
 - Academic and course provided program implementations that have not been explicitly approved for public release (please see [Private ONLY](#private-only) section under [Target Workloads](#target-workloads))
 - General-purpose firewall reconciliation, source-IP allowlisting, dynamic DNS, or VPN infrastructure
+- A universal supply-chain security framework, package manager, attestation
+  service, or guarantee that canonical upstreams, release systems, runners, or
+  published artifacts cannot be compromised. HTTPS and repository-recorded
+  hashes provide bounded evidence, not absolute provenance.
 - Expansion to entirely new cloud providers, GPU-platform families, or workload categories is currently frozen while the existing baseline is completed and stabilized. The already-planned experimental AMD DevCloud path remains in scope.
 - Acting as a general unofficial ROCm platform-enablement layer:
     - Narrow unsupported-platform experiments may be used for concrete diagnostics, upstream bug reproduction, or explicitly approved compatibility investigations.
@@ -260,6 +272,25 @@ overlaps its existing bootstrap scope.
     - Do not schedule another paid lifecycle round solely to repeat the
       provisioning, firewall attachment, SSH, and deletion commands already
       accepted on 2026-10-03 and 2026-10-04.
+
+### Supply-Chain Hardening
+
+- [ ] Replace the current Kitware and Intel signing-key streams with controlled
+  unprivileged downloads, exact expected origins and redirect behavior, and
+  reviewed key fingerprints or artifact digests before installing system trust
+  state. Preserve the existing package-source and provider boundaries.
+- [ ] Give the optional fastfetch release path an explicit reviewed version,
+  canonical repository identity, redirect policy, and artifact verification,
+  or skip it when those checks cannot be maintained. Do not make it a required
+  workload dependency.
+- [ ] Review direct AMD Python-package ownership across the AMD and default
+  Python indexes. Prevent same-name source substitution without using
+  `--no-deps`, mirroring transitive metadata, or changing the accepted packaged
+  recipe before resolver behavior is understood and tested.
+- [ ] Audit source clones and recursive submodules for exact host, owner,
+  repository, and immutable-ref contracts where reproducibility warrants them.
+  Keep this bounded to current dependencies; do not adopt vendoring or a
+  general dependency framework by default.
 
 ### Public Release Readiness
 
