@@ -517,16 +517,24 @@ A possible presentation or other external use case does not establish a
 deadline or imply continuous maintainer availability. Ask for current
 scheduling context before turning that possibility into deadline-driven work.
 
-An RPP host-versus-device Canny demonstration is an unconfirmed standalone
-feasibility experiment for a possible presentation, not an adopted bootstrap
-workload. Keep the initial experiment outside this repository and separate
-from the custom ndarray-based Canny project. It does not add RPP to this
-repository's installation pipeline, validation matrix, dependencies, or
-support claims. Consider a narrow repository change later only if the
-experiment demonstrates a concrete bootstrap-owned deficiency or a separately
-reviewed reusable validation requirement.
-
 ## Closed decisions that must not be reopened implicitly
+
+### RPP legacy Canny exclusion
+
+The previously considered RPP host-versus-device Canny demonstration is closed
+for the current bootstrap baseline. AMD-distributed RPP 2.2.1 for ROCm 7.2.3
+does not export the legacy `rppi_canny_edge_detector_*` APIs, and the older
+legacy implementation inspected in RPP 1.9.10 for ROCm 6.4.4 is not a suitable
+correctness reference. Source retained behind legacy-support paths does not
+change the shipped-package contract.
+
+Do not add an RPP legacy-Canny install or validation path, compatibility
+workaround, ROCm 6.4.4 downgrade, or custom RPP rebuild requirement. This is a
+narrow finding about the legacy Canny path, not a claim that RPP or ROCm
+computer-vision functionality is generally unavailable or broken. RPP may be
+considered for some other bounded use only after a separate concrete bootstrap
+requirement is reviewed; this decision does not change the validated ROCm 7.2.3
+MI300X baseline.
 
 ### RX 7600 XT retirement
 
