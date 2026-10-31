@@ -63,7 +63,7 @@ date() {
 
 uname() {
     [ "$*" = "--kernel-release --machine" ]
-    printf '%s\n' '6.8.0-124-generic x86_64'
+    printf '%s\n' '6.8.0-147-generic x86_64'
 }
 
 python3() {
@@ -77,6 +77,7 @@ dpkg-query() {
         *" ${AMD_DEVCLOUD_ROCM_METAPACKAGE} "*)
             printf '%s\t%s\n' \
                 amdgpu-dkms "${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" \
+                amdgpu-dkms-firmware "${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE_VERSION}" \
                 rocm7.2.3 "${AMD_DEVCLOUD_ROCM_METAPACKAGE_VERSION}"
             ;;
         *)
@@ -88,9 +89,9 @@ dpkg-query() {
 verify_amd_devcloud_post_driver_state_dont_wrap() {
     printf '%s\n' \
         'AMD DevCloud post-driver verification passed.' \
-        'AMDGPU DKMS: 6.16.13-2327507.24.04 (installed)' \
+        'AMDGPU DKMS: 7.1.9-2407772.24.04 (installed)' \
         'GPU: AMD Instinct MI300X VF (gfx942)' \
-        'AMD SMI driver version: 6.16.13'
+        'AMD SMI driver version: 7.1.9.31600000'
 }
 
 export TEST_HIPCONFIG_STATUS=0
@@ -100,8 +101,9 @@ _environment_report="$(print_amd_devcloud_environment_report \
 for _expected_text in \
     'Observed UTC: 2026-09-14T18:30:00Z' \
     'PRETTY_NAME="Ubuntu 24.04.4 LTS"' \
-    '6.8.0-124-generic x86_64' \
+    '6.8.0-147-generic x86_64' \
     'GPU: AMD Instinct MI300X VF (gfx942)' \
+    $'amdgpu-dkms-firmware\t1:31.60.0.0.31600000-2407772.24.04' \
     'HIP version: 7.2.53210' \
     'Baseline: Python 3.12.3' \
     'torch==2.11.0+rocm7.2'; do

@@ -73,6 +73,9 @@ printf '%s\n' \
     '    "${TEST_AMDGPU_PACKAGE}")' \
     '        printf "%s\t%s\n" "${TEST_AMDGPU_STATUS}" "${TEST_INSTALLED_AMDGPU_VERSION}"' \
     '        ;;' \
+    '    "${TEST_AMDGPU_FIRMWARE_PACKAGE}")' \
+    '        printf "%s\t%s\n" "${TEST_AMDGPU_FIRMWARE_STATUS}" "${TEST_INSTALLED_AMDGPU_FIRMWARE_VERSION}"' \
+    '        ;;' \
     '    "${TEST_AMD_SMI_PACKAGE}")' \
     '        printf "%s\t%s\n" "${TEST_AMD_SMI_STATUS}" "${TEST_INSTALLED_AMD_SMI_VERSION}"' \
     '        ;;' \
@@ -89,6 +92,7 @@ export PATH="${TEST_BIN_DIR}:/usr/bin:/bin"
 # Outputs: Creates isolated directories and symlinks; diagnoses failures on stderr.
 # Returns: 0 when both link cases behave as expected; exits its subshell with 1
 #     on an assertion failure.
+# shellcheck disable=SC2030,SC2031 # Fixture globals are intentionally subshell-local.
 test_rocm_alternative_resolution() (
     AMD_DEVCLOUD_ROCM_ALTERNATIVE_PATH="${TEST_TMP_DIR}/rocm"
     AMD_DEVCLOUD_ROCM_VERSIONED_ROOT="${TEST_TMP_DIR}/rocm-7.2.3"
@@ -114,6 +118,47 @@ test_rocm_alternative_resolution() (
 
 test_rocm_alternative_resolution
 
+# Usage: test_repository_source_matching
+# Inputs: No arguments or stdin; reads the test temporary-directory global.
+# Outputs: Creates isolated source-list fixtures; diagnoses failures on stderr.
+# Returns: 0 when exact sources pass and drift fails; exits its subshell with 1
+#     on an assertion failure.
+# shellcheck disable=SC2030,SC2031 # Fixture globals are intentionally subshell-local.
+test_repository_source_matching() (
+    AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE="${TEST_TMP_DIR}/amdgpu.list"
+    AMD_DEVCLOUD_AMDGPU_REPOSITORY_LINE="deb driver expected"
+    AMD_DEVCLOUD_ROCM_REPOSITORY_FILE="${TEST_TMP_DIR}/rocm.list"
+    AMD_DEVCLOUD_ROCM_REPOSITORY_LINES=$'deb rocm expected\ndeb graphics expected'
+
+    printf '%s\n' "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_LINE}" \
+        > "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}"
+    printf '%s\n' "${AMD_DEVCLOUD_ROCM_REPOSITORY_LINES}" \
+        > "${AMD_DEVCLOUD_ROCM_REPOSITORY_FILE}"
+    # shellcheck source=../lib/amd_devcloud_funcs.sh
+    . "${SCRIPT_DIR}/../lib/amd_devcloud_funcs.sh"
+
+    if ! _amd_devcloud_repository_sources_match; then
+        echo "FAILED: exact repository sources were rejected!" >&2
+        exit 1
+    fi
+    printf '%s\n' "deb driver unexpected" \
+        > "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}"
+    if _amd_devcloud_repository_sources_match; then
+        echo "FAILED: unexpected driver source was accepted!" >&2
+        exit 1
+    fi
+    printf '%s\n' "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_LINE}" \
+        > "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}"
+    printf '%s\n' "${AMD_DEVCLOUD_ROCM_REPOSITORY_LINES}" \
+        "deb rocm unexpected" > "${AMD_DEVCLOUD_ROCM_REPOSITORY_FILE}"
+    if _amd_devcloud_repository_sources_match; then
+        echo "FAILED: extra ROCm source was accepted!" >&2
+        exit 1
+    fi
+)
+
+test_repository_source_matching
+
 # shellcheck source=../lib/amd_devcloud_vars.sh
 . "${SCRIPT_DIR}/../lib/amd_devcloud_vars.sh"
 # shellcheck source=../lib/amd_devcloud_funcs.sh
@@ -121,6 +166,7 @@ test_rocm_alternative_resolution
 
 export TEST_AMDGPU_PACKAGE="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}"
 export TEST_AMDGPU_VERSION="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"
+export TEST_AMDGPU_FIRMWARE_PACKAGE="${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}"
 export TEST_AMD_SMI_PACKAGE="${AMD_DEVCLOUD_AMD_SMI_PACKAGE}"
 export TEST_AMD_SMI_VERSION="${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"
 export TEST_KERNEL_INSTALL_CALLS="${KERNEL_INSTALL_CALLS}"
@@ -149,6 +195,8 @@ reset_observations() {
     TEST_MODULES_VERSION="6.8.0"
     TEST_AMDGPU_STATUS="installed"
     TEST_INSTALLED_AMDGPU_VERSION="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"
+    TEST_AMDGPU_FIRMWARE_STATUS="installed"
+    TEST_INSTALLED_AMDGPU_FIRMWARE_VERSION="${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE_VERSION}"
     TEST_AMD_SMI_STATUS="installed"
     TEST_INSTALLED_AMD_SMI_VERSION="${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"
     TEST_ROCM_ALTERNATIVE_MATCHES=1
@@ -158,6 +206,7 @@ reset_observations() {
     export TEST_HEADERS_STATUS TEST_HEADERS_VERSION
     export TEST_MODULES_STATUS TEST_MODULES_VERSION
     export TEST_AMDGPU_STATUS TEST_INSTALLED_AMDGPU_VERSION
+    export TEST_AMDGPU_FIRMWARE_STATUS TEST_INSTALLED_AMDGPU_FIRMWARE_VERSION
     export TEST_AMD_SMI_STATUS TEST_INSTALLED_AMD_SMI_VERSION
     export TEST_ROCM_ALTERNATIVE_MATCHES TEST_AMD_SMI_EXECUTABLE
 }
@@ -219,6 +268,11 @@ reset_observations
 TEST_INSTALLED_AMDGPU_VERSION="unexpected"
 export TEST_INSTALLED_AMDGPU_VERSION
 expect_rejection "unexpected AMDGPU package version" 1 1
+
+reset_observations
+TEST_INSTALLED_AMDGPU_FIRMWARE_VERSION="unexpected"
+export TEST_INSTALLED_AMDGPU_FIRMWARE_VERSION
+expect_rejection "unexpected APT-resolved AMDGPU firmware version" 1 1
 
 reset_observations
 TEST_INSTALLED_AMD_SMI_VERSION="unexpected"

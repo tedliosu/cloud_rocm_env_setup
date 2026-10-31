@@ -10,7 +10,7 @@ readonly SCRIPT_DIR
 # shellcheck source=../lib/amd_devcloud_funcs.sh
 . "${SCRIPT_DIR}/../lib/amd_devcloud_funcs.sh"
 
-TEST_KERNEL_RELEASE="6.8.0-124-generic"
+TEST_KERNEL_RELEASE="6.8.0-147-generic"
 TEST_MACHINE_ARCH="${AMD_DEVCLOUD_EXPECTED_DKMS_ARCH}"
 TEST_PCI_OUTPUT=$'0000:83:00.0 1200: 1002:74b5\n'
 TEST_DKMS_OUTPUT=""
@@ -70,11 +70,11 @@ _amd_devcloud_run_amd_smi_static() {
 }
 
 reset_observations() {
-    TEST_KERNEL_RELEASE="6.8.0-124-generic"
+    TEST_KERNEL_RELEASE="6.8.0-147-generic"
     TEST_MACHINE_ARCH="${AMD_DEVCLOUD_EXPECTED_DKMS_ARCH}"
     TEST_PCI_OUTPUT=$'0000:83:00.0 1200: 1002:74b5\n'
     TEST_DKMS_OUTPUT="amdgpu/${AMD_DEVCLOUD_AMDGPU_DKMS_MODULE_VERSION}, ${TEST_KERNEL_RELEASE}, ${TEST_MACHINE_ARCH}: installed"
-    TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"6.16.13"}}]}'
+    TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"7.1.9.31600000"}}]}'
     TEST_LSPCI_STATUS=0
     TEST_UNAME_STATUS=0
     TEST_DKMS_STATUS=0
@@ -94,7 +94,7 @@ expect_acceptance() {
         exit 1
     fi
     if ! grep --fixed-strings --quiet \
-        "AMD SMI driver version: 6.16.13" <<< "${_output}"; then
+        "AMD SMI driver version: 7.1.9.31600000" <<< "${_output}"; then
         echo "FAILED: post-driver verification omitted the observed driver!" >&2
         exit 1
     fi
@@ -152,19 +152,19 @@ TEST_AMD_SMI_JSON='{"gpu_data":['
 expect_rejection
 
 reset_observations
-TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"6.16.13"}},{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"6.16.13"}}]}'
+TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"7.1.9.31600000"}},{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"7.1.9.31600000"}}]}'
 expect_rejection
 
 reset_observations
-TEST_AMD_SMI_JSON=$'{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"6.16.13"}}]}\n{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"6.16.13"}}]}'
+TEST_AMD_SMI_JSON=$'{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"7.1.9.31600000"}}]}\n{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx942"},"driver":{"version":"7.1.9.31600000"}}]}'
 expect_rejection
 
 reset_observations
-TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"unexpected","target_graphics_version":"gfx942"},"driver":{"version":"6.16.13"}}]}'
+TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"unexpected","target_graphics_version":"gfx942"},"driver":{"version":"7.1.9.31600000"}}]}'
 expect_rejection
 
 reset_observations
-TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx1101"},"driver":{"version":"6.16.13"}}]}'
+TEST_AMD_SMI_JSON='{"gpu_data":[{"gpu":0,"asic":{"market_name":"AMD Instinct MI300X VF","target_graphics_version":"gfx1101"},"driver":{"version":"7.1.9.31600000"}}]}'
 expect_rejection
 
 reset_observations

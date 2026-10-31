@@ -51,6 +51,7 @@ TEST_DPKG_STATUS=0
 TEST_AMDGPU_LOADED=0
 TEST_KFD_PRESENT=0
 TEST_ROCM_ALTERNATIVE_MATCHES=1
+TEST_REPOSITORY_SOURCES_MATCH=0
 TEST_COMMAND_ARTIFACTS=""
 TEST_PATH_ARTIFACTS=""
 export TEST_PCI_OUTPUT TEST_PACKAGE_OUTPUT TEST_LSPCI_STATUS TEST_DPKG_STATUS
@@ -65,6 +66,10 @@ _amd_devcloud_kfd_is_present() {
 
 _amd_devcloud_rocm_alternative_matches_versioned_root() {
     [ "${TEST_ROCM_ALTERNATIVE_MATCHES}" -eq 1 ]
+}
+
+_amd_devcloud_repository_sources_match() {
+    [ "${TEST_REPOSITORY_SOURCES_MATCH}" -eq 1 ]
 }
 
 _amd_devcloud_collect_command_artifacts() {
@@ -88,6 +93,7 @@ reset_observations() {
     TEST_AMDGPU_LOADED=0
     TEST_KFD_PRESENT=0
     TEST_ROCM_ALTERNATIVE_MATCHES=1
+    TEST_REPOSITORY_SOURCES_MATCH=0
     TEST_COMMAND_ARTIFACTS=""
     TEST_PATH_ARTIFACTS=""
     unset SHOW_PLAN_ONLY
@@ -104,6 +110,7 @@ set_repository_bootstrap_observations() {
         "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_COMMAND_ARTIFACTS[@]}")"
     TEST_PATH_ARTIFACTS="$(printf '%s\n' \
         "${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PATH_ARTIFACTS[@]}")"
+    TEST_REPOSITORY_SOURCES_MATCH=1
 }
 
 # Usage: set_driver_observations
@@ -113,6 +120,7 @@ set_repository_bootstrap_observations() {
 set_driver_observations() {
     set_repository_bootstrap_observations
     TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}"$'\n'
+    TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE_VERSION}"$'\n'
     TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMD_SMI_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}"$'\n'
     TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}"$'\tinstalled\t'"${AMD_DEVCLOUD_ROCM_CORE_PACKAGE_VERSION}"$'\n'
     TEST_PATH_ARTIFACTS="$(printf '%s\n' \
@@ -259,6 +267,11 @@ TEST_PATH_ARTIFACTS+=$'\n/opt/rocm'
 expect_rejection "${MANAGED_DIR}"
 
 reset_observations
+set_repository_bootstrap_observations
+TEST_REPOSITORY_SOURCES_MATCH=0
+expect_rejection "${MANAGED_DIR}"
+
+reset_observations
 expect_rejection "${MANAGED_DIR}"
 
 for _driver_dir in "${DRIVER_INSTALLED_DIR}" "${DRIVER_PENDING_DIR}" \
@@ -302,6 +315,11 @@ expect_rejection "${DRIVER_PENDING_DIR}"
 reset_observations
 set_driver_observations
 TEST_PACKAGE_OUTPUT+=$'rocm\tinstalled\t7.2.3\n'
+expect_rejection "${DRIVER_INSTALLED_DIR}"
+
+reset_observations
+set_driver_observations
+TEST_PACKAGE_OUTPUT+="${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}"$'\tinstalled\tunexpected\n'
 expect_rejection "${DRIVER_INSTALLED_DIR}"
 
 reset_observations

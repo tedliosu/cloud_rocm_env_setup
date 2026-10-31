@@ -474,13 +474,20 @@ Preserve these boundaries:
   requirement.
 - Use packaged `amd-cupy` and `amd-hipcim`; do not source-build ordinary CuPy
   merely for symmetry.
-- Follow the exact ROCm 7.2.3 Ubuntu installation generation for both AMDGPU
-  DKMS and ROCm userland, including the pinned Noble repository-bootstrap
-  package `amdgpu-install_7.2.3.70203-1_all.deb`. Install the complete versioned
-  `rocm7.2.3` metapackage, never the unversioned `rocm` metapackage, so later
-  manual side-by-side experiments do not inherit avoidable package stomping.
-  Refuse conflicting single-version or mixed ROCm package state instead of
-  attempting an automatic migration or cleanup.
+- Preserve the pinned Noble repository-bootstrap package
+  `amdgpu-install_7.2.3.70203-1_all.deb` for the ROCm 7.2.3 signing key,
+  userland sources, and package generation. Override only its `amdgpu.list`
+  conffile with the exact reviewed AMD GPU Driver 31.60 Noble source; do not
+  install the 31.60 repository-bootstrap package because it also selects newer
+  ROCm and graphics feeds. Install the exact direct `amdgpu-dkms` requirement
+  from that driver source and let APT resolve its declared firmware and build
+  dependencies. Verify the resolved firmware package and version as part of
+  the selected generation instead of manually reproducing the dependency
+  graph. Install the complete versioned `rocm7.2.3` metapackage, never the
+  unversioned `rocm` metapackage, so later manual side-by-side experiments do
+  not inherit avoidable package stomping. Refuse source drift, conflicting
+  single-version or mixed ROCm package state, and unreviewed driver or firmware
+  generations instead of attempting an automatic migration or cleanup.
 - Treat ROCm 7.2.3 system packages with the exact ROCm 7.2.0 AMD Python package
   index, `https://pypi.amd.com/rocm-7.2.0/simple/`, as one deliberately
   observed packaged recipe. Do not generalize that cross-patch result into

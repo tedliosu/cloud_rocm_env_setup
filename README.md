@@ -253,10 +253,33 @@ overlaps its existing bootstrap scope.
     - An explicitly confirmed `doctl` create used the discovered size, region, image, and an existing account SSH key. The separately managed existing cloud firewall was attached before SSH access. The resulting Droplet appeared in the AMD DevCloud portal at the first manual refresh approximately five to eight minutes after creation; this proves portal visibility, not the exact propagation time.
     - After the complete guest acceptance and evidence retrieval, an explicitly confirmed `doctl` delete succeeded. A subsequent API lookup of the exact Droplet returned `404`, and the Droplet was absent at the first manual portal refresh less than four minutes later. The repository did not automate either lifecycle decision.
     - The tested path made no project-management API calls and relied on the account's existing default-project placement. The canonical guide should preserve that boundary rather than request project-mutation scopes or automate project creation, selection, or reassignment. A user who needs non-default project organization must review and perform that separate provider-side operation deliberately.
+15. Version-stamped AMD DevCloud split-driver compatibility evidence:
+    - On 2026-10-31, the DevCloud system upgrade selected Ubuntu kernel `6.8.0-147-generic`. The previously accepted `amdgpu-dkms` `1:6.16.13.30300300-2327507.24.04` failed to build because its source called `pci_resize_resource()` with three arguments while the current Ubuntu headers required four. This is a superseding environment observation, not evidence that the earlier accepted kernels failed.
+    - AMD's current [driver compatibility matrix](https://instinct.docs.amd.com/projects/amdgpu-docs/en/latest/compatibility/compatibility-matrix.html) lists AMD GPU Driver 31.60.x as compatible with ROCm 7.2.x. A controlled compatibility probe at reviewed repository commit `0dd89d8` changed only the AMDGPU source to AMD's 31.60 Noble repository, installed `amdgpu-dkms` `1:7.1.9.31600000-2407772.24.04`, and let APT resolve `amdgpu-dkms-firmware` `1:31.60.0.0.31600000-2407772.24.04`.
+    - After a confirmed reboot, DKMS reported `amdgpu/7.1.9-2407772.24.04` installed for `6.8.0-147-generic`; the module loaded, `/dev/kfd` was available, and the existing `amd-smi-lib7.2.3` package reported one AMD Instinct MI300X VF with native `gfx942` and driver `7.1.9.31600000`.
+    - The exact `rocm7.2.3` `7.2.3.70203-90~24.04` metapackage then installed without changing either 31.60 driver package. The repository-owned HIP smoke compiled for `gfx942`, executed on the MI300X VF, and passed. The raw `rocminfo` output was retained privately outside the repository and its SHA-256 matched after retrieval.
+    - This manually recovered probe establishes the driver/userland compatibility needed for the update. It does not establish clean automated bootstrap, milestone resumability, the Python environments, the complete validator, or completed-state rerun for the new split generation; those remain one coordinated acceptance round.
 
 # TODOs
 
 ## Current Focus
+
+### AMD DevCloud 31.60 Split-Driver Acceptance
+
+- [ ] Complete one clean or provider-rebuilt AMD DevCloud acceptance round for
+  the split driver/userland generation:
+    - Confirm that repository bootstrap leaves the ROCm and graphics sources at
+      7.2.3 while selecting only the reviewed 31.60 Noble AMDGPU source.
+    - Confirm that setup installs the exact direct `amdgpu-dkms` requirement,
+      APT resolves the expected firmware generation, and both reboot boundaries
+      remain correctly acknowledged.
+    - Complete the pinned ROCm 7.2.3 userland, common baseline, packaged AMD
+      RAPIDS environment, strict validator, acceptance probe, and completed-state
+      setup rerun.
+    - Record the actual Ubuntu point release, kernel, driver, firmware, AMD SMI,
+      ROCm, HIP, and packaged-environment versions as a dated receipt. Do not
+      promote the generation or remove this TODO based only on the manual
+      compatibility probe.
 
 ### AMD DevCloud `doctl` Installation Example
 

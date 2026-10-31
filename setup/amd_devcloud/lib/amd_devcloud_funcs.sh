@@ -24,6 +24,17 @@ _amd_devcloud_rocm_alternative_matches_versioned_root() {
     [ "${_resolved_rocm_alternative}" = "${AMD_DEVCLOUD_ROCM_VERSIONED_ROOT}" ]
 }
 
+# Usage: _amd_devcloud_repository_sources_match
+# Returns: 0 only for the exact reviewed driver and ROCm sources; 1 otherwise
+_amd_devcloud_repository_sources_match() {
+    [ -f "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}" ] &&
+        printf '%s\n' "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_LINE}" |
+        cmp --silent -- - "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}" &&
+        [ -f "${AMD_DEVCLOUD_ROCM_REPOSITORY_FILE}" ] &&
+        printf '%s\n' "${AMD_DEVCLOUD_ROCM_REPOSITORY_LINES}" |
+        cmp --silent -- - "${AMD_DEVCLOUD_ROCM_REPOSITORY_FILE}"
+}
+
 _amd_devcloud_run_amd_smi_static() {
     "${AMD_DEVCLOUD_AMD_SMI_PATH}" static \
         --gpu "${AMD_DEVCLOUD_EXPECTED_GPU_INDEX}" --asic --driver --json
@@ -96,6 +107,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     local _expected_driver_command_artifacts
     local _expected_driver_path_command_artifacts
     local _repository_commands_present=0
+    local _repository_sources_match=0
     local _admission_state=""
     local _amdgpu_loaded=0
     local _kfd_present=0
@@ -133,9 +145,10 @@ check_amd_devcloud_setup_admission_dont_wrap() {
             return 1
         fi
     fi
-    if ! command -v lspci >/dev/null 2>&1 ||
+    if ! command -v cmp >/dev/null 2>&1 ||
+        ! command -v lspci >/dev/null 2>&1 ||
         ! command -v dpkg-query >/dev/null 2>&1; then
-        echo "ERROR: DevCloud admission requires 'lspci' and 'dpkg-query'!" >&2
+        echo "ERROR: DevCloud admission requires 'cmp', 'lspci', and 'dpkg-query'!" >&2
         return 1
     fi
 
@@ -185,6 +198,9 @@ check_amd_devcloud_setup_admission_dont_wrap() {
     fi
     if _amd_devcloud_kfd_is_present; then
         _kfd_present=1
+    fi
+    if _amd_devcloud_repository_sources_match; then
+        _repository_sources_match=1
     fi
 
     _upgrade_marker="${_milestones_dir}/${AMD_DEVCLOUD_SYSTEM_UPGRADE_STAGE_NAME}.done"
@@ -267,16 +283,20 @@ check_amd_devcloud_setup_admission_dont_wrap() {
             [ "${#_package_artifacts[@]}" -eq 1 ] &&
             [ "${_package_artifacts[amdgpu-install]-}" = \
                 "${_expected_package_artifact}" ] &&
+            [ "${_repository_sources_match}" -eq 1 ] &&
             [ "${_command_artifacts}" = "${_expected_command_artifacts}" ] &&
             [ "${_path_artifacts}" = "${_expected_path_artifacts}" ]; then
             _admission_state="${AMD_DEVCLOUD_ADMISSION_REPOSITORY_BOOTSTRAP}"
         elif [ -f "${_driver_marker}" ] &&
             [ ! -e "${_rocm_userland_marker}" ] &&
-            [ "${#_package_artifacts[@]}" -eq 4 ] &&
+            [ "${#_package_artifacts[@]}" -eq 5 ] &&
             [ "${_package_artifacts[amdgpu-install]-}" = \
                 "${_expected_package_artifact}" ] &&
+            [ "${_repository_sources_match}" -eq 1 ] &&
             [ "${_package_artifacts[${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}]-}" = \
                 $'installed\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE_VERSION}" ] &&
             [ "${_package_artifacts[${AMD_DEVCLOUD_AMD_SMI_PACKAGE}]-}" = \
                 $'installed\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}" ] &&
             [ "${_package_artifacts[${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}]-}" = \
@@ -296,11 +316,14 @@ check_amd_devcloud_setup_admission_dont_wrap() {
         elif [ -f "${_rocm_userland_marker}" ] &&
             [ "${_amdgpu_loaded}" -eq 1 ] &&
             [ "${_kfd_present}" -eq 1 ] &&
-            [ "${#_package_artifacts[@]}" -eq 5 ] &&
+            [ "${#_package_artifacts[@]}" -eq 6 ] &&
             [ "${_package_artifacts[amdgpu-install]-}" = \
                 "${_expected_package_artifact}" ] &&
+            [ "${_repository_sources_match}" -eq 1 ] &&
             [ "${_package_artifacts[${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}]-}" = \
                 $'installed\t'"${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE_VERSION}" ] &&
+            [ "${_package_artifacts[${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}]-}" = \
+                $'installed\t'"${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE_VERSION}" ] &&
             [ "${_package_artifacts[${AMD_DEVCLOUD_AMD_SMI_PACKAGE}]-}" = \
                 $'installed\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}" ] &&
             [ "${_package_artifacts[${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}]-}" = \
@@ -353,6 +376,7 @@ check_amd_devcloud_setup_admission_dont_wrap() {
 install_amd_devcloud_repository_bootstrap() (
     local _temp_dir
     local _package_path
+    local _driver_repository_path
     local _package_version
     local _installed_state
     local _command_artifacts
@@ -365,8 +389,8 @@ install_amd_devcloud_repository_bootstrap() (
         echo "ERROR: AMD repository bootstrap expects no arguments!" >&2
         return 1
     fi
-    for _required_command in apt-get dpkg-deb dpkg-query mktemp rmdir rm \
-        sha256sum sudo wget; do
+    for _required_command in apt-get cmp dpkg-deb dpkg-query install mktemp \
+        rmdir rm sha256sum sudo wget; do
         if ! command -v "${_required_command}" >/dev/null 2>&1; then
             echo "ERROR: repository bootstrap requires '${_required_command}'!" >&2
             return 1
@@ -379,7 +403,8 @@ install_amd_devcloud_repository_bootstrap() (
         return 1
     fi
     _package_path="${_temp_dir}/${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_FILENAME}"
-    trap 'rm --force -- "${_package_path}"; rmdir -- "${_temp_dir}" || :' EXIT
+    _driver_repository_path="${_temp_dir}/amdgpu.list"
+    trap 'rm --force -- "${_package_path}" "${_driver_repository_path}"; rmdir -- "${_temp_dir}" || :' EXIT
 
     echo "Downloading pinned AMD repository-bootstrap package..."
     if ! wget --tries=3 --timeout=30 --max-redirect=0 \
@@ -409,6 +434,22 @@ install_amd_devcloud_repository_bootstrap() (
         echo "ERROR: unable to install the AMD repository-bootstrap package!" >&2
         return 1
     fi
+    if ! printf '%s\n' "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_LINE}" \
+        > "${_driver_repository_path}"; then
+        echo "ERROR: unable to prepare the pinned AMDGPU repository source!" >&2
+        return 1
+    fi
+    if ! sudo --set-home install --owner=root --group=root --mode=0644 -- \
+        "${_driver_repository_path}" \
+        "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}"; then
+        echo "ERROR: unable to install the pinned AMDGPU repository source!" >&2
+        return 1
+    fi
+    if ! cmp --silent -- "${_driver_repository_path}" \
+        "${AMD_DEVCLOUD_AMDGPU_REPOSITORY_FILE}"; then
+        echo "ERROR: installed AMDGPU repository source is unexpected!" >&2
+        return 1
+    fi
     if ! sudo --set-home apt-get update \
         --option=APT::Update::Error-Mode=any; then
         echo "ERROR: AMD repository bootstrap installed, but refreshing" >&2
@@ -424,6 +465,10 @@ install_amd_devcloud_repository_bootstrap() (
         $'installed\t'"${AMD_DEVCLOUD_REPOSITORY_BOOTSTRAP_PACKAGE_VERSION}" ]; then
         echo "ERROR: installed AMD repository-bootstrap state is unexpected:" >&2
         echo "    ${_installed_state}" >&2
+        return 1
+    fi
+    if ! _amd_devcloud_repository_sources_match; then
+        echo "ERROR: installed AMDGPU or ROCm repository source is unexpected!" >&2
         return 1
     fi
 
@@ -450,7 +495,7 @@ install_amd_devcloud_repository_bootstrap() (
         return 1
     fi
 
-    echo "Pinned AMD repository-bootstrap package installed and verified."
+    echo "Pinned ROCm repository bootstrap and AMDGPU driver source installed and verified."
 )
 
 # Install and confirm the pinned AMDGPU DKMS and versioned AMD SMI packages,
@@ -523,6 +568,15 @@ install_amd_devcloud_driver() (
     fi
     if ! _package_state="$(dpkg-query --show \
         --showformat='${db:Status-Status}\t${Version}\n' \
+        "${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}")" ||
+        [ "${_package_state}" != \
+            $'installed\t'"${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE_VERSION}" ]; then
+        echo "ERROR: APT-resolved AMDGPU firmware package state is unexpected:" >&2
+        echo "    ${_package_state}" >&2
+        return 1
+    fi
+    if ! _package_state="$(dpkg-query --show \
+        --showformat='${db:Status-Status}\t${Version}\n' \
         "${AMD_DEVCLOUD_AMD_SMI_PACKAGE}")" ||
         [ "${_package_state}" != \
             $'installed\t'"${AMD_DEVCLOUD_AMD_SMI_PACKAGE_VERSION}" ]; then
@@ -541,7 +595,7 @@ install_amd_devcloud_driver() (
         return 1
     fi
 
-    echo "Pinned AMDGPU DKMS and versioned AMD SMI packages installed."
+    echo "Pinned AMDGPU DKMS and versioned AMD SMI packages installed; APT-resolved firmware verified."
 )
 
 # Install and confirm the complete versioned ROCm userland metapackage for the
@@ -992,6 +1046,7 @@ print_amd_devcloud_environment_report() (
         ! _rocm_packages="$(dpkg-query --show \
             --showformat='${binary:Package}\t${Version}\n' \
             amdgpu-install "${AMD_DEVCLOUD_AMDGPU_DKMS_PACKAGE}" \
+            "${AMD_DEVCLOUD_AMDGPU_FIRMWARE_PACKAGE}" \
             "${AMD_DEVCLOUD_AMD_SMI_PACKAGE}" \
             "${AMD_DEVCLOUD_ROCM_CORE_PACKAGE}" \
             "${AMD_DEVCLOUD_ROCM_METAPACKAGE}")" ||
