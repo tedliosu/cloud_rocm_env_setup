@@ -7,10 +7,11 @@ instance-lifecycle manager and `doctl` is not a guest-side ROCm dependency.
 
 The provider discovery, create, firewall-attachment, inspection, and delete
 commands below were accepted from an Ubuntu 24.04 x86-64 control system with
-`doctl` 1.177.0 on 2026-10-03 and 2026-10-04. Account entitlements, regions,
-prices, images, and private size slugs can change. Discover them again before
-every paid create rather than treating this receipt as a permanent provider
-promise.
+`doctl` 1.177.0 on 2026-10-03 and 2026-10-04. The optional destructive rebuild
+path was accepted against the same AMD endpoint on 2026-10-31. Account
+entitlements, regions, prices, images, private size slugs, and permission
+behavior can change. Discover them again before every paid create or rebuild
+rather than treating these receipts as permanent provider promises.
 
 ## Non-authoritative Snap-free `doctl` installation example
 
@@ -123,6 +124,12 @@ Add these only when the corresponding step is needed:
   guide does not supply an unvalidated creation command. Do not add
   `firewall:delete` unless the user's separate firewall-management workflow
   genuinely needs deletion.
+- `droplet:update` and `droplet:admin` together permit the optional destructive
+  rebuild documented below. A 2026-10-31 AMD-endpoint attempt with
+  `droplet:update` but not `droplet:admin` was refused with `403`. Prefer a
+  separate short-lived context for this stronger operation instead of adding
+  these scopes to the ordinary create-and-delete context. Token scopes cannot
+  be edited after creation.
 
 This is not an exhaustive scope recipe for tags, monitoring, backups, volumes,
 or other provider features. If a user adds one of those features, they must
@@ -151,9 +158,17 @@ when continuing the workflow from a new local shell.
 
 ## Discover account-visible resources
 
-Run the read-only commands before filling in any create parameters:
+Run the read-only commands before filling in any create parameters. The size
+API has no exact-size `doctl` subcommand, so the command below uses `jq` from
+the control system's distribution to select only the validated private slug
+and its decision-relevant fields. `jq --exit-status` also makes a missing slug
+an explicit failure instead of dumping the complete public and private size
+catalog. This local display filter is not a guest or ROCm dependency.
 
 ```bash
+validated_size_slug="gpu-mi300x1-192gb-devcloud"
+validated_image_slug="ubuntu-24-04-x64"
+
 "${doctl_bin}" \
   --api-url "${devcloud_api_url}" \
   --context "${devcloud_context}" \
@@ -169,12 +184,16 @@ Run the read-only commands before filling in any create parameters:
   --api-url "${devcloud_api_url}" \
   --context "${devcloud_context}" \
   compute size list \
-  --output json
+  --output json |
+  jq --exit-status \
+    --arg slug "${validated_size_slug}" \
+    'first(.[] | select(.slug == $slug)) |
+      {slug, memory, vcpus, disk, price_hourly, price_monthly, regions, available}'
 
 "${doctl_bin}" \
   --api-url "${devcloud_api_url}" \
   --context "${devcloud_context}" \
-  compute image list-distribution \
+  compute image get "${validated_image_slug}" \
   --format ID,Distribution,Slug,Public,MinDisk
 
 "${doctl_bin}" \
@@ -195,14 +214,15 @@ Account output and Droplet listings can contain identifying information and
 public addresses. Inspect them locally; do not paste unredacted output into
 repository files, issues, or public acceptance logs.
 
-The accepted environment used size `gpu-mi300x1-192gb-devcloud` and image
-`ubuntu-24-04-x64`. Continue on the validated path only when the current AMD
-endpoint still exposes that MI300X size and Ubuntu 24.04 Bare OS image. Select
-an available region shown by the current account; `atl1` was only the observed
-2026-10-03 region, not a universal requirement. Compare the API-visible price
-and the DevCloud portal before creating, confirm sufficient account credit or
-funding, and set a time and cost budget for the session. Stop and investigate
-material disagreement instead of substituting a public DigitalOcean GPU size.
+The accepted environment used the exact size and image assigned to the two
+validated variables above. Continue on the validated path only when the
+current AMD endpoint still exposes that MI300X size and Ubuntu 24.04 Bare OS
+image. Select an available region shown by the current account; `atl1` was
+only the observed 2026-10-03 region, not a universal requirement. Compare the
+API-visible price and the DevCloud portal before creating, confirm sufficient
+account credit or funding, and set a time and cost budget for the session.
+Stop and investigate material disagreement instead of substituting a public
+DigitalOcean GPU size.
 
 ## Select or import an SSH key
 
@@ -268,14 +288,28 @@ inventory and test the external services their selected setup path needs.
 
 This guide does not create or reconcile general firewall rules, discover the
 user's public source address, or publish an address. If an appropriate
-account-owned cloud firewall already exists, inspect its inbound and outbound
-rules locally before recording its ID:
+account-owned cloud firewall already exists, first list only its compact
+identity fields:
 
 ```bash
 "${doctl_bin}" \
   --api-url "${devcloud_api_url}" \
   --context "${devcloud_context}" \
   compute firewall list \
+  --format ID,Name,Status
+```
+
+Then set the selected ID and inspect that firewall's complete rules before
+using it. This keeps unrelated rules out of the terminal while preserving the
+security-relevant review for the selected object:
+
+```bash
+firewall_id="<REVIEWED_EXISTING_FIREWALL_ID>"
+
+"${doctl_bin}" \
+  --api-url "${devcloud_api_url}" \
+  --context "${devcloud_context}" \
+  compute firewall get "${firewall_id}" \
   --format ID,Name,Status,InboundRules,OutboundRules
 ```
 
@@ -401,6 +435,76 @@ Do not pipe a mutable network response into a root shell.
 GPU Droplet billing begins at creation and ends only when the Droplet is
 destroyed; powering it off does not stop billing. See DigitalOcean's
 [Droplet pricing documentation](https://docs.digitalocean.com/products/droplets/details/pricing/).
+
+## Optionally rebuild an existing Droplet
+
+Rebuild is a destructive recovery or acceptance convenience, not part of the
+routine provisioning path. It erases the guest disk and all results that have
+not been retrieved, while billing continues for the retained Droplet. Prefer
+it only when retaining the existing provider resource is useful and the exact
+target, current image, evidence-retrieval state, and recovery plan have been
+reviewed. DigitalOcean's current
+[`droplet-action rebuild` reference](https://docs.digitalocean.com/reference/doctl/reference/compute/droplet-action/rebuild/)
+is authoritative for the command behavior.
+
+The accepted AMD-endpoint operation used the same Ubuntu 24.04 Bare OS image
+slug as fresh provisioning. Create a separate token containing the read-scope
+dependencies plus `droplet:update` and `droplet:admin`, initialize a distinct
+context interactively, and never retain its token in a command, log, or
+repository file:
+
+```bash
+devcloud_rebuild_context="amd-devcloud-rebuild-admin"
+
+"${doctl_bin}" auth init --context "${devcloud_rebuild_context}"
+```
+
+After retrieving every needed guest artifact, inspect the immutable Droplet ID
+and current image selection one final time. Then run rebuild manually without
+backgrounding it:
+
+```bash
+"${doctl_bin}" \
+  --api-url "${devcloud_api_url}" \
+  --context "${devcloud_rebuild_context}" \
+  compute droplet get "${droplet_id}" \
+  --format ID,Name,Status
+
+"${doctl_bin}" \
+  --api-url "${devcloud_api_url}" \
+  --context "${devcloud_rebuild_context}" \
+  compute droplet-action rebuild "${droplet_id}" \
+  --image "${image_slug}" \
+  --wait \
+  --format ID,Status,Type,StartedAt,CompletedAt
+```
+
+Successful action completion is the boundary for discarding the old guest's
+SSH host key. Remove only the exact rebuilt address from the local
+`known_hosts`, reconnect with the reviewed private key, and treat the new host
+key as fresh trust-on-first-use after the independently confirmed provider
+action:
+
+```bash
+ssh-keygen -R "${droplet_ipv4}"
+
+ssh \
+  -o IdentitiesOnly=yes \
+  -i "${ssh_private_key_file}" \
+  "root@${droplet_ipv4}"
+```
+
+The accepted rebuild retained the Droplet ID, address, and attached cloud
+firewall, but re-inspect those properties instead of treating preservation as
+a permanent promise. Re-run the guest's bare-state checks before bootstrap.
+After the rebuild task is finished, revoke the stronger token through the
+account portal and remove its local authentication context; revoking the
+server-side token is the security boundary, while local context removal clears
+the stored credential:
+
+```bash
+"${doctl_bin}" auth remove --context "${devcloud_rebuild_context}"
+```
 
 ## Destroy the Droplet manually
 

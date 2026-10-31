@@ -258,28 +258,16 @@ overlaps its existing bootstrap scope.
     - AMD's current [driver compatibility matrix](https://instinct.docs.amd.com/projects/amdgpu-docs/en/latest/compatibility/compatibility-matrix.html) lists AMD GPU Driver 31.60.x as compatible with ROCm 7.2.x. A controlled compatibility probe at reviewed repository commit `0dd89d8` changed only the AMDGPU source to AMD's 31.60 Noble repository, installed `amdgpu-dkms` `1:7.1.9.31600000-2407772.24.04`, and let APT resolve `amdgpu-dkms-firmware` `1:31.60.0.0.31600000-2407772.24.04`.
     - After a confirmed reboot, DKMS reported `amdgpu/7.1.9-2407772.24.04` installed for `6.8.0-147-generic`; the module loaded, `/dev/kfd` was available, and the existing `amd-smi-lib7.2.3` package reported one AMD Instinct MI300X VF with native `gfx942` and driver `7.1.9.31600000`.
     - The exact `rocm7.2.3` `7.2.3.70203-90~24.04` metapackage then installed without changing either 31.60 driver package. The repository-owned HIP smoke compiled for `gfx942`, executed on the MI300X VF, and passed. The raw `rocminfo` output was retained privately outside the repository and its SHA-256 matched after retrieval.
-    - This manually recovered probe establishes the driver/userland compatibility needed for the update. It does not establish clean automated bootstrap, milestone resumability, the Python environments, the complete validator, or completed-state rerun for the new split generation; those remain one coordinated acceptance round.
+    - This manually recovered probe established the driver/userland compatibility needed for the update. The clean acceptance below supersedes its earlier planning limitation without turning either observed package generation into a permanent provider promise.
+    - Later on 2026-10-31, an existing DevCloud Droplet was rebuilt from the account-visible Ubuntu 24.04 Bare OS image for acceptance at reviewed commit `6003e16`. The rebuild preserved the provider resource while erasing its guest disk. A token with `droplet:update` but not `droplet:admin` was refused with `403`; a separate narrowly used token with both scopes completed the rebuild. This is an observed AMD-endpoint permission contract, not authorization for automated lifecycle management.
+    - The rebuilt guest began as Ubuntu 24.04.5 with kernel `6.8.0-147-generic`, AMD PCI device `1002:74b5`, no loaded `amdgpu` module, and no `/dev/kfd`. It completed the reviewed root-to-user handoff, separate ordinary-user SSH login, exact UFW baseline, system-upgrade reboot, repository bootstrap, split-driver installation, driver reboot, complete ROCm userland, common baseline, and packaged AMD RAPIDS environment. Repository checks retained the 7.2.3 ROCm and graphics sources while selecting only the 31.60 Noble AMDGPU source.
+    - The acceptance probe reported `amdgpu-dkms` `1:7.1.9.31600000-2407772.24.04`, APT-resolved `amdgpu-dkms-firmware` `1:31.60.0.0.31600000-2407772.24.04`, AMD SMI `26.2.2.70203-90~24.04`, one AMD Instinct MI300X VF with native `gfx942`, `rocm7.2.3` `7.2.3.70203-90~24.04`, HIP `7.2.53211-c2d9476115`, Python 3.12.3, and PyTorch 2.11.0 with ROCm 7.2. The packaged environment contained `amd-cupy` 13.5.1, `amd-hipcim` 25.10.0, NumPy 2.5.4, and Numba 0.68.1; `pip check` reported no broken requirements.
+    - The strict common validator passed the complete baseline and packaged AMD RAPIDS gate before and after a completed-state setup rerun. The rerun repeated the driver and versioned-path checks, skipped every completed setup and reboot stage, and exited successfully. Both validator runs passed the packaged CuPy custom-kernel, Numba/TBB, and hipCIM Canny checks; the Canny comparison disagreed on zero of 20,480 pixels.
+    - Separate root-handoff and tmux-backed acceptance transcripts were retained outside the repository and their SHA-256 values matched after retrieval. The exact Droplet was then deleted manually, and a subsequent lookup returned `404`. This closes the split-driver acceptance requirement for the experimental DevCloud generation. It does not establish optional hipDF components, arbitrary ROCm/Python combinations, future-image compatibility, or first-class DevCloud support.
 
 # TODOs
 
 ## Current Focus
-
-### AMD DevCloud 31.60 Split-Driver Acceptance
-
-- [ ] Complete one clean or provider-rebuilt AMD DevCloud acceptance round for
-  the split driver/userland generation:
-    - Confirm that repository bootstrap leaves the ROCm and graphics sources at
-      7.2.3 while selecting only the reviewed 31.60 Noble AMDGPU source.
-    - Confirm that setup installs the exact direct `amdgpu-dkms` requirement,
-      APT resolves the expected firmware generation, and both reboot boundaries
-      remain correctly acknowledged.
-    - Complete the pinned ROCm 7.2.3 userland, common baseline, packaged AMD
-      RAPIDS environment, strict validator, acceptance probe, and completed-state
-      setup rerun.
-    - Record the actual Ubuntu point release, kernel, driver, firmware, AMD SMI,
-      ROCm, HIP, and packaged-environment versions as a dated receipt. Do not
-      promote the generation or remove this TODO based only on the manual
-      compatibility probe.
 
 ### AMD DevCloud `doctl` Installation Example
 
